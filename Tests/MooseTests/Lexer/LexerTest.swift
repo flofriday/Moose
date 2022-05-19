@@ -3,21 +3,25 @@
 //
 
 import XCTest
-import Foundation
+@testable import Moose
 
 class LexerTest: XCTestCase {
 
-    private var input: String?
-    private var expectedTokens: [String]?
+    private var testNumber: Int!
+    private var input: String!
+    private var expectedTokens: [Token]!
 
     // MARK: Test Methods
 
     /// Tests if lexer gives expected tokens back
-    func testNextToken() {
-        let actualTokens = input!.split(separator: ",")
-        XCTAssertEqual(expectedTokens!.count, actualTokens.count)
-        for (index, item) in actualTokens.enumerated() {
-            XCTAssertEqual(expectedTokens![index], String(item))
+    func testNextToken() throws {
+        let lexer = Lexer(input: input)
+        for (i, tt) in expectedTokens.enumerated() {
+            let tok = lexer.nextToken()
+            XCTAssertEqual(tt.type, tok.type,
+                    "Test[\(testNumber!):\(i)] - TokenType wrong. expected=\(tt.type), got=\(tok.type)")
+            XCTAssertEqual(tt.lexeme, tok.lexeme,
+                    "Test[\(testNumber!):\(i)] - lexeme wrong. expected=\(tt.lexeme), got=\(tok.lexeme)")
         }
     }
 
@@ -27,18 +31,23 @@ class LexerTest: XCTestCase {
     override open class var defaultTestSuite: XCTestSuite {
         let testSuite = XCTestSuite(name: NSStringFromClass(self))
 
-        addTest("", [], toTestSuite: testSuite)
-        addTest("Brian", ["Brian"], toTestSuite: testSuite)
-        addTest("Brian,Coyner", ["Brian", "Coyner"], toTestSuite: testSuite)
-        addTest("Brian,Coyner,Was", ["Brian", "Coyner", "Was"], toTestSuite: testSuite)
-        addTest("Brian,Coyner,Was,Here", ["Brian", "Coyner", "Was", "Here"], toTestSuite: testSuite)
+        let input = """
+                    mut a = 2
+                    return b
+                    """
+        let tokenList = buildTokenList {
+            (TokenType.Identifier, "+")
+        }
+        addTest(input, tokenList, 0, toTestSuite: testSuite)
+
         return testSuite
     }
-    private class func addTest(_ input: String, _ expectedTokens: [String], toTestSuite testSuite: XCTestSuite) {
+    private class func addTest(_ input: String, _ expectedTokens: [Token], _ testNumber: Int,toTestSuite testSuite: XCTestSuite) {
         testInvocations.forEach { invocation in
             let testCase = LexerTest(invocation: invocation)
             testCase.input = input
             testCase.expectedTokens = expectedTokens
+            testCase.testNumber = testNumber
             testSuite.addTest(testCase)
         }
     }
