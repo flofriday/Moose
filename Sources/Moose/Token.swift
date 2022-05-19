@@ -7,7 +7,6 @@ enum TokenType: String {
 
     case Int = "INT"
     case Identifier = "IDENT"
-    case Return = "return"
 
     case Assign = "="
     case Plus = "+"
@@ -30,6 +29,8 @@ enum TokenType: String {
     case Comma = ","
     case SemiColon = ";"
     case Colon = ":"
+
+    case NLine = "NEW_LINE"
 
     case LParen = "("
     case RParen = ")"
