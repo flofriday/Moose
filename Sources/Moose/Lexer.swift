@@ -9,6 +9,7 @@ class Lexer {
     private var position: Int = 0
     private var readPosition: Int = 0
     private var char: Character?
+    private var line: Int = 1
 
     init(input: String) {
         self.input = input
@@ -17,11 +18,48 @@ class Lexer {
 }
 
 extension Lexer {
-    func nextToken() -> Token {
-        return Token(type: .Identifier, lexeme: "hello", literal: nil, line: 0, column: 0)
+    func nextToken() throws -> Token {
+        var tok: Token?
+        skipWhitespace()
+        tok = Token(type: .Identifier, lexeme: "Hello", literal: "String", line: 0, column: 0)
+        readChar()
+        return tok!
     }
 }
 
 extension Lexer {
-    private func readChar() -> Void {}
+    private func isLetter(char: Character) -> Bool {
+        return "a" <= char && char <= "z" || "A" <= char && char <= "Z" || char == "_"
+    }
+    private func isDigit(char: Character) -> Bool {
+        return "0" <= char && char <= "9"
+    }
+}
+
+extension Lexer {
+    private func readChar() -> Void {
+        if readPosition > input.count {
+            char = nil
+        } else {
+            char = input[readPosition]
+        }
+        position = readPosition
+        readPosition += 1
+    }
+    private func skipWhitespace(withN: Bool = false) {
+        var toSkip: [Character] = [" ", "\t", "\r"]
+        if withN { toSkip.append("\n") }
+        guard let char = char else {
+            return
+        }
+        while toSkip.contains(char) {
+            readChar()
+        }
+    }
+    private func peekChar() -> Character? {
+        guard readPosition < input.count else {
+            return nil
+        }
+        return input[readPosition]
+    }
 }

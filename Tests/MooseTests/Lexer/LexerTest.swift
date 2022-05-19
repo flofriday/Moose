@@ -33,10 +33,9 @@ class LexerTest: XCTestCase {
 
         let input = """
                     mut a = 2
-                    return b
                     """
         let tokenList = buildTokenList {
-            (TokenType.Identifier, "+")
+            (TokenType.Identifier, "a")
         }
         addTest(input, tokenList, 0, toTestSuite: testSuite)
 
