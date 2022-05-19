@@ -8,7 +8,8 @@ enum TokenType {
 struct Token {
     var type: TokenType
     var lexeme: String
-    var literal: Any
+    var literal: Any?
     var line: Int
     var column: Int
 }
+
