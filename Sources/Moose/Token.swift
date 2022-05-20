@@ -25,6 +25,7 @@ enum TokenType: String {
 
     case Eq = "=="
     case NotEq = "!="
+    case Bang = "!"
 
     case Comma = ","
     case SemiColon = ";"
@@ -62,5 +63,21 @@ struct Token {
     var literal: Any?
     var line: Int
     var column: Int
+}
+
+internal func lookUpIdent(ident: String) -> TokenType {
+    switch ident {
+    case "mut": return .Mut
+    case "func": return .Func
+    case "true": return .True
+    case "false": return .False
+    case "return": return .Ret
+    case "for": return .For
+    case "in": return .In
+    case "class": return .Class
+    case "extend": return .Extend
+    case "infix": return .Infix
+    default: return .Identifier
+    }
 }
 

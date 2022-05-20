@@ -32,12 +32,28 @@ class LexerTest: XCTestCase {
         let testSuite = XCTestSuite(name: NSStringFromClass(self))
 
         let input = """
-                    mut a = 2
+                    mut albert = 2
+
                     """
         let tokenList = buildTokenList {
-            (TokenType.Identifier, "a")
+            (TokenType.Mut, "mut")
+            (TokenType.Identifier, "albert")
+            (TokenType.Assign, "=")
+            (TokenType.Int, "2")
+            (TokenType.NLine, "\n")
+            (TokenType.EOF, " ")
         }
         addTest(input, tokenList, 0, toTestSuite: testSuite)
+
+
+        let input2 = """
+                    $test
+                    """
+        let tokenList2 = buildTokenList{
+            (TokenType.Illegal, "$ is not a valid token")
+        }
+        addTest(input2, tokenList2, 1, toTestSuite: testSuite)
+
 
         return testSuite
     }
