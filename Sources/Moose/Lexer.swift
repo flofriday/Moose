@@ -22,6 +22,7 @@ extension Lexer {
     func nextToken() -> Token {
         var tok: Token?
         skipWhitespace()
+        skipComment()
         column = position
 
         switch (char, peekChar()) {
@@ -144,6 +145,22 @@ extension Lexer {
         }
     }
 
+    /// skipChars until we receive char. If with = true, skip char to
+    private func skipUntil(ch: Character, inclusively: Bool = true) {
+        while let char = char, char != ch {
+            readChar()
+        }
+        if char != nil, inclusively {
+            readChar()
+        }
+    }
+    private func skipComment() {
+        guard let char = char, char == "/", peekChar() == "/" else {
+            return
+        }
+        skipUntil(ch: "\n")
+    }
+
     private func peekChar() -> Character? {
         guard readPosition < input.count else {
             return nil
@@ -153,16 +170,6 @@ extension Lexer {
 }
 
 extension Lexer {
-
-    ///  generate token if next token equals chelse return
-    private func genPeekToken(type: TokenType, ch: Character) -> Token? {
-        guard ch == peekChar() else {
-            return nil
-        }
-        let tmp = self.char
-        readChar()
-        return genToken(.NotEq, "\(tmp ?? " ")\(char ?? " ")")
-    }
 
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {

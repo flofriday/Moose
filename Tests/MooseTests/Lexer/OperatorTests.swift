@@ -71,6 +71,23 @@ class OperatorTests: XCTestCase {
         try assertEqualToken(tt, l.nextToken())
     }
 
+    func testComment() throws {
+        let i = """
+                let a //= das ist schön $@ : ;
+                +=
+                    //       
+                """
+        let ts = buildTokenList {
+            (TokenType.Identifier, "let")
+            (TokenType.Identifier, "a")
+            (TokenType.Operator, "+=")
+            (TokenType.NLine, "\n")
+            (TokenType.EOF, " ")
+        }
+
+        try testNextToken(i, ts)
+    }
+
     /// Tests if lexer gives expected tokens back
     private func testNextToken(_ input: String, _ expectedTokens: [Token]) throws {
         let lexer = Lexer(input: input)
