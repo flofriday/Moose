@@ -11,6 +11,8 @@ enum TokenType: String {
     case AssignOperator = "ASSIGN OPERATOR"
 
     case Assign = "="
+    case ToType = ">"
+    case InheritsFrom = "<"
 
     case Comma = ","
     case SemiColon = ";"
