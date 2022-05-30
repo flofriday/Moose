@@ -24,65 +24,41 @@ extension Lexer {
         skipWhitespace()
         column = position
 
-        switch char {
-        case "\n":
+        switch (char, peekChar()) {
+        case ("\n", _):
             line += 1
             tok = genToken(.NLine)
-        case "=":
-            if let t = genPeekToken(type: .Eq, ch: "=") {
-                tok = t
-            } else {
-                tok = genToken(.Assign)
-            }
-        case ";":
+        case ("=", let peek) where !isOpChar(char: peek):
+            tok = genToken(.Assign)
+        case (";", _):
             tok = genToken(.SemiColon)
-        case ":":
+        case (":", let peek) where !isOpChar(char: peek):
             tok = genToken(.Colon)
-        case "(":
+        case ("(", _):
             tok = genToken(.LParen)
-        case ")":
+        case (")", _):
             tok = genToken(.RParen)
-        case ",":
+        case (",", _):
             tok = genToken(.Comma)
-        case "+":
-            tok = genToken(.Plus)
-        case "-":
-            tok = genToken(.Minus)
-        case "!":
-            if let t = genPeekToken(type: .NotEq, ch: "=") {
-                tok = t
-            } else {
-                tok = genToken(.Bang)
-            }
-        case "/":
-            tok = genToken(.Slash)
-        case "*":
-            tok = genToken(.Asterik)
-        case "<":
-            if let t = genPeekToken(type: .LTE, ch: "=") {
-                tok = t
-            } else {
-                tok = genToken(.LT)
-            }
-        case ">":
-            if let t = genPeekToken(type: .GTE, ch: "=") {
-                tok = t
-            } else {
-                tok = genToken(.GT)
-            }
-        case "{":
+        case ("{", _):
             tok = genToken(.LBrace)
-        case "}":
+        case ("}", _):
             tok = genToken(.RBrace)
-        case "[":
+        case ("[", _):
             tok = genToken(.LBracket)
-        case "]":
+        case ("]", _):
             tok = genToken(.RBracket)
-        case nil:
-            tok = genToken(.EOF)
         default:
-            let char = char!
-            if isLetter(char: char) {
+            guard let char = char else { return genToken(.EOF)}
+
+            if isOpChar(char: char) {
+                let op = readString(isOpChar)
+                if let l = op.last, l == ":" {
+                    return genToken(.AssignOperator, String(op.dropLast()))
+                } else {
+                    return genToken(.Operator, op)
+                }
+            } else if isLetter(char: char) {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
                 return genToken(type, ident, ident)
@@ -120,14 +96,30 @@ extension Lexer {
         }
         return input[pos..<position]
     }
+
+    private func readString(_ evaluator: (Character?) -> Bool) -> String {
+        let pos = position
+        while let char = char, evaluator(char) {
+            readChar()
+        }
+        return input[pos..<position]
+    }
 }
 
 extension Lexer {
     private func isLetter(char: Character) -> Bool {
         return "a" <= char && char <= "z" || "A" <= char && char <= "Z" || char == "_"
     }
+
     private func isDigit(char: Character) -> Bool {
         return "0" <= char && char <= "9"
+    }
+
+    private func isOpChar(char: Character?) -> Bool {
+        guard let char = char else {
+            return false
+        }
+        return "!#$@%*/?&+-–><=:~|".contains(char)
     }
 }
 
@@ -141,13 +133,17 @@ extension Lexer {
         position = readPosition
         readPosition += 1
     }
+
     private func skipWhitespace(withN: Bool = false) {
         var toSkip: [Character] = [" ", "\t", "\r"]
-        if withN { toSkip.append("\n") }
+        if withN {
+            toSkip.append("\n")
+        }
         while let char = char, toSkip.contains(char) {
             readChar()
         }
     }
+
     private func peekChar() -> Character? {
         guard readPosition < input.count else {
             return nil
@@ -157,7 +153,9 @@ extension Lexer {
 }
 
 extension Lexer {
-    private func genPeekToken(type: TokenType, ch: Character) -> Token?{
+
+    ///  generate token if next token equals chelse return
+    private func genPeekToken(type: TokenType, ch: Character) -> Token? {
         guard ch == peekChar() else {
             return nil
         }
@@ -166,13 +164,36 @@ extension Lexer {
         return genToken(.NotEq, "\(tmp ?? " ")\(char ?? " ")")
     }
 
+    /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
         genToken(type, nil, "\(char ?? " ")")
     }
+
+    /// genToken with lexeme and literal nil
     private func genToken(_ type: TokenType, _ lexeme: String) -> Token {
         genToken(type, nil, lexeme)
     }
+
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
         Token(type: type, lexeme: lexeme, literal: lit, line: line, column: column)
+    }
+}
+
+extension Lexer {
+    func peekToken() -> Token? {
+        let pos_backup = position
+        let read_pos_backup = readPosition
+        let char = self.char
+        let line = self.line
+        let column = self.column
+
+        let token = nextToken()
+
+        position = pos_backup
+        readPosition = read_pos_backup
+        self.char = char
+        self.line = line
+        self.column = column
+        return token
     }
 }

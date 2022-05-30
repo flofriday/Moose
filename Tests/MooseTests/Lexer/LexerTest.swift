@@ -46,13 +46,13 @@ class LexerTest: XCTestCase {
         addTest(input, tokenList, 0, toTestSuite: testSuite)
 
 
-        let input2 = """
-                    $test
-                    """
-        let tokenList2 = buildTokenList{
-            (TokenType.Illegal, "$ is not a valid token")
-        }
-        addTest(input2, tokenList2, 1, toTestSuite: testSuite)
+//        let input2 = """
+//                    $test
+//                    """
+//        let tokenList2 = buildTokenList{
+//            (TokenType.Illegal, "$ is not a valid token")
+//        }
+//        addTest(input2, tokenList2, 1, toTestSuite: testSuite)
 
 
         return testSuite

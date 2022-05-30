@@ -7,25 +7,10 @@ enum TokenType: String {
 
     case Int = "INT"
     case Identifier = "IDENT"
+    case Operator = "OPERATOR"
+    case AssignOperator = "ASSIGN OPERATOR"
 
     case Assign = "="
-    case Plus = "+"
-    case Minus = "-"
-    case Asterik = "*"
-    case Slash = "/"
-
-    case And = "&"
-    case LAnd = "&&"
-    case LOr = "||"
-
-    case LT = "<"
-    case GT = ">"
-    case LTE = "<="
-    case GTE = ">="
-
-    case Eq = "=="
-    case NotEq = "!="
-    case Bang = "!"
 
     case Comma = ","
     case SemiColon = ";"
@@ -53,8 +38,8 @@ enum TokenType: String {
     case Class = "CLASS"
     case Extend = "EXTEND"
     case Infix = "INFIX"
-
-
+    case Prefix = "PREFIX"
+    case Postfix = "POSTFIX"
 }
 
 struct Token {
@@ -77,6 +62,8 @@ internal func lookUpIdent(ident: String) -> TokenType {
     case "class": return .Class
     case "extend": return .Extend
     case "infix": return .Infix
+    case "postfix": return .Postfix
+    case "prefix": return .Prefix
     default: return .Identifier
     }
 }
