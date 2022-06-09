@@ -71,7 +71,7 @@ extension Lexer {
                     return genToken(.Illegal, string, "String does not end with an closing \".")
                 }
                 readChar() // skip ending "
-                return genToken(.String, string)
+                return genToken(.String, string, string)
             }
             else if isLetter(char: unwrappedChar) {
                 let ident = readIdentifier()
