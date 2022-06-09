@@ -1,7 +1,6 @@
 
 let input = """
-            mut albert = 2
-
+            mut albert = "//hello
             """
 let l = Lexer(input: input)
 

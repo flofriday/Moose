@@ -54,20 +54,30 @@ extension Lexer {
         case ("]", _):
             tok = genToken(.RBracket)
         default:
-            guard let char = char else { return genToken(.EOF)}
+            guard let unwrappedChar = char else { return genToken(.EOF)}
 
-            if isOpChar(char: char) {
-                let op = readString(isOpChar)
+            if isOpChar(char: unwrappedChar) {
+                let op = read(isOpChar)
                 if let l = op.last, l == ":" {
                     return genToken(.AssignOperator, String(op.dropLast()))
                 } else {
                     return genToken(.Operator, op)
                 }
-            } else if isLetter(char: char) {
+            } else if unwrappedChar == "\"" {
+                readChar() // skip start "
+                let string = read({$0 != "\""})
+                // if current char is not ending ", return invalid token
+                guard let char = char, char == "\"" else {
+                    return genToken(.Illegal, string, "String does not end with an closing \".")
+                }
+                readChar() // skip ending "
+                return genToken(.String, string)
+            }
+            else if isLetter(char: unwrappedChar) {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
                 return genToken(type, ident, ident)
-            } else if isDigit(char: char) {
+            } else if isDigit(char: unwrappedChar) {
                 let digit = readNumber()
                 if let num = Int(digit) {
                     return genToken(.Int, num, digit)
@@ -76,7 +86,7 @@ extension Lexer {
                 }
 
             } else {
-                tok = genToken(.Illegal, nil, "\(char) is not a valid token")
+                tok = genToken(.Illegal, nil, "\(unwrappedChar) is not a valid token")
             }
         }
 
@@ -102,7 +112,7 @@ extension Lexer {
         return input[pos..<position]
     }
 
-    private func readString(_ evaluator: (Character?) -> Bool) -> String {
+    private func read(_ evaluator: (Character?) -> Bool) -> String {
         let pos = position
         while let char = char, evaluator(char) {
             readChar()

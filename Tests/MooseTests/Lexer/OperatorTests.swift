@@ -88,6 +88,33 @@ class OperatorTests: XCTestCase {
         try testNextToken(i, ts)
     }
 
+    func testStrings() throws {
+        let i = """
+                mut a = "this is a String"
+                "this // as well"
+                "let b = this as well"
+                "with new line
+                lol"
+                "invalid
+                """
+        let ts = buildTokenList {
+            (TokenType.Mut, "mut")
+            (TokenType.Identifier, "a")
+            (TokenType.Assign, "=")
+            (TokenType.String, "this is a String")
+            (TokenType.NLine, "\n")
+            (TokenType.String, "this // as well")
+            (TokenType.NLine, "\n")
+            (TokenType.String, "let b = this as well")
+            (TokenType.NLine, "\n")
+            (TokenType.String, "with new line\nlol")
+            (TokenType.NLine, "\n")
+            (TokenType.Illegal, "String does not end with an closing \".")
+        }
+
+        try testNextToken(i, ts)
+    }
+
     /// Tests if lexer gives expected tokens back
     private func testNextToken(_ input: String, _ expectedTokens: [Token]) throws {
         let lexer = Lexer(input: input)

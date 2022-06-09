@@ -19,6 +19,7 @@ enum TokenType: String {
     case Colon = ":"
 
     case NLine = "NEW_LINE"
+    case String = "STRING"
 
     case LParen = "("
     case RParen = ")"
