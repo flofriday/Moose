@@ -1,4 +1,3 @@
-// TODO: This is just a reference implementation, and needs to be updated to 
 // include all types
 enum TokenType: String {
 

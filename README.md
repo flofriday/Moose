@@ -6,8 +6,7 @@ written in [Swift](https://www.swift.org/).
 ## Build it yourself
 
 ```bash
-swift build
-.build/debug/Moose
+swift run Moose
 ```
 
 ## Roadmap

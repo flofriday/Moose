@@ -19,6 +19,18 @@ class Lexer {
 }
 
 extension Lexer {
+    func scan() -> [Token] {
+        var tokens: [Token] = []
+        while true {
+            var token = nextToken()
+            tokens.append(token)
+            if token.type == .EOF {
+                break
+            }
+        }
+        return tokens
+    }
+
     func nextToken() -> Token {
         var tok: Token?
         skipWhitespace()
@@ -54,7 +66,9 @@ extension Lexer {
         case ("]", _):
             tok = genToken(.RBracket)
         default:
-            guard let char = char else { return genToken(.EOF)}
+            guard let char = char else {
+                return genToken(.EOF)
+            }
 
             if isOpChar(char: char) {
                 let op = readString(isOpChar)
@@ -158,6 +172,7 @@ extension Lexer {
             readChar()
         }
     }
+
     private func skipComment() {
         guard let char = char, char == "/", peekChar() == "/" else {
             return
