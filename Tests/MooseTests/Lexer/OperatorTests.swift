@@ -115,6 +115,33 @@ class OperatorTests: XCTestCase {
         try testNextToken(i, ts)
     }
 
+    func testOperators() throws  {
+        let i = """
+                -1+ + +2
+                infix +- ()
+                a+:b
+                """
+        let ts = buildTokenList {
+            (TokenType.PrefixOperator, "-")
+            (TokenType.Int, "1")
+            (TokenType.PostfixOperator, "+")
+            (TokenType.Operator, "+")
+            (TokenType.PrefixOperator, "+")
+            (TokenType.Int, "2")
+            (TokenType.NLine, "\n")
+            (TokenType.Infix, "infix")
+            (TokenType.Operator, "+-")
+            (TokenType.LParen, "(")
+            (TokenType.RParen, ")")
+            (TokenType.NLine, "\n")
+            (TokenType.Identifier, "a")
+            (TokenType.AssignOperator, "+")
+            (TokenType.Identifier, "b")
+        }
+
+        try testNextToken(i, ts)
+    }
+
     /// Tests if lexer gives expected tokens back
     private func testNextToken(_ input: String, _ expectedTokens: [Token]) throws {
         let lexer = Lexer(input: input)

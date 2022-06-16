@@ -7,8 +7,12 @@ enum TokenType: String {
 
     case Int = "INT"
     case Identifier = "IDENT"
-    case Operator = "OPERATOR"
-    case AssignOperator = "ASSIGN OPERATOR"
+    case PrefixOperator = "PREFIX OPERATOR"
+    case PrefixAssignOperator = "PREFIX ASSIGN OPERATOR"
+    case Operator = "INFIX OPERATOR"
+    case AssignOperator = "INFIX ASSIGN OPERATOR"
+    case PostfixOperator = "POSTFIX OPERATOR"
+    case PostfixAssignOperator = "POSTFIX ASSIGN OPERATOR"
 
     case Assign = "="
     case ToType = ">"
