@@ -84,7 +84,7 @@ extension Lexer {
                 return genToken(type, ident, ident)
             } else if isDigit(char: unwrappedChar) {
                 let digit = readNumber()
-                if let num = Int(digit) {
+                if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {
                     return genToken(.Illegal, nil, "\(digit) is not an integer number")

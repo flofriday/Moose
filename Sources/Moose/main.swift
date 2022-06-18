@@ -1,12 +1,12 @@
 
 let input = """
-            mut albert = "//hello
+            a = 2
+            mut b = 12
             """
 let l = Lexer(input: input)
+let p = Parser(l)
 
-var t = l.nextToken()
-while t.type != .EOF {
-    print(t)
-    t = l.nextToken()
-}
-print(t)
+let prog = p.parseProgram()
+print("Errors: \(p.errors)")
+print("Program:")
+print(prog)
