@@ -48,19 +48,23 @@ class Parser {
     }
 
     private func expressionStmt() throws -> Stmt {
-        var expr = expression()
-        try consume(type: .NLine, message: "I expected here a newline.")
-        return Stmt.ExprStmt(expression())
+        var expr = try expression()
+        if !isAtEnd() {
+            try consume(type: .NLine, message: "I expected here a newline.")
+        }
+        return Stmt.ExprStmt(expr)
     }
 
-    private func expression() -> Expr {
-       
+    private func expression() throws -> Expr {
+        let token = try consume(type: .Int, message: "I can only process Ints at the moment")
+        return Expr.value(token.literal as! Int)
     }
 
-    private func consume(type: TokenType, message: String) throws {
+    private func consume(type: TokenType, message: String) throws -> Token {
         if !check(type: type) {
             try error(message: message, token: peek())
         }
+        return advance()
     }
 
     private func check(type: TokenType) -> Bool {

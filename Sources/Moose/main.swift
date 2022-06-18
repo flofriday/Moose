@@ -27,11 +27,20 @@ func runFile(_ file: String) {
 }
 
 func run(_ input: String) {
-    let scanner = Lexer(input: input)
-    let tokens = scanner.scan()
+    var statements: [Stmt] = []
 
-    let parser = Parser(tokens: tokens)
-    let statements = parser.parse()
+    do {
+        let scanner = Lexer(input: input)
+        let tokens = try scanner.scan()
+        print(tokens)
+
+        let parser = Parser(tokens: tokens)
+        statements = try parser.parse()
+    } catch let error as CompileError {
+        printCompileError(error: error, sourcecode: input)
+    } catch {
+    }
+
     for statement in statements {
         //statement.print()
     }
@@ -41,6 +50,31 @@ func run(_ input: String) {
 
     let interpreter = Interpreter(statements: statements)
     interpreter.run();
+}
+
+// TOOD: add colors
+func printCompileError(error: CompileError, sourcecode: String) {
+    var out = ""
+    let lines = sourcecode.split(separator: "\n")
+
+    for msg in error.messages {
+        // The header
+        out += "-- CompileError ----------------------------------------------------------------\n\n"
+
+        // The source code line causing the error
+        out += String(format: "%3d", msg.line)
+        out += "| \(lines[msg.line - 1])\n"
+        out += String(repeating: " ", count: 5 + msg.startCol)
+        out += String(repeating: "^", count: msg.endCol - msg.startCol)
+        out += "\n\n"
+
+        // A detailed message explaining the error
+        out += msg.message
+        out += "\n\n"
+    }
+    print(out)
+
+    exit(1);
 }
 
 // let input = """
