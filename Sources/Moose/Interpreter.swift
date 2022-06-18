@@ -6,7 +6,7 @@ import Foundation
 
 class Interpreter {
 
-    init(statements: [Stmt]) {
+    init(program: Program) {
 
     }
 

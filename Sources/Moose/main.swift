@@ -27,7 +27,7 @@ func runFile(_ file: String) {
 }
 
 func run(_ input: String) {
-    var statements: [Stmt] = []
+    var program: Program? = nil
 
     do {
         let scanner = Lexer(input: input)
@@ -35,20 +35,17 @@ func run(_ input: String) {
         print(tokens)
 
         let parser = Parser(tokens: tokens)
-        statements = try parser.parse()
+        program = try parser.parse()
     } catch let error as CompileError {
         printCompileError(error: error, sourcecode: input)
     } catch {
-    }
-
-    for statement in statements {
-        //statement.print()
+        exit(1)
     }
 
 //    let checker = TypeChecker(statements: statements)
 //    checker.check()
 
-    let interpreter = Interpreter(statements: statements)
+    let interpreter = Interpreter(program: program!)
     interpreter.run();
 }
 
