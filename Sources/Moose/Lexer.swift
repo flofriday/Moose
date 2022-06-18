@@ -66,32 +66,37 @@ extension Lexer {
         case ("]", _):
             tok = genToken(.RBracket)
         default:
-            guard let unwrappedChar = char else { return genToken(.EOF)}
+            guard let unwrappedChar = char else {
+                return genToken(.EOF)
+            }
 
             if isOpChar(char: unwrappedChar) {
+                let preChar = readChar(at: position-1)
                 let op = read(isOpChar)
+                let postChar = readChar(at: position)
                 if let l = op.last, l == ":" {
-                    return genToken(.AssignOperator, String(op.dropLast()))
+                    let type = determineOperator(prevChar: preChar, postChar: postChar, assign: true)
+                    return genToken(type, String(op.dropLast()))
                 } else {
-                    return genToken(.Operator, op)
+                    let type = determineOperator(prevChar: preChar, postChar: postChar, assign: false)
+                    return genToken(type, op)
                 }
             } else if unwrappedChar == "\"" {
                 readChar() // skip start "
-                let string = read({$0 != "\""})
+                let string = read({ $0 != "\"" })
                 // if current char is not ending ", return invalid token
                 guard let char = char, char == "\"" else {
                     return genToken(.Illegal, string, "String does not end with an closing \".")
                 }
                 readChar() // skip ending "
                 return genToken(.String, string, string)
-            }
-            else if isLetter(char: unwrappedChar) {
+            } else if isLetter(char: unwrappedChar) {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
                 return genToken(type, ident, ident)
             } else if isDigit(char: unwrappedChar) {
                 let digit = readNumber()
-                if let num = Int(digit) {
+                if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {
                     return genToken(.Illegal, nil, "\(digit) is not an integer number")
@@ -151,6 +156,13 @@ extension Lexer {
 }
 
 extension Lexer {
+    private func readChar(at pos: Int) -> Character? {
+        guard pos >= 0, pos < input.count else {
+            return nil
+        }
+        return input[pos]
+    }
+
     private func readChar() -> Void {
         if readPosition >= input.count {
             char = nil
@@ -229,5 +241,20 @@ extension Lexer {
         self.line = line
         self.column = column
         return token
+    }
+}
+
+extension Lexer {
+    /// determine if operator is prefix, infix, or postfix depending on characters before and after operator
+    func determineOperator(prevChar: Character?, postChar: Character?, assign: Bool) -> TokenType {
+        let prevWhite = prevChar == nil ? true : prevChar!.isWhitespace || prevChar! == ";"
+        let postWhite = postChar == nil ? true : postChar!.isWhitespace || postChar! == ";"
+        if (prevWhite && postWhite) || (!prevWhite && !postWhite) { // such as "a+b" "a + b"
+            return assign ? TokenType.AssignOperator : TokenType.Operator
+        } else if prevWhite && !postWhite { // such as "+a"
+            return assign ? TokenType.PrefixAssignOperator : TokenType.PrefixOperator
+        } else  { // !prevWhite && postWhite, such as "a+"
+            return assign ? TokenType.PostfixAssignOperator : TokenType.PostfixOperator
+        }
     }
 }
