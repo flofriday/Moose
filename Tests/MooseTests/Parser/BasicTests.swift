@@ -9,9 +9,13 @@ import XCTest
 class BasicTests: BaseClass {
     /// - Todo: Fix test! test are not processed
     func test_assignStatements() throws {
-        let inputs = [
+        let inputs: [(String, String, Any, Bool)] = [
             ("a = 3", "a", Int64(3), false),
-            ("mut b = 1", "b", Int64(1), true)
+            ("mut b = 1", "b", Int64(1), true),
+            ("a = ident", "a", "ident", false),
+            ("mut b = ident", "b", "ident", true),
+            ("var = true", "var", true, false),
+            ("mut var = false", "var", false, true)
         ]
 
         for i in inputs {
