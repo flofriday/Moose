@@ -3,3 +3,8 @@
 //
 
 import Foundation
+
+enum TestErrors: Error {
+    case parseError(String)
+    case testError(String)
+}

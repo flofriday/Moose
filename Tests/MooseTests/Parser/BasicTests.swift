@@ -3,17 +3,15 @@
 //
 
 import Foundation
-import XCTest
 @testable import Moose
+import XCTest
 
-class BasicTests: XCTest {
-
+class BasicTests: BaseClass {
     /// - Todo: Fix test! test are not processed
     func test_assignStatements() throws {
-        XCTAssertTrue(false)
         let inputs = [
-            ("a = 3", "a", "3", false),
-            ("mut b = 1", "b", "1", true)
+            ("a = 3", "a", Int64(3), false),
+            ("mut b = 1", "b", Int64(1), true)
         ]
 
         for i in inputs {
@@ -26,28 +24,7 @@ class BasicTests: XCTest {
             XCTAssert(a.0, a.1)
 
             let stmt = prog.statements[0] as! AssignStatement
-            XCTAssertEqual(stmt.value.tokenLexeme, i.2)
+            try test_literalExpression(exp: stmt.value, expected: i.2)
         }
-    }
-}
-
-extension BasicTests {
-    func test_assignStatement(stmt: Statement, name: String, mut: Bool) -> (Bool, String) {
-        guard stmt.tokenLexeme == "mut" || stmt.tokenLexeme == name else {
-            return (false, "TokenLiteral is neither 'mut' nor '\(name)'. got=\(stmt.tokenLexeme)")
-        }
-        guard let stmt = stmt as? AssignStatement else {
-            return (false, "Statement is not of type AssignStatement. got=\(String(describing: type(of: stmt)))")
-        }
-        guard name == stmt.name.value else {
-            return (false, "stmt.name.value not '\(name)'. got='\(stmt.name)'")
-        }
-        guard name == stmt.name.tokenLexeme else {
-            return (false, "stmt.name.tokenLexeme not '\(name)'. got='\(stmt.name.tokenLexeme)'")
-        }
-        guard mut == stmt.mutable else {
-            return (false, "stmt.mutable is not \(mut)")
-        }
-        return (true, "")
     }
 }
