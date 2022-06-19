@@ -93,7 +93,11 @@ extension Lexer {
             } else if isLetter(char: unwrappedChar) {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
-                return genToken(type, ident, ident)
+                var lit: Any = ident
+                if type == .True || type == .False {
+                    lit = type == .True
+                }
+                return genToken(type, lit, ident)
             } else if isDigit(char: unwrappedChar) {
                 let digit = readNumber()
                 if let num = Int64(digit) {
@@ -151,7 +155,7 @@ extension Lexer {
         guard let char = char else {
             return false
         }
-        return "!#$@%*/?&+-–><=:~|".contains(char)
+        return "!^#$@%*/?&+-–><=:~|".contains(char)
     }
 }
 

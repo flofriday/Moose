@@ -6,11 +6,9 @@ import Foundation
 
 enum Precendence: Int {
     case Lowest
-    case Equals
-    case LessGreater
-    case Sum
-    case Product
+    case Infix
     case Prefix
+    case Postfix
     case Call
     case Index
 }
@@ -27,6 +25,12 @@ class Parser {
     var prefixParseFns = [TokenType: prefixParseFn]()
     var infixParseFns = [TokenType: infixParseFn]()
     var postfixParseFns = [TokenType: postfixParseFn]()
+
+    let precendences: [TokenType: Precendence] = [
+        .Operator: .Infix,
+        .PrefixOperator: .Prefix,
+        .PostfixOperator: .Postfix,
+    ]
 
     init(tokens: [Token]) {
         self.tokens = tokens
@@ -285,12 +289,18 @@ extension Parser {
 
 extension Parser {
     var peekPrecedence: Precendence {
-        /// - Todo: implement Precedence
-        .Lowest
+        /// - Todo: implement Precendence
+        guard let prec = precendences[peekToken.type] else {
+            return .Lowest
+        }
+        return prec
     }
 
     var curPrecedence: Precendence {
-        /// - Todo: implement Precedence
-        .Lowest
+        /// - Todo: implement Precendence
+        guard let prec = precendences[curToken.type] else {
+            return .Lowest
+        }
+        return prec
     }
 }

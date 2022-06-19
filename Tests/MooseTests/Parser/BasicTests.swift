@@ -3,20 +3,25 @@
 //
 
 import Foundation
-import XCTest
 @testable import Moose
+import XCTest
 
-class BasicTests: XCTest {
-
+class BasicTests: BaseClass {
     /// - Todo: Fix test! test are not processed
     func test_assignStatements() throws {
-        XCTAssertTrue(false)
-        let inputs = [
-            ("a = 3", "a", "3", false),
-            ("mut b = 1", "b", "1", true)
+        print("-- \(#function)")
+
+        let inputs: [(String, String, Any, Bool)] = [
+            ("a = 3", "a", Int64(3), false),
+            ("mut b = 1", "b", Int64(1), true),
+            ("a = ident;", "a", "ident", false),
+            ("mut b = ident", "b", "ident", true),
+            ("var = true", "var", true, false),
+            ("mut var = false\n", "var", false, true)
         ]
 
-        for i in inputs {
+        for (index, i) in inputs.enumerated() {
+            print("Start test \(index): \(i)")
             let l = Lexer(input: i.0)
             let p = Parser(l)
             let prog = p.parseProgram()
@@ -26,28 +31,88 @@ class BasicTests: XCTest {
             XCTAssert(a.0, a.1)
 
             let stmt = prog.statements[0] as! AssignStatement
-            XCTAssertEqual(stmt.value.tokenLexeme, i.2)
+            try test_literalExpression(exp: stmt.value, expected: i.2)
         }
     }
-}
 
-extension BasicTests {
-    func test_assignStatement(stmt: Statement, name: String, mut: Bool) -> (Bool, String) {
-        guard stmt.tokenLexeme == "mut" || stmt.tokenLexeme == name else {
-            return (false, "TokenLiteral is neither 'mut' nor '\(name)'. got=\(stmt.tokenLexeme)")
+    func test_returnStatements() throws {
+        print("-- \(#function)")
+
+        let tests: [(String, Any)] = [
+            ("return 5;", Int64(5)),
+            ("return true", true),
+            ("return x", "x"),
+            ("return x\n", "x"),
+            ("return x;", "x")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(l)
+            let prog = p.parseProgram()
+            XCTAssertEqual(p.errors.count, 0, "Got parse errors: \n- \(p.errors.map { String(describing: $0) }.joined(separator: "\n- "))")
+            XCTAssertEqual(prog.statements.count, 1)
+            try test_returnStatement(s: prog.statements[0])
+            let stmt = prog.statements[0] as! ReturnStatement
+            try test_literalExpression(exp: stmt.returnValue, expected: t.1)
         }
-        guard let stmt = stmt as? AssignStatement else {
-            return (false, "Statement is not of type AssignStatement. got=\(String(describing: type(of: stmt)))")
+    }
+
+    func test_parsingPrefixExpr() throws {
+        print("-- \(#function)")
+
+        let tests: [(String, String, Any)] = [
+            ("!5;", "!", 5),
+            ("^-15\n", "^-", 15),
+            ("+&true", "+&", true)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(l)
+            let prog = p.parseProgram()
+            try test_parseErrors(p)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let stmt = try cast(prog.statements[0], ExpressionStatement.self)
+            let exp = try cast(stmt.expression, PrefixExpression.self)
+            guard exp.op == t.1 else {
+                throw TestErrors.parseError("operator is not \(t.1). got=\(exp.op)")
+            }
+            try test_literalExpression(exp: exp.right, expected: t.2)
         }
-        guard name == stmt.name.value else {
-            return (false, "stmt.name.value not '\(name)'. got='\(stmt.name)'")
+    }
+
+    func test_parsingInfixExpression() throws {
+        print("-- \(#function)")
+
+        let tests: [(String, Any, String, Any)] = [
+            ("5 + true\n", 5, "+", true),
+            ("1231 ^^ 12;", 1231, "^^", 12),
+            ("true#false", true, "#", false),
+            ("1@2", 1, "@", 2)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(l)
+            let prog = p.parseProgram()
+            try test_parseErrors(p)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let stmt = try cast(prog.statements[0], ExpressionStatement.self)
+            let exp = try cast(stmt.expression, InfixExpression.self)
+            try test_literalExpression(exp: exp.left, expected: t.1)
+            guard exp.op == t.2 else {
+                throw TestErrors.parseError("operator is not \(t.2). got=\(exp.op)")
+            }
+            try test_literalExpression(exp: exp.right, expected: t.3)
         }
-        guard name == stmt.name.tokenLexeme else {
-            return (false, "stmt.name.tokenLexeme not '\(name)'. got='\(stmt.name.tokenLexeme)'")
-        }
-        guard mut == stmt.mutable else {
-            return (false, "stmt.mutable is not \(mut)")
-        }
-        return (true, "")
     }
 }
