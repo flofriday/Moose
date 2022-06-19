@@ -142,6 +142,19 @@ class OperatorTests: XCTestCase {
         try testNextToken(i, ts)
     }
 
+    func testPrefixOperator() throws {
+        let i = """
+                ^-15\n
+                """
+        let ts = buildTokenList {
+            (TokenType.PrefixOperator, "^-")
+            (TokenType.Int, "15")
+            (TokenType.NLine, "\n")
+        }
+
+        try testNextToken(i, ts)
+    }
+
     /// Tests if lexer gives expected tokens back
     private func testNextToken(_ input: String, _ expectedTokens: [Token]) throws {
         let lexer = Lexer(input: input)

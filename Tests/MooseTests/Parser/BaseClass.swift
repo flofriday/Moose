@@ -57,6 +57,8 @@ class BaseClass: XCTestCase {
 
     func test_literalExpression(exp: Expression, expected: Any) throws {
         switch expected {
+        case let i as Int:
+            try test_integerLiteral(exp: exp, value: Int64(i))
         case let i as Int64:
             try test_integerLiteral(exp: exp, value: i)
         case let b as Bool:
@@ -78,4 +80,16 @@ class BaseClass: XCTestCase {
         }
         try test_literalExpression(exp: opExp.right, expected: right)
     }
+
+    func test_parseErrors(_ p: Parser) throws {
+        XCTAssertEqual(p.errors.count, 0, "Got parse errors: \n- \(p.errors.map { String(describing: $0) }.joined(separator: "\n- "))")
+    }
+
+    func cast<T>(_ val: Any, _ t: T.Type) throws -> T {
+        guard let val = val as? T else {
+            throw TestErrors.parseError("\(val) not \(T.self). got=\(type(of: val))")
+        }
+        return val
+    }
+
 }

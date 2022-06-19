@@ -143,7 +143,7 @@ extension Lexer {
         guard let char = char else {
             return false
         }
-        return "!#$@%*/?&+-–><=:~|".contains(char)
+        return "!^#$@%*/?&+-–><=:~|".contains(char)
     }
 }
 

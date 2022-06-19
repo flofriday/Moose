@@ -121,6 +121,7 @@ extension Parser {
     func parseExpressionStatement() throws -> ExpressionStatement {
         let token = curToken
         let val = try parseExpression(.Lowest)
+        skipStatementEnd()
         return ExpressionStatement(token: token, expression: val)
     }
 

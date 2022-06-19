@@ -58,4 +58,29 @@ class BasicTests: BaseClass {
             try test_literalExpression(exp: stmt.returnValue, expected: t.1)
         }
     }
+
+    func test_parsingPrefixExpr() throws {
+        let tests: [(String, String, Any)] = [
+            ("!5;", "!", 5),
+            ("^-15\n", "^-", 15),
+            ("+&true", "+&", true)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(l)
+            let prog = p.parseProgram()
+            try test_parseErrors(p)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let stmt = try cast(prog.statements[0], ExpressionStatement.self)
+            let exp = try cast(stmt.expression, PrefixExpression.self)
+            guard exp.op == t.1 else {
+                throw TestErrors.parseError("operator is not \(t.1). got=\(exp.op)")
+            }
+            try test_literalExpression(exp: exp.right, expected: t.2)
+        }
+    }
 }
