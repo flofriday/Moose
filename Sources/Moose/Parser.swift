@@ -290,7 +290,7 @@ extension Parser {
 extension Parser {
     var peekPrecedence: Precendence {
         /// - Todo: implement Precendence
-        guard let prec = precendences[peekToken.type] else {
+        guard let prec = precendences[peek2().type] else {
             return .Lowest
         }
         return prec
@@ -298,7 +298,7 @@ extension Parser {
 
     var curPrecedence: Precendence {
         /// - Todo: implement Precendence
-        guard let prec = precendences[curToken.type] else {
+        guard let prec = precendences[peek().type] else {
             return .Lowest
         }
         return prec
