@@ -55,7 +55,6 @@ class Parser {
                 // Continuing parsing is important so that we can catch all parsing errors at once.
                 errors.append(e)
                 synchronize()
-            } catch {
             }
         }
 
@@ -74,6 +73,7 @@ class Parser {
             }
 
             // TODO: maybe we need more a check of the type of token just like jLox has.
+            advance()
         }
     }
 
@@ -197,8 +197,8 @@ class Parser {
 //    }
 
     private func consumeStatementEnd() throws {
-        if !match(types: .EOF, .SemiColon, .NLine) {
-            try error(message: "I expected, the statement to end with a newline or semicolon.", token: peek())
+        if !isAtEnd() && !match(types: .SemiColon, .NLine) {
+            throw error(message: "I expected, the statement to end with a newline or semicolon.", token: peek())
         }
     }
 
@@ -215,7 +215,7 @@ class Parser {
 
     private func consume(type: TokenType, message: String) throws -> Token {
         if !check(type: type) {
-            try error(message: message, token: peek())
+            throw error(message: message, token: peek())
         }
         return advance()
     }
@@ -250,41 +250,36 @@ class Parser {
         tokens[current - 1]
     }
 
-    private func error(message: String, token: Token) throws {
-        let msg = CompileErrorMessage(
+    private func error(message: String, token: Token) -> CompileErrorMessage {
+        CompileErrorMessage(
                 line: token.line,
                 startCol: token.column,
                 endCol: token.column + token.lexeme.count,
                 message: message
         )
-        throw msg
     }
 }
 
 
 extension Parser {
-    func peekError(expected: TokenType, got: TokenType) -> ParseError {
-        let msg = "expected next to be \(expected), got \(got) instead"
-        return ParseError.tokenTypeError(msg: msg, expected: expected, received: got, peek().line, peek().column)
+    func peekError(expected: TokenType, got: TokenType) -> CompileErrorMessage {
+        let msg = "I expected next to be \(expected), got \(got) instead"
+        return error(message: msg, token: peek2())
     }
 
-    func curError(expected: TokenType, got: TokenType) -> ParseError {
-        let msg = "expected token to be \(expected), got \(got) instead"
-        return ParseError.tokenTypeError(msg: msg, expected: expected, received: got, previous().line, previous().column)
+    func curError(expected: TokenType, got: TokenType) -> CompileErrorMessage {
+        let msg = "I expected token to be \(expected), got \(got) instead"
+        return error(message: msg, token: peek())
     }
 
-    func noPrefixParseFnError(t: Token) -> ParseError {
-        let msg = "no prefix parse function for \(t.type) found"
-        return ParseError.noParseFn(msg: msg, type: t.type, t.line, t.column)
+    func noPrefixParseFnError(t: Token) -> CompileErrorMessage {
+        let msg = "I couldn't find any prefix parse function for \(t.type)"
+        return error(message: msg, token: peek())
     }
 
-    func genLiteralTypeError(t: Token, expected: String) -> ParseError {
-        let msg = "expected literal '\(t.lexeme)' (literal: \(t.literal)) to be of type \(expected)"
-        return ParseError.literalTypeError(
-                msg: msg,
-                expected: expected,
-                received: String(describing: type(of: t.literal)),
-                t.line, t.column)
+    func genLiteralTypeError(t: Token, expected: String) -> CompileErrorMessage {
+        let msg = "I expected literal '\(t.lexeme)' (literal: \(t.literal)) to be of type \(expected)"
+        return error(message: msg, token: peek())
     }
 }
 
