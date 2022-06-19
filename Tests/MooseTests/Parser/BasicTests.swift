@@ -9,7 +9,7 @@ import XCTest
 class BasicTests: BaseClass {
     /// - Todo: Fix test! test are not processed
     func test_assignStatements() throws {
-        print("-- Test assign statements")
+        print("-- \(#function)")
 
         let inputs: [(String, String, Any, Bool)] = [
             ("a = 3", "a", Int64(3), false),
@@ -36,7 +36,8 @@ class BasicTests: BaseClass {
     }
 
     func test_returnStatements() throws {
-        print("-- Test return statements")
+        print("-- \(#function)")
+
         let tests: [(String, Any)] = [
             ("return 5;", Int64(5)),
             ("return true", true),
@@ -60,6 +61,8 @@ class BasicTests: BaseClass {
     }
 
     func test_parsingPrefixExpr() throws {
+        print("-- \(#function)")
+
         let tests: [(String, String, Any)] = [
             ("!5;", "!", 5),
             ("^-15\n", "^-", 15),
@@ -81,6 +84,35 @@ class BasicTests: BaseClass {
                 throw TestErrors.parseError("operator is not \(t.1). got=\(exp.op)")
             }
             try test_literalExpression(exp: exp.right, expected: t.2)
+        }
+    }
+
+    func test_parsingInfixExpression() throws {
+        print("-- \(#function)")
+
+        let tests: [(String, Any, String, Any)] = [
+            ("5 + true\n", 5, "+", true),
+            ("1231 ^^ 12;", 1231, "^^", 12),
+            ("true#false", true, "#", false),
+            ("1@2", 1, "@", 2)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(l)
+            let prog = p.parseProgram()
+            try test_parseErrors(p)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let stmt = try cast(prog.statements[0], ExpressionStatement.self)
+            let exp = try cast(stmt.expression, InfixExpression.self)
+            try test_literalExpression(exp: exp.left, expected: t.1)
+            guard exp.op == t.2 else {
+                throw TestErrors.parseError("operator is not \(t.2). got=\(exp.op)")
+            }
+            try test_literalExpression(exp: exp.right, expected: t.3)
         }
     }
 }

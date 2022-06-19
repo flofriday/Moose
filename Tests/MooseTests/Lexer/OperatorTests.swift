@@ -9,6 +9,8 @@ class OperatorTests: XCTestCase {
 
 
     func test_AssignOperatorvsOperator() throws {
+        print("-- \(#function)")
+
         let input = "$#@;$#@:"
         let ts = buildTokenList {
             (TokenType.Operator, "$#@")
@@ -20,6 +22,8 @@ class OperatorTests: XCTestCase {
     }
 
     func test_standardOperators() throws {
+        print("-- \(#function)")
+
         let input = """
                     +=
                     <=
@@ -62,6 +66,8 @@ class OperatorTests: XCTestCase {
     }
 
     func testPeekToken() throws {
+        print("-- \(#function)")
+
         let l = Lexer(input: "a = b")
         let _ = l.nextToken()
         let tt = Token(type: .Assign, lexeme: "=", literal: nil, line: 0, column: 0)
@@ -72,6 +78,8 @@ class OperatorTests: XCTestCase {
     }
 
     func testComment() throws {
+        print("-- \(#function)")
+
         let i = """
                 let a //= das ist schön $@ : ;
                 +=
@@ -89,6 +97,8 @@ class OperatorTests: XCTestCase {
     }
 
     func testStrings() throws {
+        print("-- \(#function)")
+
         let i = """
                 mut a = "this is a String"
                 "this // as well"
@@ -116,6 +126,8 @@ class OperatorTests: XCTestCase {
     }
 
     func testOperators() throws  {
+        print("-- \(#function)")
+
         let i = """
                 -1+ + +2
                 infix +- ()
@@ -143,6 +155,8 @@ class OperatorTests: XCTestCase {
     }
 
     func testPrefixOperator() throws {
+        print("-- \(#function)")
+
         let i = """
                 ^-15\n
                 """
