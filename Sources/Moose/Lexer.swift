@@ -11,6 +11,7 @@ class Lexer {
     private var char: Character?
     private var line: Int = 1
     private var column: Int = 0
+    private var errors: [CompileErrorMessage] = []
 
     init(input: String) {
         self.input = input
@@ -19,19 +20,23 @@ class Lexer {
 }
 
 extension Lexer {
-    func scan() -> [Token] {
+    func scan() throws -> [Token] {
         var tokens: [Token] = []
         while true {
-            var token = nextToken()
-            tokens.append(token)
-            if token.type == .EOF {
-                break
+            do {
+                let token = try nextToken()
+                tokens.append(token)
+                if token.type == .EOF {
+                    break
+                }
+            } catch let e as CompileErrorMessage {
+                errors.append(e)
             }
         }
         return tokens
     }
 
-    func nextToken() -> Token {
+    func nextToken() throws -> Token {
         var tok: Token?
         skipWhitespace()
         skipComment()
@@ -71,7 +76,7 @@ extension Lexer {
             }
 
             if isOpChar(char: unwrappedChar) {
-                let preChar = readChar(at: position-1)
+                let preChar = readChar(at: position - 1)
                 let op = read(isOpChar)
                 let postChar = readChar(at: position)
                 if let l = op.last, l == ":" {
@@ -86,7 +91,7 @@ extension Lexer {
                 let string = read({ $0 != "\"" })
                 // if current char is not ending ", return invalid token
                 guard let char = char, char == "\"" else {
-                    return genToken(.Illegal, string, "String does not end with an closing \".")
+                    throw error(message: "String does not end with an closing \".")
                 }
                 readChar() // skip ending "
                 return genToken(.String, string, string)
@@ -103,11 +108,11 @@ extension Lexer {
                 if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {
-                    return genToken(.Illegal, nil, "\(digit) is not an integer number")
+                    throw error(message: "I thought I was reading a number, but \(digit) is not an integer number")
                 }
 
             } else {
-                tok = genToken(.Illegal, nil, "\(unwrappedChar) is not a valid token")
+                throw error(message: "I got confused while reading your code, \(unwrappedChar) is not a valid token")
             }
         }
 
@@ -230,14 +235,14 @@ extension Lexer {
 }
 
 extension Lexer {
-    func peekToken() -> Token? {
+    func peekToken() throws -> Token? {
         let pos_backup = position
         let read_pos_backup = readPosition
         let char = self.char
         let line = self.line
         let column = self.column
 
-        let token = nextToken()
+        let token = try nextToken()
 
         position = pos_backup
         readPosition = read_pos_backup
@@ -257,8 +262,14 @@ extension Lexer {
             return assign ? TokenType.AssignOperator : TokenType.Operator
         } else if prevWhite && !postWhite { // such as "+a"
             return assign ? TokenType.PrefixAssignOperator : TokenType.PrefixOperator
-        } else  { // !prevWhite && postWhite, such as "a+"
+        } else { // !prevWhite && postWhite, such as "a+"
             return assign ? TokenType.PostfixAssignOperator : TokenType.PostfixOperator
         }
+    }
+}
+
+extension Lexer {
+    func error(message: String) -> CompileErrorMessage {
+        CompileErrorMessage(line: line, startCol: column, endCol: column, message: message)
     }
 }

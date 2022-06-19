@@ -37,6 +37,7 @@ func run(_ input: String) {
         program = try parser.parse()
     } catch let error as CompileError {
         printCompileError(error: error, sourcecode: input)
+        return
     } catch let error {
         print(error)
         exit(1)
@@ -70,8 +71,6 @@ func printCompileError(error: CompileError, sourcecode: String) {
         out += "\n\n"
     }
     print(out)
-
-    exit(1);
 }
 
 // let input = """

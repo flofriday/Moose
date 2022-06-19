@@ -2,7 +2,6 @@
 enum TokenType: String {
 
     case EOF = "EOF"
-    case Illegal = "ILLEGAL"
 
     case Int = "INT"
     case Identifier = "IDENT"

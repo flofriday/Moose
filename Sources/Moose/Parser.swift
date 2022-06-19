@@ -97,7 +97,7 @@ class Parser {
     }
 
     func parseAssignStatement() throws -> AssignStatement {
-        var mutable = previous().type == .Mut
+        let mutable = previous().type == .Mut
 
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
@@ -182,20 +182,9 @@ class Parser {
         let right = try parseExpression(prec)
         return InfixExpression(token: token, left: left, op: token.lexeme, right: right)
     }
+}
 
-//    private func expressionStmt() throws -> Stmt {
-//        var expr = try expression()
-//        if !isAtEnd() {
-//            try consume(type: .NLine, message: "I expected here a newline.")
-//        }
-//        return Stmt.ExprStmt(expr)
-//    }
-//
-//    private func expression() throws -> Expr {
-//        let token = try consume(type: .Int, message: "I can only process Ints at the moment")
-//        return Expr.value(token.literal as! Int)
-//    }
-
+extension Parser {
     private func consumeStatementEnd() throws {
         if !isAtEnd() && !match(types: .SemiColon, .NLine) {
             throw error(message: "I expected, the statement to end with a newline or semicolon.", token: peek())
@@ -249,7 +238,9 @@ class Parser {
     private func previous() -> Token {
         tokens[current - 1]
     }
+}
 
+extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
                 line: token.line,
@@ -258,10 +249,7 @@ class Parser {
                 message: message
         )
     }
-}
 
-
-extension Parser {
     func peekError(expected: TokenType, got: TokenType) -> CompileErrorMessage {
         let msg = "I expected next to be \(expected), got \(got) instead"
         return error(message: msg, token: peek2())
@@ -285,7 +273,6 @@ extension Parser {
 
 extension Parser {
     var peekPrecedence: Precendence {
-        /// - Todo: implement Precendence
         guard let prec = precendences[peek2().type] else {
             return .Lowest
         }
@@ -293,7 +280,6 @@ extension Parser {
     }
 
     var curPrecedence: Precendence {
-        /// - Todo: implement Precendence
         guard let prec = precendences[peek().type] else {
             return .Lowest
         }
