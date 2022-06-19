@@ -121,7 +121,7 @@ class Parser {
         let token = peek()
         let val = try parseExpression(.Lowest)
         // TODO: skip end of statement
-        //try consumeStatementEnd()
+        try consumeStatementEnd()
         return ExpressionStatement(token: token, expression: val)
     }
 
@@ -131,20 +131,16 @@ class Parser {
         guard let prefix = prefix else {
             throw noPrefixParseFnError(t: peek())
         }
-        print(peek().type)
         var leftExpr = try prefix()
-        print(current)
-        while !isAtEnd() && prec.rawValue < peekPrecedence.rawValue {
-            let infix = infixParseFns[peek2().type]
+
+        while !isAtEnd() && prec.rawValue < curPrecedence.rawValue {
+            let infix = infixParseFns[peek().type]
             guard let infix = infix else {
                 return leftExpr
             }
             advance()
-            print("inner")
-            print(current)
             leftExpr = try infix(leftExpr)
         }
-        print("done")
         return leftExpr
     }
 
@@ -182,7 +178,7 @@ class Parser {
 
     func parseInfixExpression(left: Expression) throws -> Expression {
         let prec = curPrecedence
-        let token = advance()
+        let token = peek()
         let right = try parseExpression(prec)
         return InfixExpression(token: token, left: left, op: token.lexeme, right: right)
     }

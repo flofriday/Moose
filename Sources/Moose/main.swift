@@ -32,7 +32,6 @@ func run(_ input: String) {
     do {
         let scanner = Lexer(input: input)
         let tokens = try scanner.scan()
-        print(tokens)
 
         let parser = Parser(tokens: tokens)
         program = try parser.parse()
