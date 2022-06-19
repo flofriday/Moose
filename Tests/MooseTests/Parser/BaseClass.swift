@@ -28,7 +28,7 @@ class BaseClass: XCTestCase {
 
     func test_returnStatement(s: Statement) throws {
         XCTAssertEqual(s.tokenLexeme, "return", "s.tokenLiteral not 'return'. got=\(s.tokenLexeme)")
-        guard let s = s as? ReturnStatement else {
+        guard s is ReturnStatement else {
             throw TestErrors.parseError("s is not ReturnStatement. gpt=\(type(of: s))")
         }
     }
@@ -78,5 +78,4 @@ class BaseClass: XCTestCase {
         }
         try test_literalExpression(exp: opExp.right, expected: right)
     }
-
 }

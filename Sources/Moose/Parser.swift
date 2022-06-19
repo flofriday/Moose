@@ -66,9 +66,7 @@ extension Parser {
                 statements.append(stmt)
             } catch let e as ParseError {
                 errors.append(e)
-            } catch {
-
-            }
+            } catch {}
             nextToken()
         }
 
@@ -112,9 +110,9 @@ extension Parser {
     }
 
     func parseReturnStatement() throws -> ReturnStatement {
-        try expectCurrent(.Ret)
         let token = curToken
-        nextToken()
+        try expectCurrent(.Ret)
+//        nextToken()
         let val = try parseExpression(.Lowest)
         skipStatementEnd()
         return ReturnStatement(token: token, returnValue: val)
@@ -133,7 +131,7 @@ extension Parser {
             throw noPrefixParseFnError(t: curToken)
         }
         var leftExpr = try prefix()
-        while !isStatementEnd() && prec.rawValue < peekPrecedence.rawValue {
+        while !isStatementEnd(), prec.rawValue < peekPrecedence.rawValue {
             let infix = infixParseFns[peekToken.type]
             guard let infix = infix else {
                 return leftExpr
@@ -212,11 +210,11 @@ extension Parser {
     }
 
     func isStatementEnd() -> Bool {
-        peekTokenIs(.SemiColon) || peekTokenIs(.NLine)
+        peekTokenIs(.SemiColon) || peekTokenIs(.NLine) || peekTokenIs(.EOF)
     }
 
     func skipStatementEnd() {
-        if peekTokenIs(.SemiColon) || peekTokenIs(.NLine) {
+        if isStatementEnd() {
             nextToken()
         }
     }
@@ -239,12 +237,12 @@ extension Parser {
     }
 
     func genLiteralTypeError(t: Token, expected: String) -> ParseError {
-        let msg = "expected literal '\(t.lexeme)' (literal: \(t.literal)) to be of type \(expected)"
+        let msg = "expected literal '\(t.lexeme)' (literal: \(t.literal ?? "nil")) to be of type \(expected)"
         return ParseError.literalTypeError(
-                msg: msg,
-                expected: expected,
-                received: String(describing: type(of: t.literal)),
-                t.line, t.column)
+            msg: msg,
+            expected: expected,
+            received: String(describing: type(of: t.literal)),
+            t.line, t.column)
     }
 }
 
