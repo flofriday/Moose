@@ -8,12 +8,11 @@ import XCTest
 
 class BaseClass: XCTestCase {
     func test_assignStatement(stmt: Statement, name: String, mut: Bool, typ: String?) throws -> (Bool, String) {
-        guard stmt.tokenLexeme == "=" else {
-            return (false, "TokenLiteral is neither 'mut' nor '\(name)'. got=\(stmt.tokenLexeme)")
-        }
         guard let stmt = stmt as? AssignStatement else {
             return (false, "Statement is not of type AssignStatement. got=\(String(describing: type(of: stmt)))")
         }
+        XCTAssertTrue(stmt.token.type == .Assign || stmt.token.type == .Operator(pos: .Infix, assign: true),
+                      "Token is neither .Assign nor .Operator. got=\(stmt.tokenLexeme)")
         guard name == stmt.name.value else {
             return (false, "stmt.name.value not '\(name)'. got='\(stmt.name)'")
         }

@@ -47,7 +47,7 @@ enum TokenType: Equatable, Hashable {
 extension TokenType {
     var isAssign: Bool {
         switch self {
-        case .Assign, .Operator(pos: _, assign: true):
+        case .Assign, .Operator(pos: .Infix, assign: true):
             return true
         default:
             return false

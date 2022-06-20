@@ -37,6 +37,33 @@ class ParserTests: BaseClass {
         }
     }
 
+    func test_assignStatement_WithExpression() throws {
+        print("-- \(#function)")
+        typealias ExpOp = (String, String, Any)
+
+        let tests: [(String, String, ExpOp)] = [
+            ("a +: 3\n", "a", ("a", "+", 3)),
+            ("a ^&: true;", "a", ("a", "^&", true)),
+            ("a = b - c", "a", ("b", "-", "c"))
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let a = try test_assignStatement(stmt: prog.statements[0], name: t.1, mut: false, typ: nil)
+            XCTAssert(a.0, a.1)
+
+            let stmt = prog.statements[0] as! AssignStatement
+            let expr = try cast(stmt.value, InfixExpression.self)
+            try test_literalExpression(exp: expr.left, expected: t.2.0)
+            XCTAssertEqual(expr.op, t.2.1)
+            try test_literalExpression(exp: expr.right, expected: t.2.2)
+        }
+    }
+
     func test_returnStatements() throws {
         print("-- \(#function)")
 
@@ -91,7 +118,8 @@ class ParserTests: BaseClass {
             ("5 + true\n", 5, "+", true),
             ("1231 ^^ 12;", 1231, "^^", 12),
             ("true#false", true, "#", false),
-            ("1@2", 1, "@", 2)
+            ("1@2", 1, "@", 2),
+            ("1<<2", 1, "<<", 2)
         ]
 
         for (i, t) in tests.enumerated() {

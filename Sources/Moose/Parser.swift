@@ -123,12 +123,19 @@ class Parser {
             type = try parseIdentifier()
         }
 
-        let token = try consume(type: .Assign, message: "I expected a '=' after a variable decleration.")
+        // do not consume since it could be the operator of assign operator such as +: 3
+        var token = peek()
 
-        let val = try parseExpression(.Lowest)
+        var expr: Expression = ident
+        if case .Operator(pos: .Infix, assign: true) = token.type {
+            expr = try parseInfixExpression(left: ident)
+        } else {
+            token = try consume(oneOf: [.Assign], message: "I expected a '=' after a variable decleration.")
+            expr = try parseExpression(.Lowest)
+        }
 
         try consumeStatementEnd()
-        return AssignStatement(token: token, name: ident, value: val, mutable: mutable, type: type)
+        return AssignStatement(token: token, name: ident, value: expr, mutable: mutable, type: type)
     }
 
     func parseReturnStatement() throws -> ReturnStatement {
@@ -223,17 +230,29 @@ extension Parser {
     }
 
     private func consume(type: TokenType, message: String) throws -> Token {
-        if !check(type: type) {
+        try consume(oneOf: [type], message: message)
+    }
+
+    private func consume(oneOf types: [TokenType], message: String) throws -> Token {
+        guard check(oneOf: types) else {
             throw error(message: message, token: peek())
         }
         return advance()
     }
 
     private func check(type: TokenType) -> Bool {
+        return check(oneOf: type)
+    }
+
+    private func check(oneOf types: TokenType...) -> Bool {
+        return check(oneOf: types)
+    }
+
+    private func check(oneOf types: [TokenType]) -> Bool {
         if isAtEnd() {
             return false
         }
-        return peek().type == type
+        return types.contains(peek().type)
     }
 
     private func isAtEnd() -> Bool {
@@ -293,7 +312,10 @@ extension Parser {
 
 extension Parser {
     private func getPrecedence(of t: Token) -> Precendence {
-        if case .Operator = t.type {
+        // in case of assign statement a *: 3 + 2. this should be evaluated as a *: (3 + 2)
+        if case .Operator(pos: .Infix, assign: true) = t.type {
+            return .Lowest
+        } else if case .Operator = t.type {
             guard let prec = opPrecendences[t.lexeme] else {
                 return .OpDefault
             }
