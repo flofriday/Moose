@@ -26,7 +26,7 @@ extension Lexer {
             do {
                 let token = try nextToken()
                 tokens.append(token)
-                if token.type == .EOF {
+                if case .EOF = token.type {
                     break
                 }
             } catch let e as CompileErrorMessage {
@@ -84,7 +84,7 @@ extension Lexer {
                 }
             } else if unwrappedChar == "\"" {
                 readChar() // skip start "
-                let string = read({ $0 != "\"" })
+                let string = read { $0 != "\"" }
                 // if current char is not ending ", return invalid token
                 guard let char = char, char == "\"" else {
                     throw error(message: "String does not end with an closing \".")
@@ -95,8 +95,8 @@ extension Lexer {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
                 var lit: Any = ident
-                if type == .True || type == .False {
-                    lit = type == .True
+                if case .Boolean(let val) = type {
+                    lit = val
                 }
                 return genToken(type, lit, ident)
             } else if isDigit(char: unwrappedChar) {
@@ -145,11 +145,11 @@ extension Lexer {
 
 extension Lexer {
     private func isLetter(char: Character) -> Bool {
-        return "a" <= char && char <= "z" || "A" <= char && char <= "Z" || char == "_"
+        return char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char == "_"
     }
 
     private func isDigit(char: Character) -> Bool {
-        return "0" <= char && char <= "9"
+        return char >= "0" && char <= "9"
     }
 
     private func isOpChar(char: Character?) -> Bool {
@@ -168,7 +168,7 @@ extension Lexer {
         return input[pos]
     }
 
-    private func readChar() -> Void {
+    private func readChar() {
         if readPosition >= input.count {
             char = nil
         } else {
@@ -214,7 +214,6 @@ extension Lexer {
 }
 
 extension Lexer {
-
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
         genToken(type, nil, "\(char ?? " ")")
@@ -255,11 +254,11 @@ extension Lexer {
         let prevWhite = prevChar == nil ? true : prevChar!.isWhitespace || prevChar! == ";"
         let postWhite = postChar == nil ? true : postChar!.isWhitespace || postChar! == ";"
         if (prevWhite && postWhite) || (!prevWhite && !postWhite) { // such as "a+b" "a + b"
-            return assign ? TokenType.AssignOperator : TokenType.Operator
-        } else if prevWhite && !postWhite { // such as "+a"
-            return assign ? TokenType.PrefixAssignOperator : TokenType.PrefixOperator
+            return TokenType.Operator(pos: .Infix, assign: assign)
+        } else if prevWhite, !postWhite { // such as "+a"
+            return TokenType.Operator(pos: .Prefix, assign: assign)
         } else { // !prevWhite && postWhite, such as "a+"
-            return assign ? TokenType.PostfixAssignOperator : TokenType.PostfixOperator
+            return TokenType.Operator(pos: .Postfix, assign: assign)
         }
     }
 }

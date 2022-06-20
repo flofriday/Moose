@@ -11,9 +11,9 @@ class LexerTests: XCTestCase {
 
         let input = "$#@;$#@:"
         let ts = buildTokenList {
-            (TokenType.Operator, "$#@")
+            (TokenType.Operator(pos: .Infix, assign: false), "$#@")
             (TokenType.SemiColon, ";")
-            (TokenType.AssignOperator, "$#@")
+            (TokenType.Operator(pos: .Infix, assign: true), "$#@")
             (TokenType.EOF, " ")
         }
         try testNextToken(input, ts)
@@ -35,25 +35,25 @@ class LexerTests: XCTestCase {
         =a
         """
         let ts = buildTokenList {
-            (TokenType.Operator, "+=")
+            (TokenType.Operator(pos: .Infix, assign: false), "+=")
             (TokenType.NLine, "\n")
-            (TokenType.Operator, "<=")
+            (TokenType.Operator(pos: .Infix, assign: false), "<=")
             (TokenType.NLine, "\n")
-            (TokenType.Operator, ">=")
+            (TokenType.Operator(pos: .Infix, assign: false), ">=")
             (TokenType.NLine, "\n")
-            (TokenType.AssignOperator, "+")
+            (TokenType.Operator(pos: .Infix, assign: true), "+")
             (TokenType.NLine, "\n")
-            (TokenType.Operator, "&&")
+            (TokenType.Operator(pos: .Infix, assign: false), "&&")
             (TokenType.NLine, "\n")
-            (TokenType.Operator, "||")
+            (TokenType.Operator(pos: .Infix, assign: false), "||")
             (TokenType.NLine, "\n")
             (TokenType.Int, "4")
-            (TokenType.Operator, "++++")
+            (TokenType.Operator(pos: .Infix, assign: false), "++++")
             (TokenType.Identifier, "asd")
             (TokenType.NLine, "\n")
-            (TokenType.AssignOperator, ":")
+            (TokenType.Operator(pos: .Infix, assign: true), ":")
             (TokenType.NLine, "\n")
-            (TokenType.Operator, "=*")
+            (TokenType.Operator(pos: .Infix, assign: false), "=*")
             (TokenType.NLine, "\n")
             (TokenType.Assign, "=")
             (TokenType.Identifier, "a")
@@ -86,7 +86,7 @@ class LexerTests: XCTestCase {
         let ts = buildTokenList {
             (TokenType.Identifier, "let")
             (TokenType.Identifier, "a")
-            (TokenType.Operator, "+=")
+            (TokenType.Operator(pos: .Infix, assign: false), "+=")
             (TokenType.NLine, "\n")
             (TokenType.EOF, " ")
         }
@@ -131,20 +131,20 @@ class LexerTests: XCTestCase {
         a+:b
         """
         let ts = buildTokenList {
-            (TokenType.PrefixOperator, "-")
+            (TokenType.Operator(pos: .Prefix, assign: false), "-")
             (TokenType.Int, "1")
-            (TokenType.PostfixOperator, "+")
-            (TokenType.Operator, "+")
-            (TokenType.PrefixOperator, "+")
+            (TokenType.Operator(pos: .Postfix, assign: false), "+")
+            (TokenType.Operator(pos: .Infix, assign: false), "+")
+            (TokenType.Operator(pos: .Prefix, assign: false), "+")
             (TokenType.Int, "2")
             (TokenType.NLine, "\n")
             (TokenType.Infix, "infix")
-            (TokenType.Operator, "+-")
+            (TokenType.Operator(pos: .Infix, assign: false), "+-")
             (TokenType.LParen, "(")
             (TokenType.RParen, ")")
             (TokenType.NLine, "\n")
             (TokenType.Identifier, "a")
-            (TokenType.AssignOperator, "+")
+            (TokenType.Operator(pos: .Infix, assign: true), "+")
             (TokenType.Identifier, "b")
         }
 
@@ -158,7 +158,7 @@ class LexerTests: XCTestCase {
         ^-15\n
         """
         let ts = buildTokenList {
-            (TokenType.PrefixOperator, "^-")
+            (TokenType.Operator(pos: .Prefix, assign: false), "^-")
             (TokenType.Int, "15")
             (TokenType.NLine, "\n")
         }
@@ -175,7 +175,7 @@ class LexerTests: XCTestCase {
         let ts = buildTokenList {
             (TokenType.Class, "class")
             (TokenType.Identifier, "Helper")
-            (TokenType.Operator, "<")
+            (TokenType.Operator(pos: .Infix, assign: false), "<")
             (TokenType.Identifier, "Super")
             (TokenType.LBrace, "{")
             (TokenType.RBrace, "}")

@@ -1,48 +1,58 @@
+enum OpPos: Equatable, Hashable {
+    case Prefix
+    case Infix
+    case Postfix
+}
+
 // include all types
-enum TokenType: String {
+enum TokenType: Equatable, Hashable {
+    case EOF
 
-    case EOF = "EOF"
+    case Int
+    case Identifier
+    case Operator(pos: OpPos, assign: Bool)
 
-    case Int = "INT"
-    case Identifier = "IDENT"
-    case PrefixOperator = "PREFIX OPERATOR"
-    case PrefixAssignOperator = "PREFIX ASSIGN OPERATOR"
-    case Operator = "INFIX OPERATOR"
-    case AssignOperator = "INFIX ASSIGN OPERATOR"
-    case PostfixOperator = "POSTFIX OPERATOR"
-    case PostfixAssignOperator = "POSTFIX ASSIGN OPERATOR"
+    case Assign
 
-    case Assign = "="
+    case Comma
+    case SemiColon
+    case Colon
 
-    case Comma = ","
-    case SemiColon = ";"
-    case Colon = ":"
+    case NLine
+    case String
 
-    case NLine = "NEW_LINE"
-    case String = "STRING"
-
-    case LParen = "("
-    case RParen = ")"
-    case LBrace = "{"
-    case RBrace = "}"
-    case LBracket = "["
-    case RBracket = "]"
+    case LParen
+    case RParen
+    case LBrace
+    case RBrace
+    case LBracket
+    case RBracket
 
     // Keywords
-    case Mut = "MUT"
-    case Func = "FUNC"
-    case True = "TRUE"
-    case False = "FALSE"
-    case If = "IF"
-    case Else = "ELSE"
-    case Ret = "RETURN"
-    case For = "FOR"
-    case In = "IN"
-    case Class = "CLASS"
-    case Extend = "EXTEND"
-    case Infix = "INFIX"
-    case Prefix = "PREFIX"
-    case Postfix = "POSTFIX"
+    case Mut
+    case Func
+    case Boolean(Bool)
+    case If
+    case Else
+    case Ret
+    case For
+    case In
+    case Class
+    case Extend
+    case Infix
+    case Prefix
+    case Postfix
+}
+
+extension TokenType {
+    var isAssign: Bool {
+        switch self {
+        case .Assign, .Operator(pos: _, assign: true):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 struct Token {
@@ -57,8 +67,8 @@ internal func lookUpIdent(ident: String) -> TokenType {
     switch ident {
     case "mut": return .Mut
     case "func": return .Func
-    case "true": return .True
-    case "false": return .False
+    case "true": return .Boolean(true)
+    case "false": return .Boolean(false)
     case "return": return .Ret
     case "for": return .For
     case "in": return .In
@@ -70,4 +80,3 @@ internal func lookUpIdent(ident: String) -> TokenType {
     default: return .Identifier
     }
 }
-

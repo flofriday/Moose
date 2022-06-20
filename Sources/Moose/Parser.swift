@@ -32,8 +32,8 @@ class Parser {
 
     // precendences by type
     let typePrecendences: [TokenType: Precendence] = [
-        .PrefixOperator: .Prefix,
-        .PostfixOperator: .Postfix,
+        .Operator(pos: .Prefix, assign: false): .Prefix,
+        .Operator(pos: .Postfix, assign: false): .Postfix,
     ]
 
     let opPrecendences: [String: Precendence] = [
@@ -54,12 +54,12 @@ class Parser {
         // TODO: add parse functions
         prefixParseFns[.Identifier] = parseIdentifier
         prefixParseFns[.Int] = parseIntegerLiteral
-        prefixParseFns[.PrefixOperator] = parsePrefixExpression
-        prefixParseFns[.True] = parseBoolean
-        prefixParseFns[.False] = parseBoolean
+        prefixParseFns[.Operator(pos: .Prefix, assign: false)] = parsePrefixExpression
+        prefixParseFns[.Boolean(true)] = parseBoolean
+        prefixParseFns[.Boolean(false)] = parseBoolean
         prefixParseFns[.LParen] = parseGroupedExpression
 
-        infixParseFns[.Operator] = parseInfixExpression
+        infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
     }
 
     func parse() throws -> Program {
@@ -285,7 +285,7 @@ extension Parser {
 
 extension Parser {
     private func getPrecedence(of t: Token) -> Precendence {
-        if t.type == .Operator {
+        if case .Operator = t.type {
             guard let prec = opPrecendences[t.lexeme] else {
                 return .OpDefault
             }
