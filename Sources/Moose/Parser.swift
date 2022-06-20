@@ -136,7 +136,6 @@ class Parser {
             guard let infix = infix else {
                 return leftExpr
             }
-            _ = advance()
             leftExpr = try infix(leftExpr)
         }
         return leftExpr
@@ -176,7 +175,7 @@ class Parser {
 
     func parseInfixExpression(left: Expression) throws -> Expression {
         let prec = curPrecedence
-        let token = peek()
+        let token = advance()
         let right = try parseExpression(prec)
         return InfixExpression(token: token, left: left, op: token.lexeme, right: right)
     }
