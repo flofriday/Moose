@@ -49,7 +49,7 @@ class Parser {
     func parse() throws -> Program {
         var statements: [Statement] = []
 
-        while (!isAtEnd()) {
+        while !isAtEnd() {
             do {
                 let stmt = try parseStatement()
                 statements.append(stmt)
@@ -70,9 +70,9 @@ class Parser {
     }
 
     private func synchronize() {
-        advance();
-        while (!isAtEnd()) {
-            if (previous().type == .NLine || previous().type == .SemiColon) {
+        advance()
+        while !isAtEnd() {
+            if previous().type == .NLine || previous().type == .SemiColon {
                 return
             }
 
@@ -81,10 +81,9 @@ class Parser {
         }
     }
 
-
     func parseStatement() throws -> Statement {
         // TODO: the assign doesn't work for arrays
-        if match(types: .Mut) || peek().type == .Assign {
+        if match(types: .Mut) || peek2().type == .Assign {
             // parse AssignStatement
             return try parseAssignStatement()
         } else if match(types: .Ret) {
@@ -97,14 +96,13 @@ class Parser {
     }
 
     func parseAssignStatement() throws -> AssignStatement {
-        let mutable = previous().type == .Mut
+        let mutable = (current >= 1) && previous().type == .Mut
 
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
         let token = try consume(type: .Assign, message: "I expected a '=' after a variable decleration.")
 
         let val = try parseExpression(.Lowest)
-
 
         try consumeStatementEnd()
         return AssignStatement(token: token, name: ident, value: val, mutable: mutable)
@@ -133,20 +131,20 @@ class Parser {
         }
         var leftExpr = try prefix()
 
-        while !isAtEnd() && prec.rawValue < curPrecedence.rawValue {
+        while !isAtEnd(), prec.rawValue < curPrecedence.rawValue {
             let infix = infixParseFns[peek().type]
             guard let infix = infix else {
                 return leftExpr
             }
-            advance()
+            _ = advance()
             leftExpr = try infix(leftExpr)
         }
         return leftExpr
     }
 
     func parseIdentifier() throws -> Expression {
-        let literal = advance().literal as! String
-        return Identifier(token: peek(), value: literal)
+        let ident = advance()
+        return Identifier(token: ident, value: ident.literal as! String)
     }
 
     func parseIntegerLiteral() throws -> Expression {
@@ -186,21 +184,20 @@ class Parser {
 
 extension Parser {
     private func consumeStatementEnd() throws {
-        if !isAtEnd() && !match(types: .SemiColon, .NLine) {
+        if !isAtEnd(), !match(types: .SemiColon, .NLine) {
             throw error(message: "I expected, the statement to end with a newline or semicolon.", token: peek())
         }
     }
 
     private func match(types: TokenType...) -> Bool {
         for type in types {
-            if (check(type: type)) {
+            if check(type: type) {
                 advance()
                 return true
             }
         }
-        return false;
+        return false
     }
-
 
     private func consume(type: TokenType, message: String) throws -> Token {
         if !check(type: type) {
@@ -243,10 +240,10 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 

@@ -8,7 +8,7 @@ import XCTest
 
 class BaseClass: XCTestCase {
     func test_assignStatement(stmt: Statement, name: String, mut: Bool) -> (Bool, String) {
-        guard stmt.tokenLexeme == "mut" || stmt.tokenLexeme == name else {
+        guard stmt.tokenLexeme == "=" else {
             return (false, "TokenLiteral is neither 'mut' nor '\(name)'. got=\(stmt.tokenLexeme)")
         }
         guard let stmt = stmt as? AssignStatement else {
