@@ -6,7 +6,7 @@ import Foundation
 @testable import Moose
 import XCTest
 
-class BasicTests: BaseClass {
+class ParserTests: BaseClass {
     /// - Todo: Fix test! test are not processed
     func test_assignStatements() throws {
         print("-- \(#function)")

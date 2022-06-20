@@ -52,10 +52,6 @@ extension Lexer {
             tok = genToken(.SemiColon)
         case (":", let peek) where !isOpChar(char: peek):
             tok = genToken(.Colon)
-        case ("<", let peek) where !isOpChar(char: peek):
-            tok = genToken(.InheritsFrom)
-        case (">", let peek) where !isOpChar(char: peek):
-            tok = genToken(.ToType)
         case ("(", _):
             tok = genToken(.LParen)
         case (")", _):

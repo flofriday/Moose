@@ -13,8 +13,6 @@ enum TokenType: String {
     case PostfixAssignOperator = "POSTFIX ASSIGN OPERATOR"
 
     case Assign = "="
-    case ToType = ">"
-    case InheritsFrom = "<"
 
     case Comma = ","
     case SemiColon = ";"
