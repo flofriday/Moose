@@ -69,9 +69,9 @@ class OperatorTests: XCTestCase {
         print("-- \(#function)")
 
         let l = Lexer(input: "a = b")
-        let _ = l.nextToken()
+        let _ = try l.nextToken()
         let tt = Token(type: .Assign, lexeme: "=", literal: nil, line: 0, column: 0)
-        let tok = l.peekToken()
+        let tok = try l.peekToken()
 
         try assertEqualToken(tt, tok)
         try assertEqualToken(tt, l.nextToken())
@@ -119,7 +119,6 @@ class OperatorTests: XCTestCase {
             (TokenType.NLine, "\n")
             (TokenType.String, "with new line\nlol")
             (TokenType.NLine, "\n")
-            (TokenType.Illegal, "String does not end with an closing \".")
         }
 
         try testNextToken(i, ts)
@@ -173,7 +172,7 @@ class OperatorTests: XCTestCase {
     private func testNextToken(_ input: String, _ expectedTokens: [Token]) throws {
         let lexer = Lexer(input: input)
         for (i, tt) in expectedTokens.enumerated() {
-            let tok = lexer.nextToken()
+            let tok = try lexer.nextToken()
             XCTAssertEqual(tt.type, tok.type,
                     "[:\(i)] - TokenType wrong. expected=\(tt.type), got=\(tok.type)")
             XCTAssertEqual(tt.lexeme, tok.lexeme,

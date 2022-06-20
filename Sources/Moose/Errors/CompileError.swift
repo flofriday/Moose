@@ -11,3 +11,9 @@ class CompileError: Error {
         self.messages = messages
     }
 }
+
+extension CompileError: LocalizedError {
+    public var errorDescription: String? {
+        messages.map { message in message.localizedDescription ?? "" }.joined()
+    }
+}

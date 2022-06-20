@@ -17,7 +17,7 @@ class LexerTest: XCTestCase {
     func testNextToken() throws {
         let lexer = Lexer(input: input)
         for (i, tt) in expectedTokens.enumerated() {
-            let tok = lexer.nextToken()
+            let tok = try lexer.nextToken()
             XCTAssertEqual(tt.type, tok.type,
                     "Test[\(testNumber!):\(i)] - TokenType wrong. expected=\(tt.type), got=\(tok.type)")
             XCTAssertEqual(tt.lexeme, tok.lexeme,

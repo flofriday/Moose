@@ -22,10 +22,9 @@ class BasicTests: BaseClass {
 
         for (index, i) in inputs.enumerated() {
             print("Start test \(index): \(i)")
-            let l = Lexer(input: i.0)
-            let p = Parser(l)
-            let prog = p.parseProgram()
-            XCTAssertTrue(p.errors.isEmpty)
+
+            let prog = try startParser(input: i.0)
+
             XCTAssertEqual(prog.statements.count, 1)
             let a = test_assignStatement(stmt: prog.statements[0], name: i.1, mut: i.3)
             XCTAssert(a.0, a.1)
@@ -49,10 +48,8 @@ class BasicTests: BaseClass {
         for (i, t) in tests.enumerated() {
             print("Start test \(i): \(t)")
 
-            let l = Lexer(input: t.0)
-            let p = Parser(l)
-            let prog = p.parseProgram()
-            XCTAssertEqual(p.errors.count, 0, "Got parse errors: \n- \(p.errors.map { String(describing: $0) }.joined(separator: "\n- "))")
+            let prog = try startParser(input: t.0)
+
             XCTAssertEqual(prog.statements.count, 1)
             try test_returnStatement(s: prog.statements[0])
             let stmt = prog.statements[0] as! ReturnStatement
@@ -72,10 +69,7 @@ class BasicTests: BaseClass {
         for (i, t) in tests.enumerated() {
             print("Start test \(i): \(t)")
 
-            let l = Lexer(input: t.0)
-            let p = Parser(l)
-            let prog = p.parseProgram()
-            try test_parseErrors(p)
+            let prog = try startParser(input: t.0)
 
             XCTAssertEqual(prog.statements.count, 1)
             let stmt = try cast(prog.statements[0], ExpressionStatement.self)
@@ -100,10 +94,7 @@ class BasicTests: BaseClass {
         for (i, t) in tests.enumerated() {
             print("Start test \(i): \(t)")
 
-            let l = Lexer(input: t.0)
-            let p = Parser(l)
-            let prog = p.parseProgram()
-            try test_parseErrors(p)
+            let prog = try startParser(input: t.0)
 
             XCTAssertEqual(prog.statements.count, 1)
             let stmt = try cast(prog.statements[0], ExpressionStatement.self)

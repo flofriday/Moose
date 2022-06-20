@@ -12,6 +12,13 @@ struct CompileErrorMessage: Error {
     var startCol: Int
     var endCol: Int
     var message: String
+}
 
-
+extension CompileErrorMessage: LocalizedError {
+    public var errorDescription: String? {
+        var out = "-- CompileError ---\n"
+        out += "Line: \(line)\nStart: \(startCol)\nEnd: \(endCol)\n"
+        out += "Message: \(message)\n\n"
+        return out
+    }
 }
