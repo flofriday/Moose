@@ -6,7 +6,11 @@ import Foundation
 
 enum Precendence: Int {
     case Lowest
-    case Infix
+    case OpDefault
+    case Equals
+    case LessGreater
+    case Sum
+    case Product
     case Prefix
     case Postfix
     case Call
@@ -26,10 +30,22 @@ class Parser {
     var infixParseFns = [TokenType: infixParseFn]()
     var postfixParseFns = [TokenType: postfixParseFn]()
 
-    let precendences: [TokenType: Precendence] = [
-        .Operator: .Infix,
+    // precendences by type
+    let typePrecendences: [TokenType: Precendence] = [
         .PrefixOperator: .Prefix,
         .PostfixOperator: .Postfix,
+    ]
+
+    let opPrecendences: [String: Precendence] = [
+        "==": .Equals,
+        "<": .LessGreater,
+        ">": .LessGreater,
+        "<=": .LessGreater,
+        ">=": .LessGreater,
+        "+": .Sum,
+        "-": .Sum,
+        "*": .Product,
+        "/": .Product,
     ]
 
     init(tokens: [Token]) {
@@ -268,17 +284,25 @@ extension Parser {
 }
 
 extension Parser {
-    var peekPrecedence: Precendence {
-        guard let prec = precendences[peek2().type] else {
-            return .Lowest
+    private func getPrecedence(of t: Token) -> Precendence {
+        if t.type == .Operator {
+            guard let prec = opPrecendences[t.lexeme] else {
+                return .OpDefault
+            }
+            return prec
+        } else {
+            guard let prec = typePrecendences[peek2().type] else {
+                return .Lowest
+            }
+            return prec
         }
-        return prec
+    }
+
+    var peekPrecedence: Precendence {
+        getPrecedence(of: peek2())
     }
 
     var curPrecedence: Precendence {
-        guard let prec = precendences[peek().type] else {
-            return .Lowest
-        }
-        return prec
+        getPrecedence(of: peek())
     }
 }
