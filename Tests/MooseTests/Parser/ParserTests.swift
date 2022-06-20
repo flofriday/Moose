@@ -137,4 +137,28 @@ class ParserTests: BaseClass {
             try test_literalExpression(exp: exp.right, expected: t.3)
         }
     }
+
+    func test_operatorPrecendeceParsing() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            ("a + b * c", "(a + (b * c))"),
+            ("a +: b * c", "a = (a + (b * c))"),
+            ("a * b + c", "((a * b) + c)"),
+            ("a *: b + c", "a = (a * (b + c))"),
+            ("a *: b + c * 2", "a = (a * (b + (c * 2)))"),
+            ("a == b &^ c < d + g", "((a == b) &^ (c < (d + g)))"),
+            ("-c+", "(-(c+))"),
+            ("a+ =+ c", "((a+) =+ c)"),
+            ("a+ :+ :$c%", "((a+) :+ (:$(c%)))"),
+            ("a +: :$c%", "a = (a + (:$(c%)))")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(t.1, prog.description)
+        }
+    }
 }

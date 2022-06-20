@@ -55,11 +55,15 @@ class Parser {
         prefixParseFns[.Identifier] = parseIdentifier
         prefixParseFns[.Int] = parseIntegerLiteral
         prefixParseFns[.Operator(pos: .Prefix, assign: false)] = parsePrefixExpression
+        prefixParseFns[.Operator(pos: .Prefix, assign: true)] = parsePrefixExpression
         prefixParseFns[.Boolean(true)] = parseBoolean
         prefixParseFns[.Boolean(false)] = parseBoolean
         prefixParseFns[.LParen] = parseGroupedExpression
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
+
+        postfixParseFns[.Operator(pos: .Postfix, assign: true)] = parsePostfixExpression
+        postfixParseFns[.Operator(pos: .Postfix, assign: false)] = parsePostfixExpression
     }
 
     func parse() throws -> Program {
@@ -154,13 +158,26 @@ class Parser {
     }
 
     func parseExpression(_ prec: Precendence) throws -> Expression {
-        // TODO: implement parseExpression Function
+        // parse prefix expression
         let prefix = prefixParseFns[peek().type]
         guard let prefix = prefix else {
             throw noPrefixParseFnError(t: peek())
         }
         var leftExpr = try prefix()
 
+        // -----
+
+        // parse postfix expression
+        if case .Operator(pos: .Postfix, assign: _) = peek().type {
+            guard let postfix = postfixParseFns[peek().type] else {
+                throw error(message: "could not find postfix function for postfix operator \(String(describing: peek()))", token: peek())
+            }
+            leftExpr = try postfix(leftExpr)
+        }
+
+        // -----
+
+        // parse infix expression
         while !isAtEnd(), prec.rawValue < curPrecedence.rawValue {
             let infix = infixParseFns[peek().type]
             guard let infix = infix else {
@@ -210,12 +227,17 @@ class Parser {
         let right = try parseExpression(prec)
         return InfixExpression(token: token, left: left, op: token.lexeme, right: right)
     }
+
+    func parsePostfixExpression(left: Expression) throws -> Expression {
+        let token = advance()
+        return PostfixExpression(token: token, left: left, op: token.lexeme)
+    }
 }
 
 extension Parser {
     private func consumeStatementEnd() throws {
         if !isAtEnd(), !match(types: .SemiColon, .NLine) {
-            throw error(message: "I expected, the statement to end with a newline or semicolon.", token: peek())
+            throw error(message: "I expected, the statement to end with a newline or semicolon, but ended with '\(peek().lexeme)'", token: peek())
         }
     }
 

@@ -65,7 +65,7 @@ struct StringLiteral {
 struct PrefixExpression {
     let token: Token
     let op: String // operator
-    let right: Expression
+    var right: Expression
 }
 
 struct InfixExpression {
@@ -99,9 +99,7 @@ extension Program: Node {
     }
 
     var description: String {
-        statements.reduce("") { (income: String, statement: Statement) in
-            "\(income)\(statement.description)\n"
-        }
+        statements.map { $0.description }.joined(separator: "\n")
     }
 }
 
@@ -165,5 +163,5 @@ extension InfixExpression: Expression {
 extension PostfixExpression: Expression {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
-    var description: String { "(\(left.description)\(op)" }
+    var description: String { "(\(left.description)\(op))" }
 }
