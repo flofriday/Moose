@@ -7,7 +7,7 @@ import Foundation
 import XCTest
 
 class BaseClass: XCTestCase {
-    func test_assignStatement(stmt: Statement, name: String, mut: Bool) -> (Bool, String) {
+    func test_assignStatement(stmt: Statement, name: String, mut: Bool, typ: String?) throws -> (Bool, String) {
         guard stmt.tokenLexeme == "=" else {
             return (false, "TokenLiteral is neither 'mut' nor '\(name)'. got=\(stmt.tokenLexeme)")
         }
@@ -22,6 +22,15 @@ class BaseClass: XCTestCase {
         }
         guard mut == stmt.mutable else {
             return (false, "stmt.mutable is not \(mut)")
+        }
+
+        if let refType = typ {
+            guard let stmtType = stmt.type else {
+                return (false, "stmt.type is nil but should be identifier with value '\(refType)'")
+            }
+            try test_identifier(exp: stmtType, value: refType)
+        } else {
+            XCTAssertTrue(stmt.type == nil, "stmt.type is not nil. got=\(String(describing: stmt.type))")
         }
         return (true, "")
     }

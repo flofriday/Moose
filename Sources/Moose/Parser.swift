@@ -86,20 +86,20 @@ class Parser {
     }
 
     private func synchronize() {
-        advance()
+        _ = advance()
         while !isAtEnd() {
             if previous().type == .NLine || previous().type == .SemiColon {
                 return
             }
 
             // TODO: maybe we need more a check of the type of token just like jLox has.
-            advance()
+            _ = advance()
         }
     }
 
     func parseStatement() throws -> Statement {
         // TODO: the assign doesn't work for arrays
-        if match(types: .Mut) || peek2().type == .Assign {
+        if match(types: .Mut) || peek2().type.isAssign || peek2().type == .Colon {
             // parse AssignStatement
             return try parseAssignStatement()
         } else if match(types: .Ret) {
@@ -116,12 +116,19 @@ class Parser {
 
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
+
+        var type: Identifier?
+        if check(type: .Colon) {
+            _ = advance()
+            type = try parseIdentifier()
+        }
+
         let token = try consume(type: .Assign, message: "I expected a '=' after a variable decleration.")
 
         let val = try parseExpression(.Lowest)
 
         try consumeStatementEnd()
-        return AssignStatement(token: token, name: ident, value: val, mutable: mutable)
+        return AssignStatement(token: token, name: ident, value: val, mutable: mutable, type: type)
     }
 
     func parseReturnStatement() throws -> ReturnStatement {
@@ -157,8 +164,9 @@ class Parser {
         return leftExpr
     }
 
-    func parseIdentifier() throws -> Expression {
-        let ident = advance()
+    func parseIdentifier() throws -> Identifier {
+//        let ident = advance()
+        let ident = try consume(type: .Identifier, message: "Identifier was expected")
         return Identifier(token: ident, value: ident.literal as! String)
     }
 
@@ -177,9 +185,9 @@ class Parser {
     }
 
     func parseGroupedExpression() throws -> Expression {
-        advance()
+        _ = advance()
         let exp = try parseExpression(.Lowest)
-        try consume(type: .RParen, message: "I expected a closing parenthesis here.")
+        _ = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
         return exp
     }
 
@@ -207,7 +215,7 @@ extension Parser {
     private func match(types: TokenType...) -> Bool {
         for type in types {
             if check(type: type) {
-                advance()
+                _ = advance()
                 return true
             }
         }

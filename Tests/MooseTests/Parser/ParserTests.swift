@@ -11,13 +11,16 @@ class ParserTests: BaseClass {
     func test_assignStatements() throws {
         print("-- \(#function)")
 
-        let inputs: [(String, String, Any, Bool)] = [
-            ("a = 3", "a", Int64(3), false),
-            ("mut b = 1", "b", Int64(1), true),
-            ("a = ident;", "a", "ident", false),
-            ("mut b = ident", "b", "ident", true),
-            ("var = true", "var", true, false),
-            ("mut var = false\n", "var", false, true)
+        let inputs: [(String, String, Any, Bool, String?)] = [
+            ("a = 3", "a", Int64(3), false, nil),
+            ("mut b = 1", "b", Int64(1), true, nil),
+            ("a = ident;", "a", "ident", false, nil),
+            ("mut b = ident", "b", "ident", true, nil),
+            ("var = true", "var", true, false, nil),
+            ("mut var = false\n", "var", false, true, nil),
+            ("mut var: Bool = false\n", "var", false, true, "Bool"),
+            ("var: String = 2;", "var", Int64(2), false, "String"),
+            ("var: String = ident", "var", "ident", false, "String")
         ]
 
         for (index, i) in inputs.enumerated() {
@@ -26,7 +29,7 @@ class ParserTests: BaseClass {
             let prog = try startParser(input: i.0)
 
             XCTAssertEqual(prog.statements.count, 1)
-            let a = test_assignStatement(stmt: prog.statements[0], name: i.1, mut: i.3)
+            let a = try test_assignStatement(stmt: prog.statements[0], name: i.1, mut: i.3, typ: i.4)
             XCTAssert(a.0, a.1)
 
             let stmt = prog.statements[0] as! AssignStatement

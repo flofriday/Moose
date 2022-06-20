@@ -1,8 +1,8 @@
 import Darwin
 
-if (CommandLine.arguments.count == 1) {
+if CommandLine.arguments.count == 1 {
     runRepl()
-} else if (CommandLine.arguments.count == 2) {
+} else if CommandLine.arguments.count == 2 {
     runFile(CommandLine.arguments[1])
 } else {
     fputs("Usage: \(CommandLine.arguments[0]) [script]\n", stderr)
@@ -12,7 +12,7 @@ if (CommandLine.arguments.count == 1) {
 func runRepl() {
     print("Moose Interpreter (https://github.com/flofriday/Moose)")
     print("Written with <3 by Jozott00 and flofriday.")
-    while (true) {
+    while true {
         print("> ", terminator: "")
         guard let line = readLine() else {
             return
@@ -22,12 +22,12 @@ func runRepl() {
 }
 
 func runFile(_ file: String) {
-    fputs("Error: Reading from files is not yet supported\n", stderr);
+    fputs("Error: Reading from files is not yet supported\n", stderr)
     exit(1)
 }
 
 func run(_ input: String) {
-    var program: Program? = nil
+    var program: Program?
 
     do {
         let scanner = Lexer(input: input)
@@ -38,7 +38,7 @@ func run(_ input: String) {
     } catch let error as CompileError {
         printCompileError(error: error, sourcecode: input)
         return
-    } catch let error {
+    } catch {
         print(error)
         exit(1)
     }
@@ -47,7 +47,7 @@ func run(_ input: String) {
 //    checker.check()
 
     let interpreter = Interpreter(program: program!)
-    interpreter.run();
+    interpreter.run()
 }
 
 // TOOD: add colors
