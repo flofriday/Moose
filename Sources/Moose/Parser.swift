@@ -107,14 +107,8 @@ class Parser {
 
     func parseStatement() throws -> Statement {
         // TODO: the assign doesn't work for arrays
-        if
-            check(type: .Mut)
-            || peek2().type.isAssign
-            || peek2().type == .Colon
-        {
-            // parse AssignStatement
-            return try parseAssignStatement()
-        } else if check(type: .Ret) {
+
+        if check(type: .Ret) {
             // pase ReturnStatement
             return try parseReturnStatement()
         } else if check(type: .Func) {
@@ -122,16 +116,28 @@ class Parser {
         } else if check(type: .LBrace) {
             return try parseBlockStatement()
         } else {
-            // parse ExpressionStatement
-            return try parseExpressionStatement()
+            return try parseAssignExpressionStatement()
         }
     }
 
-    func parseAssignStatement() throws -> AssignStatement {
+    /// Parses assign and expression statements. If expr starts with mut or first expression is followed by
+    ///  `:` or `=`, it will parse an AssignStatement. Else it will return the expression as ExpressionStatement
+    func parseAssignExpressionStatement() throws -> Statement {
         let mutable = match(types: .Mut)
 
-        let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
-        let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
+//        let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
+//        let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
+        let exprToken = peek()
+        let assignable = try parseExpression(.Lowest)
+
+        guard mutable || check(oneOf: .Colon, .Assign, .Operator(pos: .Infix, assign: true)) else {
+            try consumeStatementEnd()
+            return ExpressionStatement(token: exprToken, expression: assignable)
+        }
+
+        guard let assignable = assignable as? Assignable, assignable.isAssignable else {
+            throw error(message: "Expression '\(assignable.description)' is not assignable.", token: exprToken)
+        }
 
         var type: ValueType?
         if check(type: .Colon) {
@@ -142,16 +148,16 @@ class Parser {
         // do not consume since it could be the operator of assign operator such as +: 3
         var token = peek()
 
-        var expr: Expression = ident
+        var expr: Expression = assignable
         if case .Operator(pos: .Infix, assign: true) = token.type {
-            expr = try parseInfixExpression(left: ident)
+            expr = try parseInfixExpression(left: expr)
         } else {
             token = try consume(oneOf: [.Assign], message: "I expected a '=' after a variable decleration.")
             expr = try parseExpression(.Lowest)
         }
 
         try consumeStatementEnd()
-        return AssignStatement(token: token, name: ident, value: expr, mutable: mutable, type: type)
+        return AssignStatement(token: token, assignable: assignable, value: expr, mutable: mutable, type: type)
     }
 
     func parseReturnStatement() throws -> ReturnStatement {

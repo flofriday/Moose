@@ -219,13 +219,13 @@ class ParserTests: BaseClass {
         print("-- \(#function)")
 
         let tests = [
-            ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
-            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
-            ("func AS() {x}", "func AS() > Void {x}"),
-            ("func AS()>Int{x}", "func AS() > Int {x}"),
-            ("func AS()> Int{x}", "func AS() > Int {x}"),
-            ("func AS() >Int{x}", "func AS() > Int {x}"),
-            ("asd(1, 3+ + 3 * 1)", "asd(1, ((3+) + (3 * 1)))"),
+            //            ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
+//            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
+//            ("func AS() {x}", "func AS() > Void {x}"),
+//            ("func AS()>Int{x}", "func AS() > Int {x}"),
+//            ("func AS()> Int{x}", "func AS() > Int {x}"),
+//            ("func AS() >Int{x}", "func AS() > Int {x}"),
+//            ("asd(1, 3+ + 3 * 1)", "asd(1, ((3+) + (3 * 1)))"),
             ("a = asd(1)\n", "a = asd(1)"),
             ("mut a: String = asd((1, b(2)))\n", "mut a: String = asd((1, b(2)))"),
             ("mut a: String = asd()\n", "mut a: String = asd()"),
@@ -287,7 +287,7 @@ class ParserTests: BaseClass {
 
         let tests = [
             ("a: Test = 1", "Test"),
-//            ("a: (Test, Test) = 1", "(Test, Test)"),
+            ("a: (Test, Test) = 1", "(Test, Test)"),
             ("a: () > Void = 1", "() > ()"),
             ("a: () > () = 1", "() > ()"),
             ("a: (Int) > String = 1", "(Int) > String"),

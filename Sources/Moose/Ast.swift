@@ -16,6 +16,10 @@ protocol Statement: Node {}
 
 protocol Expression: Node {}
 
+protocol Assignable: Expression {
+    var isAssignable: Bool { get }
+}
+
 struct Program {
     let statements: [Statement]
 
@@ -26,15 +30,17 @@ struct Program {
 
 struct AssignStatement {
     let token: Token
-    let name: Identifier
+    let assignable: Expression
     let value: Expression
     let mutable: Bool
     var type: ValueType?
 }
 
-struct Identifier {
+struct Identifier: Assignable {
     let token: Token
     let value: String
+
+    var isAssignable: Bool { true }
 }
 
 struct ReturnStatement {
@@ -107,9 +113,18 @@ struct CallExpression {
     let arguments: [Expression]
 }
 
-struct Tuple {
+struct Tuple: Assignable {
     let token: Token
     let expressions: [Expression]
+
+    var isAssignable: Bool {
+        return expressions.reduce(true) { prev, exp in
+            guard exp is Identifier else {
+                return false
+            }
+            return prev || true
+        }
+    }
 }
 
 // Node implementations
@@ -140,7 +155,7 @@ extension AssignStatement: Statement {
     var description: String {
         let mut = mutable ? "mut " : ""
         let type = type != nil ? ": \(type?.description ?? "")" : ""
-        return "\(mut)\(name.description)\(type) = \(value.description)"
+        return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 }
 
