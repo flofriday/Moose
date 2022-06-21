@@ -219,4 +219,23 @@ class ParserTests: BaseClass {
             XCTAssertEqual(t.1, prog.description)
         }
     }
+
+    func test_lightFunctionDefinitions() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
+            ("func AS() {x}", "func AS() > Void {x}"),
+            ("func AS()>Int{x}", "func AS() > Int {x}"),
+            ("func AS()> Int{x}", "func AS() > Int {x}"),
+            ("func AS() >Int{x}", "func AS() > Int {x}")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(t.1, prog.description)
+        }
+    }
 }
