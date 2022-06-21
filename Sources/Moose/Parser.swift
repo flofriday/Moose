@@ -224,6 +224,7 @@ class Parser {
         return BlockStatement(token: token, statements: stmts)
     }
 
+    @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
     func parseExpressionStatement() throws -> ExpressionStatement {
         let token = peek()
         let val = try parseExpression(.Lowest)
