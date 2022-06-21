@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import Rainbow
 
 class CompileError: Error {
     let messages: [CompileErrorMessage]
@@ -23,18 +24,18 @@ extension CompileError: LocalizedError {
 
         for msg in messages {
             // The header
-            out += "-- CompileError ----------------------------------------------------------------\n\n"
+            out += "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
 
             // The source code line causing the error
-            out += String(format: "%3d", msg.line)
-            out += "| \(lines[msg.line - 1])\n"
+            out += String(format: "%3d| ".blue, msg.line)
+            out += "\(lines[msg.line - 1])\n"
             out += String(repeating: " ", count: 5 + msg.startCol)
-            out += String(repeating: "^", count: msg.endCol - msg.startCol)
+            out += String(repeating: "^".red, count: msg.endCol - msg.startCol)
             out += "\n\n"
 
             // A detailed message explaining the error
             out += msg.message
-            out += "\n\n"
+            out += "\n"
         }
         print(out)
     }

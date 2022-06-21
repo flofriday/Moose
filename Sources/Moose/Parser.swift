@@ -252,7 +252,7 @@ class Parser {
             let t = try parseValueTypeDefinition()
             types.append(t)
         } while match(types: .Comma)
-        _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(previous().lexeme)")
+        _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
         return .Tuple(types: types)
     }
 }

@@ -23,7 +23,7 @@ class ParserTests: BaseClass {
             ("var: String = ident", "var", "ident", false, "String"),
             ("var: (String) = ident", "var", "ident", false, "(String)"),
             ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
-            ("mut var: ( String, Int  ) = ident", "var", "ident", true, "(String, Int)"),
+            ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
             ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
         ]
 

@@ -36,7 +36,8 @@ func run(_ input: String) {
         let parser = Parser(tokens: tokens)
         program = try parser.parse()
     } catch let error as CompileError {
-        printCompileError(error: error, sourcecode: input)
+//        printCompileError(error: error, sourcecode: input)
+        print(error.getFullReport(sourcecode: input))
         return
     } catch {
         print(error)
@@ -51,27 +52,27 @@ func run(_ input: String) {
 }
 
 // TOOD: add colors AND move to CompileError itself
-func printCompileError(error: CompileError, sourcecode: String) {
-    var out = ""
-    let lines = sourcecode.split(separator: "\n")
-
-    for msg in error.messages {
-        // The header
-        out += "-- CompileError ----------------------------------------------------------------\n\n"
-
-        // The source code line causing the error
-        out += String(format: "%3d", msg.line)
-        out += "| \(lines[msg.line - 1])\n"
-        out += String(repeating: " ", count: 5 + msg.startCol)
-        out += String(repeating: "^", count: msg.endCol - msg.startCol)
-        out += "\n\n"
-
-        // A detailed message explaining the error
-        out += msg.message
-        out += "\n\n"
-    }
-    print(out)
-}
+// func printCompileError(error: CompileError, sourcecode: String) {
+//    var out = ""
+//    let lines = sourcecode.split(separator: "\n")
+//
+//    for msg in error.messages {
+//        // The header
+//        out += "-- CompileError ----------------------------------------------------------------\n\n"
+//
+//        // The source code line causing the error
+//        out += String(format: "%3d", msg.line)
+//        out += "| \(lines[msg.line - 1])\n"
+//        out += String(repeating: " ", count: 5 + msg.startCol)
+//        out += String(repeating: "^", count: msg.endCol - msg.startCol)
+//        out += "\n\n"
+//
+//        // A detailed message explaining the error
+//        out += msg.message
+//        out += "\n\n"
+//    }
+//    print(out)
+// }
 
 // let input = """
 //             mut albert = 2
