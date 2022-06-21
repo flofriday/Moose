@@ -107,6 +107,11 @@ struct CallExpression {
     let arguments: [Expression]
 }
 
+struct Tuple {
+    let token: Token
+    let expressions: [Expression]
+}
+
 // Node implementations
 
 extension Program: Node {
@@ -173,6 +178,12 @@ extension StringLiteral: Expression {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
     var description: String { "\"\(token.lexeme)\"" }
+}
+
+extension Tuple: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
 }
 
 extension PrefixExpression: Expression {

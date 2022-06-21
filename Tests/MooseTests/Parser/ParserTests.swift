@@ -21,7 +21,6 @@ class ParserTests: BaseClass {
             ("mut var: Bool = false\n", "var", false, true, "Bool"),
             ("var: String = 2;", "var", Int64(2), false, "String"),
             ("var: String = ident", "var", "ident", false, "String"),
-            ("var: (String) = ident", "var", "ident", false, "(String)"),
             ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
             ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
             ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
@@ -228,7 +227,7 @@ class ParserTests: BaseClass {
             ("func AS() >Int{x}", "func AS() > Int {x}"),
             ("asd(1, 3+ + 3 * 1)", "asd(1, ((3+) + (3 * 1)))"),
             ("a = asd(1)\n", "a = asd(1)"),
-//            ("mut a: String = asd((1, b(2))\n", "mut a: String = asd((1, b(2)))"),
+            ("mut a: String = asd((1, b(2)))\n", "mut a: String = asd((1, b(2)))"),
             ("mut a: String = asd()\n", "mut a: String = asd()"),
             ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")")
         ]

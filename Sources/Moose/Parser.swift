@@ -59,7 +59,7 @@ class Parser {
         prefixParseFns[.Operator(pos: .Prefix, assign: true)] = parsePrefixExpression
         prefixParseFns[.Boolean(true)] = parseBoolean
         prefixParseFns[.Boolean(false)] = parseBoolean
-        prefixParseFns[.LParen] = parseGroupedExpression
+        prefixParseFns[.LParen] = parseTupleAndGroupedExpression
         prefixParseFns[.String] = parseStringLiteral
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
@@ -282,6 +282,25 @@ class Parser {
         return StringLiteral(token: token, value: token.literal as! String)
     }
 
+    // groups only contain 1 expression while tuple contain 2 or more
+    func parseTupleAndGroupedExpression() throws -> Expression {
+        let token = try consume(type: .LParen, message: "'(' expected, but got \(peek().lexeme) instead.")
+        let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
+        _ = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
+
+        guard !exprs.isEmpty else {
+            throw error(message: "Priority parentheses have to contain an expression", token: token)
+        }
+
+        // if only one expression, it's a group
+        if exprs.count == 1 {
+            return exprs[0]
+        }
+
+        // more than 1 expression is a tuple
+        return Tuple(token: token, expressions: exprs)
+    }
+
     func parseGroupedExpression() throws -> Expression {
         _ = advance()
         let exp = try parseExpression(.Lowest)
@@ -352,13 +371,16 @@ class Parser {
     }
 
     func parseTupleTypeDefinition() throws -> ValueType {
-        _ = try consume(type: .LParen, message: "expected an starting ( for tupel definition")
+        let token = try consume(type: .LParen, message: "expected an starting ( for tupel definition")
         var types = [ValueType]()
         repeat {
             let t = try parseValueTypeDefinition()
             types.append(t)
         } while match(types: .Comma)
         _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
+        guard types.count > 1 else {
+            throw error(message: "tuple have to contain at least 2 values", token: token)
+        }
         return .Tuple(types: types)
     }
 
