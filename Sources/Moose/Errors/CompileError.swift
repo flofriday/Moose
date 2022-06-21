@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import Rainbow
 
 class CompileError: Error {
     let messages: [CompileErrorMessage]
@@ -14,6 +15,28 @@ class CompileError: Error {
 
 extension CompileError: LocalizedError {
     public var errorDescription: String? {
-        messages.map { message in message.localizedDescription ?? "" }.joined()
+        messages.map { message in message.localizedDescription }.joined()
+    }
+
+    public func getFullReport(sourcecode: String) {
+        var out = ""
+        let lines = sourcecode.split(separator: "\n")
+
+        for msg in messages {
+            // The header
+            out += "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
+
+            // The source code line causing the error
+            out += String(format: "%3d| ".blue, msg.line)
+            out += "\(lines[msg.line - 1])\n"
+            out += String(repeating: " ", count: 5 + msg.startCol)
+            out += String(repeating: "^".red, count: msg.endCol - msg.startCol)
+            out += "\n\n"
+
+            // A detailed message explaining the error
+            out += msg.message
+            out += "\n"
+        }
+        print(out)
     }
 }

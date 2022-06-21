@@ -109,6 +109,8 @@ class Parser {
         } else if match(types: .Ret) {
             // pase ReturnStatement
             return try parseReturnStatement()
+        } else if check(type: .Func) {
+            return try parseFunctionStatement()
         } else {
             // parse ExpressionStatement
             return try parseExpressionStatement()
@@ -121,10 +123,10 @@ class Parser {
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
 
-        var type: Identifier?
+        var type: ValueType?
         if check(type: .Colon) {
             _ = advance()
-            type = try parseIdentifier()
+            type = try parseValueTypeDefinition()
         }
 
         // do not consume since it could be the operator of assign operator such as +: 3
@@ -147,6 +149,51 @@ class Parser {
         let val = try parseExpression(.Lowest)
         try consumeStatementEnd()
         return ReturnStatement(token: token, returnValue: val)
+    }
+
+    func parseFunctionStatement() throws -> FunctionStatement {
+        let token = try consume(type: .Func, message: "func keyword was expected")
+        let name = try parseIdentifier()
+        let params = try parseFunctionParameters()
+
+        var returnType: ValueType?
+        if !check(type: .LBrace) {
+            let toTok = advance() // > token as infix prefix or postfix op
+            guard
+                case .Operator(pos: _, assign: false) = toTok.type,
+                toTok.lexeme == ">"
+            else {
+                throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
+            }
+            returnType = try parseValueTypeDefinition()
+        }
+
+        let body = try parseBlockStatement()
+        try consumeStatementEnd()
+        return FunctionStatement(token: token, name: name, body: body, parameter: params, returnType: returnType)
+    }
+
+    func parseFunctionParameters() throws -> [VariableDefinition] {
+        var defs = [VariableDefinition]()
+        _ = try consume(type: .LParen, message: "expected begin of parameter definition with (, but got \(peek().lexeme) instead")
+
+        while !check(type: .RParen) {
+            let def = try parseVariableDefinition()
+            defs.append(def)
+        }
+        _ = try consume(type: .RParen, message: "expected end of parameter definition with ), but got \(peek().lexeme) instead")
+        return defs
+    }
+
+    // currently only used by function to parse body.
+    func parseBlockStatement() throws -> [Statement] {
+        _ = try consume(type: .LBrace, message: "expected start of function body starting with {")
+        var stmts = [Statement]()
+        while !check(type: .RBrace) {
+            stmts.append(try parseStatement())
+        }
+        _ = try consume(type: .RBrace, message: "expected } at end of function body")
+        return stmts
     }
 
     func parseExpressionStatement() throws -> ExpressionStatement {
@@ -232,13 +279,53 @@ class Parser {
         let token = advance()
         return PostfixExpression(token: token, left: left, op: token.lexeme)
     }
+
+    func parseValueTypeDefinition() throws -> ValueType {
+        switch peek().type {
+        case .Identifier:
+            let ident = try parseIdentifier()
+            return .Identifier(ident: ident)
+        case .LParen:
+            return try parseTupleTypeDefinition()
+        default:
+            throw error(message: "Could not find type definition parsing method for token \(peek().type)", token: peek())
+        }
+    }
+
+    func parseTupleTypeDefinition() throws -> ValueType {
+        _ = try consume(type: .LParen, message: "expected an starting ( for tupel definition")
+        var types = [ValueType]()
+        repeat {
+            let t = try parseValueTypeDefinition()
+            types.append(t)
+        } while match(types: .Comma)
+        _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
+        return .Tuple(types: types)
+    }
+
+    // strongly typed, currently used by parameter and class property definitions
+    func parseVariableDefinition() throws -> VariableDefinition {
+        let mut = match(types: .Mut)
+        let ident = try parseIdentifier()
+        _ = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
+        let type = try parseValueTypeDefinition()
+        return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
+    }
 }
 
 extension Parser {
     private func consumeStatementEnd() throws {
-        if !isAtEnd(), !match(types: .SemiColon, .NLine) {
+        if
+            !isAtEnd(),
+            !check(type: .RBrace), // for function body such as f() {x}
+            !match(types: .SemiColon, .NLine)
+        {
             throw error(message: "I expected, the statement to end with a newline or semicolon, but ended with '\(peek().lexeme)'", token: peek())
         }
+    }
+
+    private var isStatementEnd: Bool {
+        isAtEnd() || check(oneOf: .SemiColon, .NLine)
     }
 
     private func match(types: TokenType...) -> Bool {
@@ -275,6 +362,12 @@ extension Parser {
             return false
         }
         return types.contains(peek().type)
+    }
+
+    private func assert(token: Token, ofType type: TokenType, _ msg: String) throws {
+        guard case type = token.type else {
+            throw error(message: msg, token: token)
+        }
     }
 
     private func isAtEnd() -> Bool {
@@ -327,7 +420,7 @@ extension Parser {
     }
 
     func genLiteralTypeError(t: Token, expected: String) -> CompileErrorMessage {
-        let msg = "I expected literal '\(t.lexeme)' (literal: \(t.literal)) to be of type \(expected)"
+        let msg = "I expected literal '\(t.lexeme)' (literal: \(String(describing: t.literal))) to be of type \(expected)"
         return error(message: msg, token: peek())
     }
 }

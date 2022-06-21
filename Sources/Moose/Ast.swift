@@ -48,7 +48,7 @@ struct AssignStatement {
     let name: Identifier
     let value: Expression
     let mutable: Bool
-    var type: Identifier?
+    var type: ValueType?
 }
 
 struct Identifier {
@@ -98,6 +98,21 @@ struct PostfixExpression {
     let token: Token
     let left: Expression
     let op: String
+}
+
+struct VariableDefinition {
+    let token: Token
+    let mutable: Bool
+    let name: Identifier
+    let type: ValueType
+}
+
+struct FunctionStatement {
+    let token: Token
+    let name: Identifier
+    let body: [Statement]
+    let parameter: [VariableDefinition]
+    let returnType: ValueType?
 }
 
 // Node implementations
@@ -287,5 +302,39 @@ extension PostfixExpression: Expression {
 
     func accept(_ visitor: Visitor) {
         visitor.visit(self)
+    }
+}
+
+extension VariableDefinition: Node {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "\(name.value): \(type.description)" }
+}
+
+extension FunctionStatement: Statement {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String {
+        var out = "func \(name.value)"
+        out += "(\(parameter.map { $0.description }.joined(separator: ", ")))"
+        out += " > \(returnType?.description ?? "Void")"
+        out += " {\(body.map { $0.description }.joined(separator: ";"))}"
+        return out
+    }
+}
+
+enum ValueType {
+    case Identifier(ident: Identifier)
+    case Tuple(types: [ValueType])
+}
+
+extension ValueType: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .Identifier(ident: let i):
+            return i.description
+        case .Tuple(types: let ids):
+            return "(\(ids.map { $0.description }.joined(separator: ", ")))"
+        }
     }
 }

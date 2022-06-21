@@ -20,7 +20,11 @@ class ParserTests: BaseClass {
             ("mut var = false\n", "var", false, true, nil),
             ("mut var: Bool = false\n", "var", false, true, "Bool"),
             ("var: String = 2;", "var", Int64(2), false, "String"),
-            ("var: String = ident", "var", "ident", false, "String")
+            ("var: String = ident", "var", "ident", false, "String"),
+            ("var: (String) = ident", "var", "ident", false, "(String)"),
+            ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
+            ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
+            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
         ]
 
         for (index, i) in inputs.enumerated() {
@@ -87,13 +91,20 @@ class ParserTests: BaseClass {
         }
     }
 
+    func test_functionStatements() throws {
+        print("-- \(#function)")
+    }
+
     func test_parsingPrefixExpr() throws {
         print("-- \(#function)")
 
-        let tests: [(String, String, Any)] = [
-            ("!5;", "!", 5),
-            ("^-15\n", "^-", 15),
-            ("+&true", "+&", true)
+        let tests: [(String, String, Any, Bool)] = [
+            ("!5;", "!", 5, false),
+            ("^-15\n", "^-", 15, false),
+            ("+&true", "+&", true, false),
+            ("+:true", "+", true, true),
+            ("=:12", "=", 12, true),
+            ("::12", ":", 12, true)
         ]
 
         for (i, t) in tests.enumerated() {
@@ -108,6 +119,16 @@ class ParserTests: BaseClass {
                 throw TestErrors.parseError("operator is not \(t.1). got=\(exp.op)")
             }
             try test_literalExpression(exp: exp.right, expected: t.2)
+
+            if t.3 {
+                guard case .Operator(pos: .Prefix, true) = exp.token.type else {
+                    throw TestErrors.parseError("token of stmt should be prefix assign operator. got=\(stmt.token.type)")
+                }
+            } else {
+                guard case .Operator(pos: .Prefix, false) = exp.token.type else {
+                    throw TestErrors.parseError("token of stmt should be prefix non-assign operator. got=\(stmt.token.type)")
+                }
+            }
         }
     }
 
@@ -138,6 +159,43 @@ class ParserTests: BaseClass {
         }
     }
 
+    func test_parsingPostfixExpr() throws {
+        print("-- \(#function)")
+
+        let tests: [(String, String, Any, Bool)] = [
+            ("5!;", "!", 5, false),
+            ("15^-\n", "^-", 15, false),
+            ("true+&", "+&", true, false),
+            ("true+:", "+", true, true),
+            ("12=:", "=", 12, true),
+            ("12::", ":", 12, true)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start test \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+
+            XCTAssertEqual(prog.statements.count, 1)
+            let stmt = try cast(prog.statements[0], ExpressionStatement.self)
+            let exp = try cast(stmt.expression, PostfixExpression.self)
+            guard exp.op == t.1 else {
+                throw TestErrors.parseError("operator is not \(t.1). got=\(exp.op)")
+            }
+            try test_literalExpression(exp: exp.left, expected: t.2)
+
+            if t.3 {
+                guard case .Operator(pos: .Postfix, true) = exp.token.type else {
+                    throw TestErrors.parseError("token of stmt should be prefix assign operator. got=\(stmt.token.type)")
+                }
+            } else {
+                guard case .Operator(pos: .Postfix, false) = exp.token.type else {
+                    throw TestErrors.parseError("token of stmt should be prefix non-assign operator. got=\(stmt.token.type)")
+                }
+            }
+        }
+    }
+
     func test_operatorPrecendeceParsing() throws {
         print("-- \(#function)")
 
@@ -152,6 +210,25 @@ class ParserTests: BaseClass {
             ("a+ =+ c", "((a+) =+ c)"),
             ("a+ :+ :$c%", "((a+) :+ (:$(c%)))"),
             ("a +: :$c%", "a = (a + (:$(c%)))")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(t.1, prog.description)
+        }
+    }
+
+    func test_lightFunctionDefinitions() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
+            ("func AS() {x}", "func AS() > Void {x}"),
+            ("func AS()>Int{x}", "func AS() > Int {x}"),
+            ("func AS()> Int{x}", "func AS() > Int {x}"),
+            ("func AS() >Int{x}", "func AS() > Int {x}")
         ]
 
         for (i, t) in tests.enumerated() {
