@@ -236,9 +236,11 @@ extension CallExpression: Expression {
 
 // ---- Value Type -----
 
-enum ValueType {
+indirect enum ValueType {
     case Identifier(ident: Identifier)
     case Tuple(types: [ValueType])
+    case Function(params: [ValueType], returnType: ValueType)
+    case Void
 }
 
 extension ValueType: CustomStringConvertible {
@@ -248,6 +250,10 @@ extension ValueType: CustomStringConvertible {
             return i.description
         case .Tuple(types: let ids):
             return "(\(ids.map { $0.description }.joined(separator: ", ")))"
+        case .Function(params: let params, returnType: let returnType):
+            return "(\(params.map { $0.description }.joined(separator: ", "))) > \(returnType.description)"
+        case .Void:
+            return "()"
         }
     }
 }

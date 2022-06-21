@@ -281,4 +281,30 @@ class ParserTests: BaseClass {
 
         _ = try cast(fn.body.statements[3], ReturnStatement.self)
     }
+
+    func test_valueTypeParsing() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            ("a: Test = 1", "Test"),
+//            ("a: (Test, Test) = 1", "(Test, Test)"),
+            ("a: () > Void = 1", "() > ()"),
+            ("a: () > () = 1", "() > ()"),
+            ("a: (Int) > String = 1", "(Int) > String"),
+            ("a: (Int, String) > String = 1", "(Int, String) > String"),
+            ("a: (Int, () > (String)) > String = 1", "(Int, () > String) > String"),
+            ("a: (Int) > (String, () > Error) > Bool = 1", "(Int) > (String, () > Error) > Bool"),
+            ("a: () > ((Int) > String) = 1", "() > (Int) > String"),
+            ("a: (() > Int) > String = 1", "(() > Int) > String")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(prog.statements.count, 1)
+            let ass = try cast(prog.statements[0], AssignStatement.self)
+            try test_valueType(type: ass.type!, value: t.1)
+        }
+    }
 }

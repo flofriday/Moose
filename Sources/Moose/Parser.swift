@@ -360,14 +360,21 @@ class Parser {
 
     func parseValueTypeDefinition() throws -> ValueType {
         switch peek().type {
+        case .Void:
+            return try parseVoidTypeDefinition()
         case .Identifier:
             let ident = try parseIdentifier()
             return .Identifier(ident: ident)
         case .LParen:
-            return try parseTupleTypeDefinition()
+            return try parseTupleGroupFunction_TypeDefinition()
         default:
             throw error(message: "Could not find type definition parsing method for token \(peek().type)", token: peek())
         }
+    }
+
+    func parseVoidTypeDefinition() throws -> ValueType {
+        let _ = try consume(type: .Void, message: "expected 'Void', but got \(peek().lexeme) instead")
+        return .Void
     }
 
     func parseTupleTypeDefinition() throws -> ValueType {
@@ -382,6 +389,50 @@ class Parser {
             throw error(message: "tuple have to contain at least 2 values", token: token)
         }
         return .Tuple(types: types)
+    }
+
+    func parseFunctionTypeDefinition(params: [ValueType]) throws -> ValueType {
+        guard case .Operator(pos: _, false) = peek().type, peek().lexeme == ">" else {
+            throw error(message: "Expected a '>' for function defintion, but got \(peek().lexeme) instead.", token: peek())
+        }
+        _ = advance()
+
+        let resultType = try parseValueTypeDefinition()
+        return ValueType.Function(params: params, returnType: resultType)
+    }
+
+    func parseTupleGroupFunction_TypeDefinition() throws -> ValueType {
+        _ = try consume(type: .LParen, message: "Expected a starting '(', but got \(peek().lexeme) instead.")
+        let types = try parseTypeDefinitionList(seperator: .Comma, end: .RParen)
+
+        // if next token is '>', it is a function type, else its a void, tuple or group (Int) that is mapped to Int
+        if case .Operator(pos: _, false) = peek2().type, peek2().lexeme == ">" {
+            _ = try consume(type: .RParen, message: "expected closing ) at end of function parameter definition, got \(peek().lexeme)")
+            return try parseFunctionTypeDefinition(params: types)
+        } else if types.isEmpty {
+            _ = try consume(type: .RParen, message: "expected closing ) at end of Void definition, got \(peek().lexeme)")
+            return ValueType.Void
+        } else if types.count == 1 {
+            _ = try consume(type: .RParen, message: "expected closing ) at end of group defintion, got \(peek().lexeme)")
+            return types[0]
+        } else {
+            _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
+            return ValueType.Tuple(types: types)
+        }
+    }
+
+    func parseTypeDefinitionList(seperator: TokenType, end: TokenType) throws -> [ValueType] {
+        var list = [ValueType]()
+
+        guard !check(type: end) else {
+            return list
+        }
+
+        list.append(try parseValueTypeDefinition())
+        while match(types: seperator) {
+            list.append(try parseValueTypeDefinition())
+        }
+        return list
     }
 
     // strongly typed, currently used by parameter and class property definitions
