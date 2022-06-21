@@ -92,7 +92,7 @@ struct FunctionStatement {
     let token: Token
     let name: Identifier
     let body: [Statement]
-    let parameter: [VariableDefinition]
+    let params: [VariableDefinition]
     let returnType: ValueType?
 }
 
@@ -192,7 +192,7 @@ extension FunctionStatement: Statement {
     var tokenLexeme: String { token.lexeme }
     var description: String {
         var out = "func \(name.value)"
-        out += "(\(parameter.map { $0.description }.joined(separator: ", ")))"
+        out += "(\(params.map { $0.description }.joined(separator: ", ")))"
         out += " > \(returnType?.description ?? "Void")"
         out += " {\(body.map { $0.description }.joined(separator: ";"))}"
         return out

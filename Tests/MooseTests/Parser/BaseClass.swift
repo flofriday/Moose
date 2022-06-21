@@ -108,9 +108,6 @@ class BaseClass: XCTestCase {
         } catch let error as CompileError {
             XCTFail("Could not parse program without error:\n \(error.getFullReport(sourcecode: input))")
             throw error
-        } catch {
-            XCTFail("Could not parse program without error:\n \(error.localizedDescription)")
-            throw error
         }
     }
 }

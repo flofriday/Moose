@@ -18,9 +18,9 @@ extension CompileError: LocalizedError {
         messages.map { message in message.localizedDescription }.joined()
     }
 
-    public func getFullReport(sourcecode: String) {
+    public func getFullReport(sourcecode: String) -> String {
         var out = ""
-        let lines = sourcecode.split(separator: "\n")
+        let lines = sourcecode.lines
 
         for msg in messages {
             // The header
@@ -37,6 +37,6 @@ extension CompileError: LocalizedError {
             out += msg.message
             out += "\n"
         }
-        print(out)
+        return out
     }
 }

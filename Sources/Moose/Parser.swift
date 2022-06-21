@@ -22,7 +22,7 @@ class Parser {
     typealias infixParseFn = (Expression) throws -> Expression
     typealias postfixParseFn = (Expression) throws -> Expression
 
-    private let tokens: [Token]
+    private var tokens: [Token]
     private var current = 0
     private var errors: [CompileErrorMessage] = []
 
@@ -71,6 +71,7 @@ class Parser {
 
         while !isAtEnd() {
             do {
+                skip(all: .NLine)
                 let stmt = try parseStatement()
                 statements.append(stmt)
             } catch let e as CompileErrorMessage {
@@ -153,6 +154,10 @@ class Parser {
 
     func parseFunctionStatement() throws -> FunctionStatement {
         let token = try consume(type: .Func, message: "func keyword was expected")
+
+        // remove all newlines since these are not relevant for function definition
+        remove(all: .NLine, until: .LBrace)
+
         let name = try parseIdentifier()
         let params = try parseFunctionParameters()
 
@@ -169,15 +174,22 @@ class Parser {
         }
 
         let body = try parseBlockStatement()
+        remove(all: .NLine, until: .RBrace)
         try consumeStatementEnd()
-        return FunctionStatement(token: token, name: name, body: body, parameter: params, returnType: returnType)
+        return FunctionStatement(token: token, name: name, body: body, params: params, returnType: returnType)
     }
 
     func parseFunctionParameters() throws -> [VariableDefinition] {
         var defs = [VariableDefinition]()
         _ = try consume(type: .LParen, message: "expected begin of parameter definition with (, but got \(peek().lexeme) instead")
 
+        var isFirst = true
         while !check(type: .RParen) {
+            // expect , seperator
+            if !isFirst {
+                _ = try consume(type: .Comma, message: "parameter seperator ',' expected, but got '\(peek().lexeme)' instead")
+            } else { isFirst = false }
+
             let def = try parseVariableDefinition()
             defs.append(def)
         }
@@ -189,8 +201,10 @@ class Parser {
     func parseBlockStatement() throws -> [Statement] {
         _ = try consume(type: .LBrace, message: "expected start of function body starting with {")
         var stmts = [Statement]()
+        skip(all: .NLine)
         while !check(type: .RBrace) {
             stmts.append(try parseStatement())
+            skip(all: .NLine)
         }
         _ = try consume(type: .RBrace, message: "expected } at end of function body")
         return stmts
@@ -449,5 +463,27 @@ extension Parser {
 
     var curPrecedence: Precendence {
         getPrecedence(of: peek())
+    }
+}
+
+extension Parser {
+    /// Removes all tokens of type all, until the first appearance of until.
+    /// This is mostly used to remove new line tokens.
+    private func remove(all toRemove: TokenType, until: TokenType) {
+        var i = current
+        while tokens[i].type != .EOF, tokens[i].type != until {
+            if tokens[i].type == toRemove {
+                tokens.remove(at: i)
+            } else {
+                i += 1
+            }
+        }
+    }
+
+    /// Skips all tokenTypes until something else was found.
+    private func skip(all toSkip: TokenType...) {
+        while check(oneOf: toSkip) {
+            current += 1
+        }
     }
 }

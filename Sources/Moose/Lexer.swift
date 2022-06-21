@@ -45,6 +45,7 @@ extension Lexer {
         switch (char, peekChar()) {
         case ("\n", _):
             line += 1
+            column = 0
             tok = genToken(.NLine)
         case ("=", let peek) where !isOpChar(char: peek):
             tok = genToken(.Assign)

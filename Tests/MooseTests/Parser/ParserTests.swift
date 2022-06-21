@@ -91,10 +91,6 @@ class ParserTests: BaseClass {
         }
     }
 
-    func test_functionStatements() throws {
-        print("-- \(#function)")
-    }
-
     func test_parsingPrefixExpr() throws {
         print("-- \(#function)")
 
@@ -225,6 +221,7 @@ class ParserTests: BaseClass {
 
         let tests = [
             ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
+            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
             ("func AS() {x}", "func AS() > Void {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
@@ -237,5 +234,36 @@ class ParserTests: BaseClass {
             let prog = try startParser(input: t.0)
             XCTAssertEqual(t.1, prog.description)
         }
+    }
+
+    func test_functionStatements() throws {
+        print("-- \(#function)")
+
+        let input =
+            """
+            func fn(x: Int, y: (String, String)) > ReturnType
+            {
+
+            x + y
+            mut a: Stirng = x;
+
+            return a}
+            """
+
+        let prog = try startParser(input: input)
+        XCTAssertEqual(prog.statements.count, 1)
+        let fn = try cast(prog.statements[0], FunctionStatement.self)
+        XCTAssertEqual(fn.params.count, 2)
+        try test_literalExpression(exp: fn.params[0].name, expected: "x")
+        try test_valueType(type: fn.params[0].type, value: "Int")
+
+        try test_literalExpression(exp: fn.params[1].name, expected: "y")
+        try test_valueType(type: fn.params[1].type, value: "(String, String)")
+
+        try test_valueType(type: fn.returnType!, value: "ReturnType")
+
+        XCTAssertEqual(fn.body.count, 3)
+        let expr = try cast(fn.body[0], ExpressionStatement.self)
+        try test_infixExpression(exp: expr.expression, left: "x", op: "+", right: "y")
     }
 }
