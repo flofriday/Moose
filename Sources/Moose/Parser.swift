@@ -104,7 +104,11 @@ class Parser {
 
     func parseStatement() throws -> Statement {
         // TODO: the assign doesn't work for arrays
-        if match(types: .Mut) || peek2().type.isAssign || peek2().type == .Colon {
+        if
+            match(types: .Mut)
+            || peek2().type.isAssign
+            || peek2().type == .Colon
+        {
             // parse AssignStatement
             return try parseAssignStatement()
         } else if match(types: .Ret) {
@@ -396,11 +400,17 @@ extension Parser {
     }
 
     private func peek2() -> Token {
-        tokens[current + 1]
+        guard (current + 1) < tokens.count else {
+            return tokens[tokens.count - 1]
+        }
+        return tokens[current + 1]
     }
 
     private func peek() -> Token {
-        tokens[current]
+        guard current < tokens.count else {
+            return tokens[tokens.count - 1]
+        }
+        return tokens[current]
     }
 
     private func previous() -> Token {

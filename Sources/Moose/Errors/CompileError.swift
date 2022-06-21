@@ -22,10 +22,14 @@ extension CompileError: LocalizedError {
         var out = ""
         let lines = sourcecode.lines
 
-        for msg in messages {
+        for m in messages {
             // The header
             out += "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
 
+            var msg = m
+            if lines.count <= msg.line {
+                msg.line = lines.count - 1
+            }
             // The source code line causing the error
             out += String(format: "%3d| ".blue, msg.line)
             out += "\(lines[msg.line - 1])\n"
