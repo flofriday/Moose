@@ -34,6 +34,7 @@ class Parser {
     let typePrecendences: [TokenType: Precendence] = [
         .Operator(pos: .Prefix, assign: false): .Prefix,
         .Operator(pos: .Postfix, assign: false): .Postfix,
+        .LParen: .Call,
     ]
 
     let opPrecendences: [String: Precendence] = [
@@ -59,8 +60,10 @@ class Parser {
         prefixParseFns[.Boolean(true)] = parseBoolean
         prefixParseFns[.Boolean(false)] = parseBoolean
         prefixParseFns[.LParen] = parseGroupedExpression
+        prefixParseFns[.String] = parseStringLiteral
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
+        infixParseFns[.LParen] = parseCallExpression
 
         postfixParseFns[.Operator(pos: .Postfix, assign: true)] = parsePostfixExpression
         postfixParseFns[.Operator(pos: .Postfix, assign: false)] = parsePostfixExpression
@@ -105,17 +108,19 @@ class Parser {
     func parseStatement() throws -> Statement {
         // TODO: the assign doesn't work for arrays
         if
-            match(types: .Mut)
+            check(type: .Mut)
             || peek2().type.isAssign
             || peek2().type == .Colon
         {
             // parse AssignStatement
             return try parseAssignStatement()
-        } else if match(types: .Ret) {
+        } else if check(type: .Ret) {
             // pase ReturnStatement
             return try parseReturnStatement()
         } else if check(type: .Func) {
             return try parseFunctionStatement()
+        } else if check(type: .LBrace) {
+            return try parseBlockStatement()
         } else {
             // parse ExpressionStatement
             return try parseExpressionStatement()
@@ -123,7 +128,7 @@ class Parser {
     }
 
     func parseAssignStatement() throws -> AssignStatement {
-        let mutable = (current >= 1) && previous().type == .Mut
+        let mutable = match(types: .Mut)
 
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
@@ -150,7 +155,7 @@ class Parser {
     }
 
     func parseReturnStatement() throws -> ReturnStatement {
-        let token = previous()
+        let token = try consume(type: .Ret, message: "expected that return statement starts with 'return', but got '\(peek())' instead")
         let val = try parseExpression(.Lowest)
         try consumeStatementEnd()
         return ReturnStatement(token: token, returnValue: val)
@@ -201,9 +206,8 @@ class Parser {
         return defs
     }
 
-    // currently only used by function to parse body.
-    func parseBlockStatement() throws -> [Statement] {
-        _ = try consume(type: .LBrace, message: "expected start of function body starting with {")
+    func parseBlockStatement() throws -> BlockStatement {
+        let token = try consume(type: .LBrace, message: "expected start of function body starting with {")
         var stmts = [Statement]()
         skip(all: .NLine)
         while !check(type: .RBrace) {
@@ -211,7 +215,7 @@ class Parser {
             skip(all: .NLine)
         }
         _ = try consume(type: .RBrace, message: "expected } at end of function body")
-        return stmts
+        return BlockStatement(token: token, statements: stmts)
     }
 
     func parseExpressionStatement() throws -> ExpressionStatement {
@@ -273,6 +277,11 @@ class Parser {
         return Boolean(token: previous(), value: literal)
     }
 
+    func parseStringLiteral() throws -> StringLiteral {
+        let token = try consume(type: .String, message: "excpected to get a string, but go \(peek().lexeme) instead.")
+        return StringLiteral(token: token, value: token.literal as! String)
+    }
+
     func parseGroupedExpression() throws -> Expression {
         _ = advance()
         let exp = try parseExpression(.Lowest)
@@ -297,6 +306,38 @@ class Parser {
         let token = advance()
         return PostfixExpression(token: token, left: left, op: token.lexeme)
     }
+
+    func parseCallExpression(function: Expression) throws -> CallExpression {
+        let token = try consume(type: .LParen, message: "excepted '(' for function call, but got \(peek().lexeme) instead.")
+        guard let function = function as? Identifier else {
+            throw error(message: "function call is only valid for identifiers, not \(function.description)", token: token)
+        }
+
+        let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
+        _ = try consume(type: .RParen, message: "expected ')' at end of argument list")
+        return CallExpression(token: token, function: function, arguments: exprs)
+    }
+
+    /// Parses expression list until an (exclusivly) end tokentype occures.
+    /// So it assumes that `(` is already consumed and does not consume nor check `)` at the end (taken on the example `(1, 2)`.
+    func parseExpressionList(seperator: TokenType, end: TokenType) throws -> [Expression] {
+        var list = [Expression]()
+
+        guard !check(type: end) else {
+            return list
+        }
+
+        list.append(try parseExpression(.Lowest))
+
+        while match(types: seperator) {
+            list.append(try parseExpression(.Lowest))
+        }
+
+        return list
+    }
+
+    // -----------------------
+    // ---- TypeDefinition ---
 
     func parseValueTypeDefinition() throws -> ValueType {
         switch peek().type {
@@ -460,7 +501,7 @@ extension Parser {
             }
             return prec
         } else {
-            guard let prec = typePrecendences[peek2().type] else {
+            guard let prec = typePrecendences[t.type] else {
                 return .Lowest
             }
             return prec

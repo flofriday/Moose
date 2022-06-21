@@ -216,7 +216,7 @@ class ParserTests: BaseClass {
         }
     }
 
-    func test_lightFunctionDefinitions() throws {
+    func test_lightFunctions() throws {
         print("-- \(#function)")
 
         let tests = [
@@ -225,7 +225,12 @@ class ParserTests: BaseClass {
             ("func AS() {x}", "func AS() > Void {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
-            ("func AS() >Int{x}", "func AS() > Int {x}")
+            ("func AS() >Int{x}", "func AS() > Int {x}"),
+            ("asd(1, 3+ + 3 * 1)", "asd(1, ((3+) + (3 * 1)))"),
+            ("a = asd(1)\n", "a = asd(1)"),
+//            ("mut a: String = asd((1, b(2))\n", "mut a: String = asd((1, b(2)))"),
+            ("mut a: String = asd()\n", "mut a: String = asd()"),
+            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")")
         ]
 
         for (i, t) in tests.enumerated() {
@@ -247,6 +252,10 @@ class ParserTests: BaseClass {
             x + y
             mut a: Stirng = x;
 
+            {
+            mut a: String = 2;
+            }
+
             return a}
             """
 
@@ -262,8 +271,15 @@ class ParserTests: BaseClass {
 
         try test_valueType(type: fn.returnType!, value: "ReturnType")
 
-        XCTAssertEqual(fn.body.count, 3)
-        let expr = try cast(fn.body[0], ExpressionStatement.self)
+        XCTAssertEqual(fn.body.statements.count, 4)
+        let expr = try cast(fn.body.statements[0], ExpressionStatement.self)
         try test_infixExpression(exp: expr.expression, left: "x", op: "+", right: "y")
+        _ = try cast(fn.body.statements[1], AssignStatement.self)
+
+        let block = try cast(fn.body.statements[2], BlockStatement.self)
+        XCTAssertEqual(block.statements.count, 1)
+        _ = try cast(block.statements[0], AssignStatement.self)
+
+        _ = try cast(fn.body.statements[3], ReturnStatement.self)
     }
 }

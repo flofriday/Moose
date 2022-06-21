@@ -88,12 +88,23 @@ struct VariableDefinition {
     let type: ValueType
 }
 
+struct BlockStatement {
+    let token: Token
+    let statements: [Statement]
+}
+
 struct FunctionStatement {
     let token: Token
     let name: Identifier
-    let body: [Statement]
+    let body: BlockStatement
     let params: [VariableDefinition]
     let returnType: ValueType?
+}
+
+struct CallExpression {
+    let token: Token
+    let function: Identifier
+    let arguments: [Expression]
 }
 
 // Node implementations
@@ -123,7 +134,8 @@ extension AssignStatement: Statement {
     var tokenLexeme: String { return token.lexeme }
     var description: String {
         let mut = mutable ? "mut " : ""
-        return "\(mut)\(name.description) = \(value.description)"
+        let type = type != nil ? ": \(type?.description ?? "")" : ""
+        return "\(mut)\(name.description)\(type) = \(value.description)"
     }
 }
 
@@ -160,7 +172,7 @@ extension Boolean: Expression {
 extension StringLiteral: Expression {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
-    var description: String { token.lexeme }
+    var description: String { "\"\(token.lexeme)\"" }
 }
 
 extension PrefixExpression: Expression {
@@ -187,6 +199,12 @@ extension VariableDefinition: Node {
     var description: String { "\(name.value): \(type.description)" }
 }
 
+extension BlockStatement: Statement {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
+}
+
 extension FunctionStatement: Statement {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
@@ -194,10 +212,18 @@ extension FunctionStatement: Statement {
         var out = "func \(name.value)"
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
         out += " > \(returnType?.description ?? "Void")"
-        out += " {\(body.map { $0.description }.joined(separator: ";"))}"
+        out += " \(body.description)"
         return out
     }
 }
+
+extension CallExpression: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
+}
+
+// ---- Value Type -----
 
 enum ValueType {
     case Identifier(ident: Identifier)
