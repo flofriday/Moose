@@ -27,7 +27,7 @@ class BaseClass: XCTestCase {
             guard let stmtType = stmt.type else {
                 return (false, "stmt.type is nil but should be identifier with value '\(refType)'")
             }
-            try test_identifier(exp: stmtType, value: refType)
+            try test_valueType(type: stmtType, value: refType)
         } else {
             XCTAssertTrue(stmt.type == nil, "stmt.type is not nil. got=\(String(describing: stmt.type))")
         }
@@ -47,6 +47,10 @@ class BaseClass: XCTestCase {
         }
         XCTAssertEqual(ident.value, value)
         XCTAssertEqual(ident.tokenLexeme, value)
+    }
+
+    func test_valueType(type: ValueType, value: String) throws {
+        XCTAssertEqual(type.description, value)
     }
 
     func test_integerLiteral(exp: Expression, value: Int64) throws {
@@ -101,6 +105,9 @@ class BaseClass: XCTestCase {
         do {
             let p = Parser(tokens: try l.scan())
             return try p.parse()
+        } catch let error as CompileError {
+            XCTFail("Could not parse program without error:\n \(error.getFullReport(sourcecode: input))")
+            throw error
         } catch {
             XCTFail("Could not parse program without error:\n \(error.localizedDescription)")
             throw error

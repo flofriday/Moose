@@ -50,7 +50,7 @@ func run(_ input: String) {
     interpreter.run()
 }
 
-// TOOD: add colors
+// TOOD: add colors AND move to CompileError itself
 func printCompileError(error: CompileError, sourcecode: String) {
     var out = ""
     let lines = sourcecode.split(separator: "\n")

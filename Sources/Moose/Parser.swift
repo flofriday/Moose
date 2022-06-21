@@ -121,10 +121,10 @@ class Parser {
         let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
         let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
 
-        var type: Identifier?
+        var type: ValueType?
         if check(type: .Colon) {
             _ = advance()
-            type = try parseIdentifier()
+            type = try parseValueTypeDefinition()
         }
 
         // do not consume since it could be the operator of assign operator such as +: 3
@@ -232,6 +232,29 @@ class Parser {
         let token = advance()
         return PostfixExpression(token: token, left: left, op: token.lexeme)
     }
+
+    func parseValueTypeDefinition() throws -> ValueType {
+        switch peek().type {
+        case .Identifier:
+            let ident = try parseIdentifier()
+            return .Identifier(ident: ident)
+        case .LParen:
+            return try parseTupleTypeDefinition()
+        default:
+            throw error(message: "Could not find type definition parsing method for token \(peek().type)", token: peek())
+        }
+    }
+
+    func parseTupleTypeDefinition() throws -> ValueType {
+        _ = try consume(type: .LParen, message: "expected an starting ( for tupel definition")
+        var types = [ValueType]()
+        repeat {
+            let t = try parseValueTypeDefinition()
+            types.append(t)
+        } while match(types: .Comma)
+        _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(previous().lexeme)")
+        return .Tuple(types: types)
+    }
 }
 
 extension Parser {
@@ -275,6 +298,12 @@ extension Parser {
             return false
         }
         return types.contains(peek().type)
+    }
+
+    private func assert(token: Token, ofType type: TokenType, _ msg: String) throws {
+        guard case type = token.type else {
+            throw error(message: msg, token: token)
+        }
     }
 
     private func isAtEnd() -> Bool {
@@ -327,7 +356,7 @@ extension Parser {
     }
 
     func genLiteralTypeError(t: Token, expected: String) -> CompileErrorMessage {
-        let msg = "I expected literal '\(t.lexeme)' (literal: \(t.literal)) to be of type \(expected)"
+        let msg = "I expected literal '\(t.lexeme)' (literal: \(String(describing: t.literal))) to be of type \(expected)"
         return error(message: msg, token: peek())
     }
 }

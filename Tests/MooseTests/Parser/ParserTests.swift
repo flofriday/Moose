@@ -20,7 +20,11 @@ class ParserTests: BaseClass {
             ("mut var = false\n", "var", false, true, nil),
             ("mut var: Bool = false\n", "var", false, true, "Bool"),
             ("var: String = 2;", "var", Int64(2), false, "String"),
-            ("var: String = ident", "var", "ident", false, "String")
+            ("var: String = ident", "var", "ident", false, "String"),
+            ("var: (String) = ident", "var", "ident", false, "(String)"),
+            ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
+            ("mut var: ( String, Int  ) = ident", "var", "ident", true, "(String, Int)"),
+            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
         ]
 
         for (index, i) in inputs.enumerated() {
