@@ -239,6 +239,14 @@ class Parser {
         return BlockStatement(token: token, statements: stmts)
     }
 
+//    func parseIfStatement() throws -> IfStatement {
+//        let token = try consume(type: .If, message: "'if' was expected, but got '\(peek().lexeme)' instead")
+//
+//        let condition = try parseExpression(.Lowest)
+//
+//
+//    }
+
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
     func parseExpressionStatement() throws -> ExpressionStatement {
         let token = peek()

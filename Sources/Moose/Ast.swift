@@ -20,7 +20,7 @@ protocol Assignable: Expression {
     var isAssignable: Bool { get }
 }
 
-struct Program {
+class Program {
     let statements: [Statement]
 
     init(statements: [Statement]) {
@@ -28,7 +28,15 @@ struct Program {
     }
 }
 
-struct AssignStatement {
+class AssignStatement {
+    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: ValueType?) {
+        self.token = token
+        self.assignable = assignable
+        self.value = value
+        self.mutable = mutable
+        self.type = type
+    }
+
     let token: Token
     let assignable: Expression
     let value: Expression
@@ -36,74 +44,147 @@ struct AssignStatement {
     var type: ValueType?
 }
 
-struct Identifier: Assignable {
+class Identifier: Assignable {
+    init(token: Token, value: String) {
+        self.token = token
+        self.value = value
+    }
+
     let token: Token
     let value: String
 
     var isAssignable: Bool { true }
 }
 
-struct ReturnStatement {
+class ReturnStatement {
+    init(token: Token, returnValue: Expression) {
+        self.token = token
+        self.returnValue = returnValue
+    }
+
     let token: Token
     let returnValue: Expression
 }
 
-struct ExpressionStatement {
+class ExpressionStatement {
+    init(token: Token, expression: Expression) {
+        self.token = token
+        self.expression = expression
+    }
+
     let token: Token // first token of expression
     let expression: Expression
 }
 
-struct IntegerLiteral {
+class IntegerLiteral {
+    init(token: Token, value: Int64) {
+        self.token = token
+        self.value = value
+    }
+
     let token: Token
     let value: Int64
 }
 
-struct Boolean {
+class Boolean {
+    init(token: Token, value: Bool) {
+        self.token = token
+        self.value = value
+    }
+
     let token: Token
     let value: Bool
 }
 
-struct StringLiteral {
+class StringLiteral {
+    init(token: Token, value: String) {
+        self.token = token
+        self.value = value
+    }
+
     let token: Token
     let value: String
 }
 
-struct Nil {
+class Nil {
+    init(token: Token) {
+        self.token = token
+    }
+
     let token: Token
 }
 
-struct PrefixExpression {
+class PrefixExpression {
+    init(token: Token, op: String, right: Expression) {
+        self.token = token
+        self.op = op
+        self.right = right
+    }
+
     let token: Token
     let op: String // operator
     var right: Expression
 }
 
-struct InfixExpression {
+class InfixExpression {
+    init(token: Token, left: Expression, op: String, right: Expression) {
+        self.token = token
+        self.left = left
+        self.op = op
+        self.right = right
+    }
+
     let token: Token
     let left: Expression
     let op: String
     let right: Expression
 }
 
-struct PostfixExpression {
+class PostfixExpression {
+    init(token: Token, left: Expression, op: String) {
+        self.token = token
+        self.left = left
+        self.op = op
+    }
+
     let token: Token
     let left: Expression
     let op: String
 }
 
-struct VariableDefinition {
+class VariableDefinition {
+    init(token: Token, mutable: Bool, name: Identifier, type: ValueType) {
+        self.token = token
+        self.mutable = mutable
+        self.name = name
+        self.type = type
+    }
+
     let token: Token
     let mutable: Bool
     let name: Identifier
     let type: ValueType
 }
 
-struct BlockStatement {
+class BlockStatement {
+    init(token: Token, statements: [Statement]) {
+        self.token = token
+        self.statements = statements
+    }
+
     let token: Token
     let statements: [Statement]
 }
 
-struct FunctionStatement {
+class FunctionStatement {
+    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: ValueType?) {
+        self.token = token
+        self.name = name
+        self.body = body
+        self.params = params
+        self.returnType = returnType
+    }
+
     let token: Token
     let name: Identifier
     let body: BlockStatement
@@ -111,13 +192,38 @@ struct FunctionStatement {
     let returnType: ValueType?
 }
 
-struct CallExpression {
+class CallExpression {
+    init(token: Token, function: Identifier, arguments: [Expression]) {
+        self.token = token
+        self.function = function
+        self.arguments = arguments
+    }
+
     let token: Token
     let function: Identifier
     let arguments: [Expression]
 }
 
-struct Tuple: Assignable {
+class IfStatement {
+    init(token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement?) {
+        self.token = token
+        self.condition = condition
+        self.consequence = consequence
+        self.alternative = alternative
+    }
+
+    let token: Token
+    let condition: Expression
+    let consequence: BlockStatement
+    let alternative: BlockStatement?
+}
+
+class Tuple: Assignable {
+    init(token: Token, expressions: [Expression]) {
+        self.token = token
+        self.expressions = expressions
+    }
+
     let token: Token
     let expressions: [Expression]
 
@@ -257,6 +363,18 @@ extension CallExpression: Expression {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
+}
+
+extension IfStatement: Statement {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String {
+        let base = "if \(condition.description) \(consequence.description)"
+        guard let alt = alternative else {
+            return base
+        }
+        return base + "else \(alt.description)"
+    }
 }
 
 // ---- Value Type -----
