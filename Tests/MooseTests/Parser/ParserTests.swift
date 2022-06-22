@@ -307,4 +307,32 @@ class ParserTests: BaseClass {
             try test_valueType(type: ass.type!, value: t.1)
         }
     }
+
+    func test_tupleAssignment() throws {
+        print("-- \(#function)")
+        let tests = [
+            ("(a,a) = 1", true),
+            ("(1,a) = 1", false),
+            ("(a,1) = 1", false),
+            ("(a,a,1) = 1", false),
+            ("(a,a,a) = 1", true)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(tokens: try l.scan())
+
+            if !t.1 {
+                return XCTAssertThrowsError(try p.parse())
+            }
+
+            let prog = try p.parse()
+            XCTAssertEqual(prog.statements.count, 1)
+            let ass = try cast(prog.statements[0], AssignStatement.self)
+            let assignable = try cast(ass.assignable, Tuple.self)
+            XCTAssertTrue(assignable.isAssignable)
+        }
+    }
 }

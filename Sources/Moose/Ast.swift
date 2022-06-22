@@ -122,7 +122,7 @@ struct Tuple: Assignable {
             guard exp is Identifier else {
                 return false
             }
-            return prev || true
+            return prev && true
         }
     }
 }
