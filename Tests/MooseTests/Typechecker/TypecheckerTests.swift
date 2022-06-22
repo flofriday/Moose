@@ -45,8 +45,12 @@ class TypecheckerTests: TypecheckerBaseClass {
             let tc = Typechecker()
             do {
                 try tc.check(program: prog)
-            } let error as CompileError {
-                error.f
+            } catch let error as CompileError {
+                print(error.getFullReport(sourcecode: t))
+                XCTFail()
+            } catch let error as CompileErrorMessage {
+                print(error.getFullReport(sourcecode: t))
+                XCTFail()
             }
         }
     }
