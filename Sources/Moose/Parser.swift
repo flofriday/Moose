@@ -195,8 +195,8 @@ class Parser {
         if !check(type: .LBrace) {
             let toTok = advance() // > token as infix prefix or postfix op
             guard
-                case .Operator(pos: _, assign: false) = toTok.type,
-                toTok.lexeme == ">"
+                    case .Operator(pos: _, assign: false) = toTok.type,
+                    toTok.lexeme == ">"
             else {
                 throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
             }
@@ -483,11 +483,10 @@ class Parser {
 extension Parser {
     private func consumeStatementEnd() throws {
         if
-            !isAtEnd(),
-            !check(type: .RBrace), // for function body such as f() {x}
-            !match(types: .SemiColon, .NLine)
-        {
-            throw error(message: "I expected, the statement to end with a newline or semicolon, but ended with '\(peek().lexeme)'", token: peek())
+                !isAtEnd(),
+                !check(type: .RBrace), // for function body such as f() {x}
+                !match(types: .SemiColon, .NLine) {
+            throw error(message: "I expected, the statement to end here (with a newline or semicolon), but it kept going with '\(peek().lexeme)'.\nTipp: Maybe you forgot an (infix) operator here?", token: peek())
         }
     }
 
@@ -570,10 +569,10 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
         )
     }
 

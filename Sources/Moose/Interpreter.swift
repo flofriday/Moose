@@ -6,11 +6,11 @@ import Foundation
 
 class Interpreter {
 
-    init(program: Program) {
+    init() {
 
     }
 
-    func run() {
+    func run(program: Program) {
 
     }
 }

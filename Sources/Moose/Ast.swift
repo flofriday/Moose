@@ -4,17 +4,46 @@
 
 import Foundation
 
+protocol Visitor {
+    func visit(_ node: Program) throws
+    func visit(_ node: AssignStatement) throws
+    func visit(_ node: ReturnStatement) throws
+    func visit(_ node: ExpressionStatement) throws
+    func visit(_ node: BlockStatement) throws
+    func visit(_ node: FunctionStatement) throws
+    func visit(_ node: IfStatement) throws
+
+    func visit(_ node: Identifier) throws
+    func visit(_ node: IntegerLiteral) throws
+    func visit(_ node: Boolean) throws
+    func visit(_ node: StringLiteral) throws
+    func visit(_ node: PrefixExpression) throws
+    func visit(_ node: InfixExpression) throws
+    func visit(_ node: PostfixExpression) throws
+    func visit(_ node: VariableDefinition) throws
+    func visit(_ node: Tuple) throws
+    func visit(_ node: Nil) throws
+    func visit(_ node: CallExpression) throws
+    func visit(_ node: ValueType) throws
+}
+
 protocol Node: CustomStringConvertible {
-//    var tokenLiteral: Token { get }
     var getToken: Token { get }
+    func accept(_ visitor: Visitor) throws
 }
 
 protocol Statement: Node {}
 
-protocol Expression: Node {}
+protocol Expression: Node {
+    var mooseType: MooseType? { get set }
+}
 
 protocol Assignable: Expression {
     var isAssignable: Bool { get }
+}
+
+protocol Declareable: Assignable {
+    var idents: [Identifier] { get }
 }
 
 class Program {
@@ -41,7 +70,7 @@ class AssignStatement {
     var type: ValueType?
 }
 
-class Identifier: Assignable {
+class Identifier: Assignable, Declareable {
     init(token: Token, value: String) {
         self.token = token
         self.value = value
@@ -49,8 +78,15 @@ class Identifier: Assignable {
 
     let token: Token
     let value: String
+    var mooseType: MooseType?
 
-    var isAssignable: Bool { true }
+    var isAssignable: Bool {
+        true
+    }
+
+    var idents: [Identifier] {
+        [self]
+    }
 }
 
 class ReturnStatement {
@@ -81,6 +117,7 @@ class IntegerLiteral {
 
     let token: Token
     let value: Int64
+    var mooseType: MooseType?
 }
 
 class Boolean {
@@ -91,6 +128,7 @@ class Boolean {
 
     let token: Token
     let value: Bool
+    var mooseType: MooseType?
 }
 
 class StringLiteral {
@@ -101,6 +139,7 @@ class StringLiteral {
 
     let token: Token
     let value: String
+    var mooseType: MooseType?
 }
 
 class Nil {
@@ -109,6 +148,7 @@ class Nil {
     }
 
     let token: Token
+    var mooseType: MooseType?
 }
 
 class PrefixExpression {
@@ -121,6 +161,7 @@ class PrefixExpression {
     let token: Token
     let op: String // operator
     var right: Expression
+    var mooseType: MooseType?
 }
 
 class InfixExpression {
@@ -135,6 +176,7 @@ class InfixExpression {
     let left: Expression
     let op: String
     let right: Expression
+    var mooseType: MooseType?
 }
 
 class PostfixExpression {
@@ -147,6 +189,7 @@ class PostfixExpression {
     let token: Token
     let left: Expression
     let op: String
+    var mooseType: MooseType?
 }
 
 class VariableDefinition {
@@ -161,6 +204,7 @@ class VariableDefinition {
     let mutable: Bool
     let name: Identifier
     let type: ValueType
+    var mooseType: MooseType?
 }
 
 class BlockStatement {
@@ -187,6 +231,7 @@ class FunctionStatement {
     let body: BlockStatement
     let params: [VariableDefinition]
     let returnType: ValueType?
+    var mooseType: MooseType?
 }
 
 class CallExpression {
@@ -199,6 +244,7 @@ class CallExpression {
     let token: Token
     let function: Identifier
     let arguments: [Expression]
+    var mooseType: MooseType?
 }
 
 class IfStatement {
@@ -215,7 +261,7 @@ class IfStatement {
     let alternative: BlockStatement?
 }
 
-class Tuple: Assignable {
+class Tuple: Assignable, Declareable {
     init(token: Token, expressions: [Expression]) {
         self.token = token
         self.expressions = expressions
@@ -223,6 +269,7 @@ class Tuple: Assignable {
 
     let token: Token
     let expressions: [Expression]
+    var mooseType: MooseType?
 
     var isAssignable: Bool {
         return expressions.reduce(true) { prev, exp in
@@ -230,6 +277,12 @@ class Tuple: Assignable {
                 return false
             }
             return prev && true
+        }
+    }
+
+    var idents: [Identifier] {
+        expressions.map {
+            $0 as! Identifier
         }
     }
 }
@@ -245,7 +298,14 @@ extension Program: Node {
     }
 
     var description: String {
-        statements.map { $0.description }.joined(separator: "\n")
+        statements.map {
+            $0.description
+        }
+        .joined(separator: "\n")
+    }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
     }
 }
 
@@ -256,19 +316,32 @@ extension AssignStatement: Statement {
         let type = type != nil ? ": \(type?.description ?? "")" : ""
         return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
 }
 
 extension Identifier: Expression {
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
+
     var getToken: Token { token }
     var description: String { value }
 }
 
 extension ReturnStatement: Statement {
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
+
     var getToken: Token { token }
     var description: String { "\(token.lexeme) \(returnValue.description)" }
 }
 
 extension ExpressionStatement: Statement {
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
     var getToken: Token { token }
     var description: String { expression.description }
 }
@@ -276,51 +349,61 @@ extension ExpressionStatement: Statement {
 extension IntegerLiteral: Expression {
     var getToken: Token { token }
     var description: String { token.lexeme }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Nil: Expression {
     var getToken: Token { token }
     var description: String { "nil" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Boolean: Expression {
     var getToken: Token { token }
     var description: String { token.lexeme }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension StringLiteral: Expression {
     var getToken: Token { token }
     var description: String { "\"\(token.lexeme)\"" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Tuple: Expression {
     var getToken: Token { token }
     var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PrefixExpression: Expression {
     var getToken: Token { token }
     var description: String { "(\(op)\(right.description))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension InfixExpression: Expression {
     var getToken: Token { token }
     var description: String { "(\(left.description) \(op) \(right.description))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PostfixExpression: Expression {
     var getToken: Token { token }
     var description: String { "(\(left.description)\(op))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension VariableDefinition: Node {
     var getToken: Token { token }
     var description: String { "\(name.value): \(type.description)" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension BlockStatement: Statement {
     var getToken: Token { token }
     var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension FunctionStatement: Statement {
@@ -332,11 +415,16 @@ extension FunctionStatement: Statement {
         out += " \(body.description)"
         return out
     }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
 }
 
 extension CallExpression: Expression {
     var getToken: Token { token }
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension IfStatement: Statement {
@@ -347,6 +435,10 @@ extension IfStatement: Statement {
             return base
         }
         return base + "else \(alt.description)"
+    }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
     }
 }
 
@@ -371,5 +463,9 @@ extension ValueType: CustomStringConvertible {
         case .Void:
             return "()"
         }
+    }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
     }
 }
