@@ -89,6 +89,7 @@ class Typechecker: Visitor {
         throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
     }
 
+    // TODO: remove variable on failure if current scope is global
     func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
         try node.value.accept(self)
