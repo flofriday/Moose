@@ -37,8 +37,7 @@ protocol Node: CustomStringConvertible {
 //    var description: String { get }
 }
 
-protocol Statement: Node {
-}
+protocol Statement: Node {}
 
 protocol Expression: Node {
     var mooseType: MooseType? { get set }
@@ -89,6 +88,7 @@ class Identifier: Assignable, Declareable {
     var isAssignable: Bool {
         true
     }
+
     var idents: [Identifier] {
         [self]
     }
@@ -311,9 +311,9 @@ extension Program: Node {
 
     var description: String {
         statements.map {
-                    $0.description
-                }
-                .joined(separator: "\n")
+            $0.description
+        }
+        .joined(separator: "\n")
     }
 
     func accept(_ visitor: Visitor) throws {
@@ -325,9 +325,11 @@ extension AssignStatement: Statement {
     var tokenLiteral: Any? {
         return token.literal
     }
+
     var tokenLexeme: String {
         return token.lexeme
     }
+
     var description: String {
         let mut = mutable ? "mut " : ""
         let type = type != nil ? ": \(type?.description ?? "")" : ""
@@ -340,13 +342,14 @@ extension AssignStatement: Statement {
 }
 
 extension Identifier: Expression {
-
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         value
     }
@@ -360,9 +363,11 @@ extension ReturnStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "\(tokenLexeme) \(returnValue.description)"
     }
@@ -376,9 +381,11 @@ extension ExpressionStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         expression.description
     }
@@ -392,9 +399,11 @@ extension IntegerLiteral: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         token.lexeme
     }
@@ -408,9 +417,11 @@ extension Nil: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "nil"
     }
@@ -424,9 +435,11 @@ extension Boolean: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         token.lexeme
     }
@@ -440,9 +453,11 @@ extension StringLiteral: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "\"\(token.lexeme)\""
     }
@@ -456,9 +471,11 @@ extension Tuple: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "(\(expressions.map { $0.description }.joined(separator: ", ")))"
     }
@@ -472,9 +489,11 @@ extension PrefixExpression: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "(\(op)\(right.description))"
     }
@@ -488,9 +507,11 @@ extension InfixExpression: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "(\(left.description) \(op) \(right.description))"
     }
@@ -504,9 +525,11 @@ extension PostfixExpression: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "(\(left.description)\(op))"
     }
@@ -520,9 +543,11 @@ extension VariableDefinition: Node {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "\(name.value): \(type.description)"
     }
@@ -536,9 +561,11 @@ extension BlockStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "{\(statements.map { $0.description }.joined(separator: ";"))}"
     }
@@ -552,9 +579,11 @@ extension FunctionStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         var out = "func \(name.value)"
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
@@ -572,9 +601,11 @@ extension CallExpression: Expression {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))"
     }
@@ -588,9 +619,11 @@ extension IfStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
     }
+
     var tokenLexeme: String {
         token.lexeme
     }
+
     var description: String {
         let base = "if \(condition.description) \(consequence.description)"
         guard let alt = alternative else {

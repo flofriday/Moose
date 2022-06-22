@@ -7,10 +7,9 @@ import Foundation
 // The typechecker not only validates types it also checks that all variables and functions
 // are visible.
 class Typechecker: Visitor {
-
     var isGlobal = true
     var isFunction = false
-    var functionReturnType: MooseType? = nil
+    var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
     var scope: Scope
 
@@ -22,7 +21,7 @@ class Typechecker: Visitor {
         try program.accept(self)
 
         let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
-        self.scope = try scopeSpawner.spawn()
+        scope = try scopeSpawner.spawn()
 
         guard errors.count == 0 else {
             throw CompileError(messages: errors)
@@ -54,10 +53,10 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: IfStatement) throws {
-        let condType = try node.condition.accept(self)
-        guard condType == .Bool else {
+        try node.condition.accept(self)
+        guard node.condition.mooseType == .Bool else {
             // TODO: the Error highlights the wrong character here
-            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(condType) but if-conditions need to evaluate to Bool.", token: node.token)
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", token: node.token)
         }
 
         try node.consequence.accept(self)
@@ -65,7 +64,6 @@ class Typechecker: Visitor {
         if let alternative = node.alternative {
             try alternative.accept(self)
         }
-
     }
 
     func visit(_ node: Tuple) throws {
@@ -83,9 +81,7 @@ class Typechecker: Visitor {
         node.mooseType = .Nil
     }
 
-    func visit(_ node: CallExpression) throws {
-
-    }
+    func visit(_ node: CallExpression) throws {}
 
     func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
@@ -94,7 +90,7 @@ class Typechecker: Visitor {
 
         // Verify that the explicit expressed type (if availble) matches the type of the expression
         if let expressedType = node.type {
-            guard MooseType.from(node.type!) == valueType else {
+            guard try MooseType.from(node.type!) == valueType else {
                 throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
             }
         }
@@ -135,16 +131,13 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: ReturnStatement) throws {
-    }
+    func visit(_ node: ReturnStatement) throws {}
 
     func visit(_ node: ExpressionStatement) throws {
         try node.expression.accept(self)
     }
 
-    func visit(_ node: Identifier) throws {
-
-    }
+    func visit(_ node: Identifier) throws {}
 
     func visit(_ node: IntegerLiteral) throws {
         node.mooseType = .Int
@@ -158,17 +151,13 @@ class Typechecker: Visitor {
         node.mooseType = .String
     }
 
-    func visit(_ node: PrefixExpression) throws {
-    }
+    func visit(_ node: PrefixExpression) throws {}
 
-    func visit(_ node: InfixExpression) throws {
-    }
+    func visit(_ node: InfixExpression) throws {}
 
-    func visit(_ node: PostfixExpression) throws {
-    }
+    func visit(_ node: PostfixExpression) throws {}
 
-    func visit(_ node: VariableDefinition) throws {
-    }
+    func visit(_ node: VariableDefinition) throws {}
 
     func visit(_ node: FunctionStatement) throws {
         let wasGlobal = isGlobal
@@ -176,19 +165,16 @@ class Typechecker: Visitor {
         // Some Code
 
         isGlobal = wasGlobal
-
     }
 
-    func visit(_ node: ValueType) throws {
-
-    }
+    func visit(_ node: ValueType) throws {}
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 }
@@ -203,9 +189,8 @@ class Typechecker: Visitor {
 // func a() -> Int ...
 // b = 1 + a()
 class GlobalScopeExplorer: Visitor {
-
-    let scope: Scope;
-    let program: Program;
+    let scope: Scope
+    let program: Program
 
     init(program: Program, scope: Scope) {
         self.scope = scope
@@ -240,64 +225,50 @@ class GlobalScopeExplorer: Visitor {
         throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ node: CallExpression) throws {
-    }
+    func visit(_ node: CallExpression) throws {}
 
     /// Checks initial assignment types
-    /// If assignment, it must have a declared type.
+    /// If assignment, it must have a declared type if it is a declaration.
     ///
     /// - Parameter node: assign statement
     /// - Throws:
     func visit(_ node: AssignStatement) throws {
-
-        guard let assignable = node.assignable else {
+        guard let assignable = node.assignable as? Declareable else {
             return
         }
 
         // check if it is declaration or just assignment. If it is a declaration without type, throw error
         guard let vType = node.type else {
-            guard scope.hasVar(name: )
-            throw error(message: "Assignments in global scope must be explicitly typed.", token: node.token)
+            for n in assignable.idents {
+                guard scope.hasVar(name: n.value) else {
+                    throw error(message: "Assignments in global scope must be explicitly typed.", token: n.token)
+                }
+            }
+            // we are not interrest in this assignment since it is no declaration
+            return
         }
 
-        if let ident = node.assignable as? Identifier {
-            let valType = MooseType.from(vType)
-            guard !(scope.hasVar(name: ident.value) && node.mutable) else {
-
+        // now we know that we have a type declaration with type definition.
+        // we dont check if the assignment is currect, since this is done by the type checker
+        if let ident = assignable as? Identifier {
+            let valType = try MooseType.from(vType)
+            try scope.addVar(name: ident.value, type: valType, mutable: node.mutable)
+        } else if let tuple = assignable as? Tuple {
+            guard case .Tuple(let valTypes) = try MooseType.from(vType) else {
+                throw error(message: "Type of tuple is not tuple", token: node.token)
+            }
+            guard tuple.expressions.count == valTypes.count else {
+                throw error(message: "Tuple has not the same amount of length as type declares", token: node.token)
+            }
+            for (i, (e, t)) in zip(tuple.expressions, valTypes).enumerated() {
+                guard let e = e as? Identifier else {
+                    throw error(message: "\(i + 1). element of tuple is not an identier.", token: node.token)
+                }
+                try scope.addVar(name: e.value, type: t, mutable: node.mutable)
             }
 
-            scope.addVar(name: node.value, type: valType, mutable: node.mutable)
         } else {
             throw error(message: "Assignment for '\(type(of: node.assignable))' is not supported.", token: node.token)
-        }
-
-        // Calculate the type of the experssion (right side)
-        try node.value.accept(self)
-        let valueType = node.value.mooseType!
-
-        if let expressedType = node.type {
-            guard MooseType.from(node.type!) == valueType else {
-                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
-            }
-        }
-
-        let name: String!
-        switch node.assignable {
-        case let id as Identifier:
-            name = id.value
-        default:
-            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
-        }
-
-        if scope.hasVar(name: name, includeEnclosing: false) {
-            let currentType = try scope.getVarType(name: name)
-            guard currentType == valueType else {
-                throw error(message: "Variable '\(name)' is has the type \(currentType), but the expression on the right produces a value of the type \(valueType) ", token: node.token)
-            }
-        }
-
-        if !scope.hasVar(name: name, includeEnclosing: false) {
-            try scope.addVar(name: name, type: valueType, mutable: node.mutable)
         }
     }
 
@@ -353,12 +324,10 @@ class GlobalScopeExplorer: Visitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
-
-
 }

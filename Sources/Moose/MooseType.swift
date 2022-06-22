@@ -9,24 +9,39 @@ indirect enum MooseType: Equatable {
     case Float
     case String
     case Bool
-    case Tuple ([MooseType])
-    case List (MooseType)
-    case Function ([MooseType], MooseType?) // Associated values are arguments and return value
-    case Class (String) // The classname is the associated type
+    case Tuple([MooseType])
+    case List(MooseType)
+    case Function([MooseType], MooseType?) // Associated values are arguments and return value
+    case Class(String) // The classname  is the associated type
     case Nil
 
-    static func from(_ value: ValueType) -> MooseType {
-        // TODO: add more complex types
-        if value.description == "String" {
-            return .String
-        } else if value.description == "Int" {
-            return .Int
-        } else if value.description == "Float" {
-            return .Float
-        } else if value.description == "Bool" {
-            return .Bool
+    // TODO: add more types
+    /// If valuetype is not implemented it returns nil
+    static func from(_ value: ValueType) throws -> MooseType {
+        if case .Identifier(ident: let id) = value {
+            switch id.value {
+            case "String":
+                return .String
+            case "Int":
+                return .String
+            case "Float":
+                return .String
+            case "Bool":
+                return .String
+            default:
+                return .Class(id.value)
+            }
+        } else if case .Function(params: let params, returnType: let retType) = value {
+            let par = try params.map { try from($0) }
+            var ret: MooseType?
+            if case .Void = retType {
+                ret = try from(retType)
+            }
+            return Function(par, ret)
+        } else if case .Tuple(types: let ts) = value {
+            return .Tuple(try ts.map { try from($0) })
         } else {
-            return .Class(value.description)
+            throw TypeConvertionError(msg: "Could not convert ValueType '\(value)' to MooseType.")
         }
     }
 }
