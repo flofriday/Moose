@@ -7,11 +7,13 @@ import Foundation
 class Scope {
     var mooseVars: [String: MooseType] = [:]
     var mooseConsts: Set<String> = []
-    var mooseFuncs: [String: ([MooseType], MooseType)] = [:]
+    var mooseFuncs: [String: ([MooseType], MooseType)] = [:] //TODO: this could also be much faster O(1) instead of O(n), however, this is probably most of the time O(1)
     var mooseClasses: Set<String> = []
+    var mooseOps: [String: [(OpPos, [MooseType], MooseType)]] = [:] //TODO: this is mostly really ineficient O(n) while it could be O(1)
     var enclosing: Scope?
 
-    init() {}
+    init() {
+    }
 
     func getIdentifierType(name: String) throws -> MooseType {
         if mooseVars.keys.contains(name) {
@@ -78,7 +80,7 @@ class Scope {
         mooseVars.updateValue(type, forKey: name)
     }
 
-    func getFuncType(name: String) throws -> MooseType? {
+    func getFuncType(name: String) throws -> MooseType {
         guard let f = mooseFuncs[name] else {
             if let enclosing = enclosing {
                 return try enclosing.getFuncType(name: name)
@@ -91,7 +93,7 @@ class Scope {
         throw ScopeError(message: "NOT IMPLEMENTED")
     }
 
-    func addFunc(name: String, args: [MooseType], returnType: MooseType?) throws {
+    func addFunc(name: String, args: [MooseType], returnType: MooseType) throws {
         /* if let others = mooseFuncs[name] {
              for other in others {
                  let (otherArgs, _) = other
@@ -111,7 +113,60 @@ class Scope {
         throw ScopeError(message: "NOT IMPLEMENTED")
     }
 
-    func remove(variable name: String) {
+    func hasOp(name: String, opPos: OpPos, args: [MooseType], includeEnclosing: Bool) -> Bool {
+        guard mooseOps.keys.contains(name) else {
+            return false
+        }
+
+        // We need to iterate over all operations with the same name cause the datastructure is stupid and I hadn't
+        // enough time to write it properly.
+        // So year we iterate overall and then find the one that matches the types.
+        if let others = mooseOps[name] {
+            for other in others {
+                let (otherOpPos, otherArgs, _) = other
+                if opPos == otherOpPos, args == otherArgs {
+                    return true
+                }
+            }
+        }
+
+        if let enclosing = enclosing, includeEnclosing {
+            return enclosing.hasOp(name: name, opPos: opPos, args: args, includeEnclosing: includeEnclosing)
+        }
+
+        return false
+    }
+
+    func getOpType(name: String, opPos: OpPos, args: [MooseType]) throws -> MooseType {
+        guard mooseOps.keys.contains(name) else {
+            throw ScopeError(message: "No operation `\(name)` exists.")
+        }
+
+        if let others = mooseOps[name] {
+            for other in others {
+                let (otherOpPos, otherArgs, otherRet) = other
+                if opPos == otherOpPos, args == otherArgs {
+                    return otherRet
+                }
+            }
+        }
+
+        guard enclosing != nil else {
+            throw ScopeError(message: "No operation '\(name)' exists, that operates on \(args).")
+        }
+
+        return try enclosing!.getOpType(name: name, opPos: opPos, args: args)
+    }
+
+    func addOp(name: String, opPos: OpPos, args: [MooseType], returnType: MooseType) {
+        if !mooseOps.keys.contains(name) {
+            mooseOps.updateValue([], forKey: name)
+        }
+
+        mooseOps[name]!.append((opPos, args, returnType))
+    }
+
+    func removeVar(variable name: String) {
         mooseConsts.remove(name)
         mooseVars.removeValue(forKey: name)
     }

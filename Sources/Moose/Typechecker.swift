@@ -105,7 +105,7 @@ class Typechecker: Visitor {
             let name = ass.idents[0].value
             let storedType = try scope.getVarType(name: name)
             guard valueType == storedType else {
-                scope.remove(variable: name) // remove variable since repl uses same scope
+                scope.removeVar(variable: name) // remove variable since repl uses same scope
                 throw error(message: "The variable is declared as \(storedType.description) but its actual type is \(valueType.description)", token: ass.token)
             }
         }
@@ -204,10 +204,10 @@ class Typechecker: Visitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
         )
     }
 }
@@ -260,7 +260,8 @@ class GlobalScopeExplorer: Visitor {
         throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ node: CallExpression) throws {}
+    func visit(_ node: CallExpression) throws {
+    }
 
     /// Checks initial assignment types
     /// If assignment, it must have a declared type if it is a declaration.
@@ -356,10 +357,10 @@ class GlobalScopeExplorer: Visitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
         )
     }
 }
