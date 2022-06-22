@@ -39,6 +39,10 @@ protocol Expression: Node {
     var mooseType: MooseType? { get set }
 }
 
+protocol Assignable: Expression {
+    var isAssignable: Bool { get }
+}
+
 struct Program {
     let statements: [Statement]
 
@@ -49,16 +53,18 @@ struct Program {
 
 struct AssignStatement {
     let token: Token
-    let name: Identifier
+    let assignable: Expression
     let value: Expression
     let mutable: Bool
     var type: ValueType?
 }
 
-struct Identifier {
+struct Identifier: Assignable {
     let token: Token
     let value: String
     var mooseType: MooseType?
+
+    var isAssignable: Bool { true }
 }
 
 struct ReturnStatement {
@@ -87,6 +93,10 @@ struct StringLiteral {
     let token: Token
     let value: String
     var mooseType: MooseType?
+}
+
+struct Nil {
+    let token: Token
 }
 
 struct PrefixExpression {
@@ -119,13 +129,38 @@ struct VariableDefinition {
     var mooseType: MooseType?
 }
 
+struct BlockStatement {
+    let token: Token
+    let statements: [Statement]
+}
+
 struct FunctionStatement {
     let token: Token
     let name: Identifier
-    let body: [Statement]
-    let parameter: [VariableDefinition]
+    let body: BlockStatement
+    let params: [VariableDefinition]
     let returnType: ValueType?
     var mooseType: MooseType?
+}
+
+struct CallExpression {
+    let token: Token
+    let function: Identifier
+    let arguments: [Expression]
+}
+
+struct Tuple: Assignable {
+    let token: Token
+    let expressions: [Expression]
+
+    var isAssignable: Bool {
+        return expressions.reduce(true) { prev, exp in
+            guard exp is Identifier else {
+                return false
+            }
+            return prev && true
+        }
+    }
 }
 
 // Node implementations
@@ -166,7 +201,8 @@ extension AssignStatement: Statement {
     }
     var description: String {
         let mut = mutable ? "mut " : ""
-        return "\(mut)\(name.description) = \(value.description)"
+        let type = type != nil ? ": \(type?.description ?? "")" : ""
+        return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 
     func accept(_ visitor: Visitor) throws {
@@ -239,6 +275,12 @@ extension IntegerLiteral: Expression {
     }
 }
 
+extension Nil: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "nil" }
+}
+
 extension Boolean: Expression {
     var tokenLiteral: Any? {
         token.literal
@@ -256,19 +298,19 @@ extension Boolean: Expression {
 }
 
 extension StringLiteral: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-    var tokenLexeme: String {
-        token.lexeme
-    }
-    var description: String {
-        token.lexeme
-    }
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "\"\(token.lexeme)\"" }
 
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
     }
+}
+
+extension Tuple: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
 }
 
 extension PrefixExpression: Expression {
@@ -335,6 +377,12 @@ extension VariableDefinition: Node {
     }
 }
 
+extension BlockStatement: Statement {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
+}
+
 extension FunctionStatement: Statement {
     var tokenLiteral: Any? {
         token.literal
@@ -344,9 +392,9 @@ extension FunctionStatement: Statement {
     }
     var description: String {
         var out = "func \(name.value)"
-        out += "(\(parameter.map { $0.description }.joined(separator: ", ")))"
+        out += "(\(params.map { $0.description }.joined(separator: ", ")))"
         out += " > \(returnType?.description ?? "Void")"
-        out += " {\(body.map { $0.description }.joined(separator: ";"))}"
+        out += " \(body.description)"
         return out
     }
 
@@ -355,9 +403,19 @@ extension FunctionStatement: Statement {
     }
 }
 
-enum ValueType {
+extension CallExpression: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
+}
+
+// ---- Value Type -----
+
+indirect enum ValueType {
     case Identifier(ident: Identifier)
     case Tuple(types: [ValueType])
+    case Function(params: [ValueType], returnType: ValueType)
+    case Void
 }
 
 extension ValueType: CustomStringConvertible {
@@ -367,6 +425,10 @@ extension ValueType: CustomStringConvertible {
             return i.description
         case .Tuple(types: let ids):
             return "(\(ids.map { $0.description }.joined(separator: ", ")))"
+        case .Function(params: let params, returnType: let returnType):
+            return "(\(params.map { $0.description }.joined(separator: ", "))) > \(returnType.description)"
+        case .Void:
+            return "()"
         }
     }
 

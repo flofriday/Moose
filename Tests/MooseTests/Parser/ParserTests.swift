@@ -11,6 +11,7 @@ class ParserTests: BaseClass {
     func test_assignStatements() throws {
         print("-- \(#function)")
 
+        // (input, ident, value, isMutable, Type)
         let inputs: [(String, String, Any, Bool, String?)] = [
             ("a = 3", "a", Int64(3), false, nil),
             ("mut b = 1", "b", Int64(1), true, nil),
@@ -21,10 +22,10 @@ class ParserTests: BaseClass {
             ("mut var: Bool = false\n", "var", false, true, "Bool"),
             ("var: String = 2;", "var", Int64(2), false, "String"),
             ("var: String = ident", "var", "ident", false, "String"),
-            ("var: (String) = ident", "var", "ident", false, "(String)"),
             ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
             ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
-            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
+            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))"),
+            ("(var): Int = 2", "var", 2, false, "Int")
         ]
 
         for (index, i) in inputs.enumerated() {
@@ -89,10 +90,6 @@ class ParserTests: BaseClass {
             let stmt = prog.statements[0] as! ReturnStatement
             try test_literalExpression(exp: stmt.returnValue, expected: t.1)
         }
-    }
-
-    func test_functionStatements() throws {
-        print("-- \(#function)")
     }
 
     func test_parsingPrefixExpr() throws {
@@ -220,15 +217,21 @@ class ParserTests: BaseClass {
         }
     }
 
-    func test_lightFunctionDefinitions() throws {
+    func test_lightFunctions() throws {
         print("-- \(#function)")
 
         let tests = [
             ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
+            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
             ("func AS() {x}", "func AS() > Void {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
-            ("func AS() >Int{x}", "func AS() > Int {x}")
+            ("func AS() >Int{x}", "func AS() > Int {x}"),
+            ("asd(1, 3+ + 3 * 1)", "asd(1, ((3+) + (3 * 1)))"),
+            ("a = asd(1)\n", "a = asd(1)"),
+            ("mut a: String = asd((1, b(2)))\n", "mut a: String = asd((1, b(2)))"),
+            ("mut a: String = asd()\n", "mut a: String = asd()"),
+            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")")
         ]
 
         for (i, t) in tests.enumerated() {
@@ -236,6 +239,122 @@ class ParserTests: BaseClass {
 
             let prog = try startParser(input: t.0)
             XCTAssertEqual(t.1, prog.description)
+        }
+    }
+
+    func test_functionStatements() throws {
+        print("-- \(#function)")
+
+        let input =
+            """
+            func fn(x: Int, y: (String, String)) > ReturnType
+            {
+
+            x + y
+            mut a: Stirng = x;
+
+            {
+            mut a: String = 2;
+            }
+
+            return a}
+            """
+
+        let prog = try startParser(input: input)
+        XCTAssertEqual(prog.statements.count, 1)
+        let fn = try cast(prog.statements[0], FunctionStatement.self)
+        XCTAssertEqual(fn.params.count, 2)
+        try test_literalExpression(exp: fn.params[0].name, expected: "x")
+        try test_valueType(type: fn.params[0].type, value: "Int")
+
+        try test_literalExpression(exp: fn.params[1].name, expected: "y")
+        try test_valueType(type: fn.params[1].type, value: "(String, String)")
+
+        try test_valueType(type: fn.returnType!, value: "ReturnType")
+
+        XCTAssertEqual(fn.body.statements.count, 4)
+        let expr = try cast(fn.body.statements[0], ExpressionStatement.self)
+        try test_infixExpression(exp: expr.expression, left: "x", op: "+", right: "y")
+        _ = try cast(fn.body.statements[1], AssignStatement.self)
+
+        let block = try cast(fn.body.statements[2], BlockStatement.self)
+        XCTAssertEqual(block.statements.count, 1)
+        _ = try cast(block.statements[0], AssignStatement.self)
+
+        _ = try cast(fn.body.statements[3], ReturnStatement.self)
+    }
+
+    func test_valueTypeParsing() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            ("a: Test = 1", "Test"),
+            ("a: (Test, Test) = 1", "(Test, Test)"),
+            ("a: () > Void = 1", "() > ()"),
+            ("a: () > () = 1", "() > ()"),
+            ("a: (Int) > String = 1", "(Int) > String"),
+            ("a: (Int, String) > String = 1", "(Int, String) > String"),
+            ("a: (Int, () > (String)) > String = 1", "(Int, () > String) > String"),
+            ("a: (Int) > (String, () > Error) > Bool = 1", "(Int) > (String, () > Error) > Bool"),
+            ("a: () > ((Int) > String) = 1", "() > (Int) > String"),
+            ("a: (() > Int) > String = 1", "(() > Int) > String")
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(prog.statements.count, 1)
+            let ass = try cast(prog.statements[0], AssignStatement.self)
+            try test_valueType(type: ass.type!, value: t.1)
+        }
+    }
+
+    func test_tupleAssignment() throws {
+        print("-- \(#function)")
+        let tests = [
+            ("(a,a) = 1", true),
+            ("(1,a) = 1", false),
+            ("(a,1) = 1", false),
+            ("(a,a,1) = 1", false),
+            ("(a,a,a) = 1", true),
+            ("(a,a,a) = nil", false),
+            ("(a,a): Int = nil", false),
+            ("(a,a): Int = (nil)", false)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let l = Lexer(input: t.0)
+            let p = Parser(tokens: try l.scan())
+
+            if !t.1 {
+                return XCTAssertThrowsError(try p.parse())
+            }
+
+            let prog = try p.parse()
+            XCTAssertEqual(prog.statements.count, 1)
+            let ass = try cast(prog.statements[0], AssignStatement.self)
+            let assignable = try cast(ass.assignable, Tuple.self)
+            XCTAssertTrue(assignable.isAssignable)
+        }
+    }
+
+    func test_assertThrows() throws {
+        let tests = [
+            "(a+1) = 1",
+            "a = nil",
+            "a = (nil)"
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let l = Lexer(input: t)
+            let p = Parser(tokens: try l.scan())
+
+            XCTAssertThrowsError(try p.parse())
         }
     }
 }

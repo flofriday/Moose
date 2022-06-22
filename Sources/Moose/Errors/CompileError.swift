@@ -23,15 +23,19 @@ extension CompileError: LocalizedError {
 
     public func getFullReport(sourcecode: String) -> String {
         var out = ""
-        let lines = sourcecode.split(separator: "\n")
+        let lines = sourcecode.lines
 
         for msg in messages {
             // The header
             out += "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
 
+            var line = msg.line
+            if !(line - 1 < lines.count) {
+                line = lines.count
+            }
             // The source code line causing the error
             out += String(format: "%3d| ".blue, msg.line)
-            out += "\(lines[msg.line - 1])\n"
+            out += "\(lines[line - 1])\n"
             out += String(repeating: " ", count: 5 + msg.startCol)
             out += String(repeating: "^".red, count: msg.endCol - msg.startCol)
             out += "\n\n"

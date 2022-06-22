@@ -13,11 +13,12 @@ class BaseClass: XCTestCase {
         }
         XCTAssertTrue(stmt.token.type == .Assign || stmt.token.type == .Operator(pos: .Infix, assign: true),
                       "Token is neither .Assign nor .Operator. got=\(stmt.tokenLexeme)")
-        guard name == stmt.name.value else {
-            return (false, "stmt.name.value not '\(name)'. got='\(stmt.name)'")
+        let assignable = try cast(stmt.assignable, Identifier.self)
+        guard name == assignable.value else {
+            return (false, "stmt.name.value not '\(name)'. got='\(assignable)'")
         }
-        guard name == stmt.name.tokenLexeme else {
-            return (false, "stmt.name.tokenLexeme not '\(name)'. got='\(stmt.name.tokenLexeme)'")
+        guard name == assignable.tokenLexeme else {
+            return (false, "stmt.name.tokenLexeme not '\(name)'. got='\(assignable.tokenLexeme)'")
         }
         guard mut == stmt.mutable else {
             return (false, "stmt.mutable is not \(mut)")
@@ -107,9 +108,6 @@ class BaseClass: XCTestCase {
             return try p.parse()
         } catch let error as CompileError {
             XCTFail("Could not parse program without error:\n \(error.getFullReport(sourcecode: input))")
-            throw error
-        } catch {
-            XCTFail("Could not parse program without error:\n \(error.localizedDescription)")
             throw error
         }
     }
