@@ -265,10 +265,10 @@ class ParserTests: BaseClass {
         let fn = try cast(prog.statements[0], FunctionStatement.self)
         XCTAssertEqual(fn.params.count, 2)
         try test_literalExpression(exp: fn.params[0].name, expected: "x")
-        try test_valueType(type: fn.params[0].type, value: "Int")
+        try test_valueType(type: fn.params[0].declaredType, value: "Int")
 
         try test_literalExpression(exp: fn.params[1].name, expected: "y")
-        try test_valueType(type: fn.params[1].type, value: "(String, String)")
+        try test_valueType(type: fn.params[1].declaredType, value: "(String, String)")
 
         try test_valueType(type: fn.returnType!, value: "ReturnType")
 
@@ -306,7 +306,7 @@ class ParserTests: BaseClass {
             let prog = try startParser(input: t.0)
             XCTAssertEqual(prog.statements.count, 1)
             let ass = try cast(prog.statements[0], AssignStatement.self)
-            try test_valueType(type: ass.type!, value: t.1)
+            try test_valueType(type: ass.declaredType!, value: t.1)
         }
     }
 

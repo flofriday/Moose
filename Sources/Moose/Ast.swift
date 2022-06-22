@@ -24,11 +24,10 @@ protocol Visitor {
     func visit(_ node: Tuple) throws
     func visit(_ node: Nil) throws
     func visit(_ node: CallExpression) throws
-    func visit(_ node: ValueType) throws
 }
 
 protocol Node: CustomStringConvertible {
-    var getToken: Token { get }
+    var token: Token { get }
     func accept(_ visitor: Visitor) throws
 }
 
@@ -55,19 +54,19 @@ class Program {
 }
 
 class AssignStatement {
-    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: ValueType?) {
+    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: MooseType?) {
         self.token = token
         self.assignable = assignable
         self.value = value
         self.mutable = mutable
-        self.type = type
+        self.declaredType = type
     }
 
     let token: Token
     let assignable: Expression
     let value: Expression
     let mutable: Bool
-    var type: ValueType?
+    var declaredType: MooseType?
 }
 
 class Identifier: Assignable, Declareable {
@@ -193,17 +192,17 @@ class PostfixExpression {
 }
 
 class VariableDefinition {
-    init(token: Token, mutable: Bool, name: Identifier, type: ValueType) {
+    init(token: Token, mutable: Bool, name: Identifier, type: MooseType) {
         self.token = token
         self.mutable = mutable
         self.name = name
-        self.type = type
+        self.declaredType = type
     }
 
     let token: Token
     let mutable: Bool
     let name: Identifier
-    let type: ValueType
+    let declaredType: MooseType
     var mooseType: MooseType?
 }
 
@@ -218,7 +217,7 @@ class BlockStatement {
 }
 
 class FunctionStatement {
-    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: ValueType?) {
+    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: MooseType?) {
         self.token = token
         self.name = name
         self.body = body
@@ -230,7 +229,7 @@ class FunctionStatement {
     let name: Identifier
     let body: BlockStatement
     let params: [VariableDefinition]
-    let returnType: ValueType?
+    let returnType: MooseType?
     var mooseType: MooseType?
 }
 
@@ -290,11 +289,11 @@ class Tuple: Assignable, Declareable {
 // Node implementations
 
 extension Program: Node {
-    var getToken: Token {
+    var token: Token {
         guard let f = statements.first else {
             return Token(type: .EOF, lexeme: "", line: 1, column: 0)
         }
-        return f.getToken
+        return f.token
     }
 
     var description: String {
@@ -310,104 +309,81 @@ extension Program: Node {
 }
 
 extension AssignStatement: Statement {
-    var getToken: Token { return token }
     var description: String {
         let mut = mutable ? "mut " : ""
-        let type = type != nil ? ": \(type?.description ?? "")" : ""
+        let type = declaredType != nil ? ": \(declaredType?.description ?? "")" : ""
         return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Identifier: Expression {
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
-
-    var getToken: Token { token }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
     var description: String { value }
 }
 
 extension ReturnStatement: Statement {
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
-
-    var getToken: Token { token }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
     var description: String { "\(token.lexeme) \(returnValue.description)" }
 }
 
 extension ExpressionStatement: Statement {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
-    var getToken: Token { token }
     var description: String { expression.description }
 }
 
 extension IntegerLiteral: Expression {
-    var getToken: Token { token }
     var description: String { token.lexeme }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Nil: Expression {
-    var getToken: Token { token }
     var description: String { "nil" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Boolean: Expression {
-    var getToken: Token { token }
     var description: String { token.lexeme }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension StringLiteral: Expression {
-    var getToken: Token { token }
     var description: String { "\"\(token.lexeme)\"" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Tuple: Expression {
-    var getToken: Token { token }
     var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PrefixExpression: Expression {
-    var getToken: Token { token }
     var description: String { "(\(op)\(right.description))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension InfixExpression: Expression {
-    var getToken: Token { token }
     var description: String { "(\(left.description) \(op) \(right.description))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PostfixExpression: Expression {
-    var getToken: Token { token }
     var description: String { "(\(left.description)\(op))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension VariableDefinition: Node {
-    var getToken: Token { token }
-    var description: String { "\(name.value): \(type.description)" }
+    var description: String { "\(name.value): \(declaredType.description)" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension BlockStatement: Statement {
-    var getToken: Token { token }
     var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension FunctionStatement: Statement {
-    var getToken: Token { token }
     var description: String {
         var out = "func \(name.value)"
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
@@ -422,47 +398,17 @@ extension FunctionStatement: Statement {
 }
 
 extension CallExpression: Expression {
-    var getToken: Token { token }
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension IfStatement: Statement {
-    var getToken: Token { token }
     var description: String {
         let base = "if \(condition.description) \(consequence.description)"
         guard let alt = alternative else {
             return base
         }
         return base + "else \(alt.description)"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
-}
-
-// ---- Value Type -----
-
-indirect enum ValueType {
-    case Identifier(ident: Identifier)
-    case Tuple(types: [ValueType])
-    case Function(params: [ValueType], returnType: ValueType)
-    case Void
-}
-
-extension ValueType: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .Identifier(ident: let i):
-            return i.description
-        case .Tuple(types: let ids):
-            return "(\(ids.map { $0.description }.joined(separator: ", ")))"
-        case .Function(params: let params, returnType: let returnType):
-            return "(\(params.map { $0.description }.joined(separator: ", "))) > \(returnType.description)"
-        case .Void:
-            return "()"
-        }
     }
 
     func accept(_ visitor: Visitor) throws {

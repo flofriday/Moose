@@ -11,32 +11,32 @@ class BaseClass: XCTestCase {
         guard let stmt = stmt as? AssignStatement else {
             return (false, "Statement is not of type AssignStatement. got=\(String(describing: type(of: stmt)))")
         }
-        XCTAssertTrue(stmt.getToken.type == .Assign || stmt.getToken.type == .Operator(pos: .Infix, assign: true),
-                      "Token is neither .Assign nor .Operator. got=\(stmt.getToken.lexeme)")
+        XCTAssertTrue(stmt.token.type == .Assign || stmt.token.type == .Operator(pos: .Infix, assign: true),
+                      "Token is neither .Assign nor .Operator. got=\(stmt.token.lexeme)")
         let assignable = try cast(stmt.assignable, Identifier.self)
         guard name == assignable.value else {
             return (false, "stmt.name.value not '\(name)'. got='\(assignable)'")
         }
-        guard name == assignable.getToken.lexeme else {
-            return (false, "stmt.name.token.lexeme not '\(name)'. got='\(assignable.getToken.lexeme)'")
+        guard name == assignable.token.lexeme else {
+            return (false, "stmt.name.token.lexeme not '\(name)'. got='\(assignable.token.lexeme)'")
         }
         guard mut == stmt.mutable else {
             return (false, "stmt.mutable is not \(mut)")
         }
 
         if let refType = typ {
-            guard let stmtType = stmt.type else {
+            guard let stmtType = stmt.declaredType else {
                 return (false, "stmt.type is nil but should be identifier with value '\(refType)'")
             }
             try test_valueType(type: stmtType, value: refType)
         } else {
-            XCTAssertTrue(stmt.type == nil, "stmt.type is not nil. got=\(String(describing: stmt.type))")
+            XCTAssertTrue(stmt.declaredType == nil, "stmt.type is not nil. got=\(String(describing: stmt.declaredType))")
         }
         return (true, "")
     }
 
     func test_returnStatement(s: Statement) throws {
-        XCTAssertEqual(s.getToken.lexeme, "return", "s.tokenLiteral not 'return'. got=\(s.getToken.lexeme)")
+        XCTAssertEqual(s.token.lexeme, "return", "s.tokenLiteral not 'return'. got=\(s.token.lexeme)")
         guard s is ReturnStatement else {
             throw TestErrors.parseError("s is not ReturnStatement. gpt=\(type(of: s))")
         }
@@ -50,7 +50,7 @@ class BaseClass: XCTestCase {
         XCTAssertEqual(ident.token.lexeme, value)
     }
 
-    func test_valueType(type: ValueType, value: String) throws {
+    func test_valueType(type: MooseType, value: String) throws {
         XCTAssertEqual(type.description, value)
     }
 

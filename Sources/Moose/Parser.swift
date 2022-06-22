@@ -140,7 +140,7 @@ class Parser {
             throw error(message: "Expression '\(assignable.description)' is not assignable.", token: exprToken)
         }
 
-        var type: ValueType?
+        var type: MooseType?
         if check(type: .Colon) {
             _ = advance()
             type = try parseValueTypeDefinition()
@@ -191,12 +191,12 @@ class Parser {
         let name = try parseIdentifier()
         let params = try parseFunctionParameters()
 
-        var returnType: ValueType?
+        var returnType: MooseType?
         if !check(type: .LBrace) {
             let toTok = advance() // > token as infix prefix or postfix op
             guard
-                    case .Operator(pos: _, assign: false) = toTok.type,
-                    toTok.lexeme == ">"
+                case .Operator(pos: _, assign: false) = toTok.type,
+                toTok.lexeme == ">"
             else {
                 throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
             }
@@ -393,13 +393,13 @@ class Parser {
     // -----------------------
     // ---- TypeDefinition ---
 
-    func parseValueTypeDefinition(withVoid: Bool = false) throws -> ValueType {
+    func parseValueTypeDefinition(withVoid: Bool = false) throws -> MooseType {
         switch peek().type {
         case .Void:
             return try parseVoidTypeDefinition()
         case .Identifier:
             let ident = try parseIdentifier()
-            return .Identifier(ident: ident)
+            return MooseType.toClass(ident.value)
         case .LParen:
             return try parseTupleGroupFunction_TypeDefinition()
         default:
@@ -407,14 +407,15 @@ class Parser {
         }
     }
 
-    func parseVoidTypeDefinition() throws -> ValueType {
+    func parseVoidTypeDefinition() throws -> MooseType {
         let _ = try consume(type: .Void, message: "expected 'Void', but got \(peek().lexeme) instead")
         return .Void
     }
 
-    func parseTupleTypeDefinition() throws -> ValueType {
+    @available(*, deprecated, message: "This method is deprecated since parseTupleGroupFunction_TypeDefinition is used to parse Tuple")
+    func parseTupleTypeDefinition() throws -> MooseType {
         let token = try consume(type: .LParen, message: "expected an starting ( for tupel definition")
-        var types = [ValueType]()
+        var types = [MooseType]()
         repeat {
             let t = try parseValueTypeDefinition()
             types.append(t)
@@ -423,20 +424,20 @@ class Parser {
         guard types.count > 1 else {
             throw error(message: "tuple have to contain at least 2 values", token: token)
         }
-        return .Tuple(types: types)
+        return .Tuple(types)
     }
 
-    func parseFunctionTypeDefinition(params: [ValueType]) throws -> ValueType {
+    func parseFunctionTypeDefinition(params: [MooseType]) throws -> MooseType {
         guard case .Operator(pos: _, false) = peek().type, peek().lexeme == ">" else {
             throw error(message: "Expected a '>' for function defintion, but got \(peek().lexeme) instead.", token: peek())
         }
         _ = advance()
 
         let resultType = try parseValueTypeDefinition()
-        return ValueType.Function(params: params, returnType: resultType)
+        return .Function(params, resultType)
     }
 
-    func parseTupleGroupFunction_TypeDefinition() throws -> ValueType {
+    func parseTupleGroupFunction_TypeDefinition() throws -> MooseType {
         _ = try consume(type: .LParen, message: "Expected a starting '(', but got \(peek().lexeme) instead.")
         let types = try parseTypeDefinitionList(seperator: .Comma, end: .RParen)
 
@@ -446,18 +447,18 @@ class Parser {
             return try parseFunctionTypeDefinition(params: types)
         } else if types.isEmpty {
             _ = try consume(type: .RParen, message: "expected closing ) at end of Void definition, got \(peek().lexeme)")
-            return ValueType.Void
+            return .Void
         } else if types.count == 1 {
             _ = try consume(type: .RParen, message: "expected closing ) at end of group defintion, got \(peek().lexeme)")
             return types[0]
         } else {
             _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
-            return ValueType.Tuple(types: types)
+            return .Tuple(types)
         }
     }
 
-    func parseTypeDefinitionList(seperator: TokenType, end: TokenType) throws -> [ValueType] {
-        var list = [ValueType]()
+    func parseTypeDefinitionList(seperator: TokenType, end: TokenType) throws -> [MooseType] {
+        var list = [MooseType]()
 
         guard !check(type: end) else {
             return list
@@ -483,9 +484,10 @@ class Parser {
 extension Parser {
     private func consumeStatementEnd() throws {
         if
-                !isAtEnd(),
-                !check(type: .RBrace), // for function body such as f() {x}
-                !match(types: .SemiColon, .NLine) {
+            !isAtEnd(),
+            !check(type: .RBrace), // for function body such as f() {x}
+            !match(types: .SemiColon, .NLine)
+        {
             throw error(message: "I expected, the statement to end here (with a newline or semicolon), but it kept going with '\(peek().lexeme)'.\nTipp: Maybe you forgot an (infix) operator here?", token: peek())
         }
     }
@@ -569,10 +571,10 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 
