@@ -191,7 +191,7 @@ class Parser {
         let name = try parseIdentifier()
         let params = try parseFunctionParameters()
 
-        var returnType: MooseType?
+        var returnType: MooseType = .Void
         if !check(type: .LBrace) {
             let toTok = advance() // > token as infix prefix or postfix op
             guard

@@ -217,7 +217,7 @@ class BlockStatement {
 }
 
 class FunctionStatement {
-    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: MooseType?) {
+    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: MooseType) {
         self.token = token
         self.name = name
         self.body = body
@@ -229,7 +229,25 @@ class FunctionStatement {
     let name: Identifier
     let body: BlockStatement
     let params: [VariableDefinition]
-    let returnType: MooseType?
+    let returnType: MooseType
+    var mooseType: MooseType?
+}
+
+class OperationStatement {
+    init(token: Token, name: String, position: OpPos, params: [VariableDefinition], returnType: MooseType, mooseType: MooseType?) {
+        self.token = token
+        self.name = name
+        self.position = position
+        self.params = params
+        self.returnType = returnType
+        self.mooseType = mooseType
+    }
+
+    let token: Token // operator token
+    let name: String
+    let position: OpPos
+    let params: [VariableDefinition]
+    let returnType: MooseType
     var mooseType: MooseType?
 }
 
@@ -387,7 +405,7 @@ extension FunctionStatement: Statement {
     var description: String {
         var out = "func \(name.value)"
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
-        out += " > \(returnType?.description ?? "Void")"
+        out += " > \(returnType.description)"
         out += " \(body.description)"
         return out
     }

@@ -222,8 +222,8 @@ class ParserTests: BaseClass {
 
         let tests = [
             ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
-            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
-            ("func AS() {x}", "func AS() > Void {x}"),
+            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > () {}"),
+            ("func AS() {x}", "func AS() > () {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
             ("func AS() >Int{x}", "func AS() > Int {x}"),
@@ -270,7 +270,7 @@ class ParserTests: BaseClass {
         try test_literalExpression(exp: fn.params[1].name, expected: "y")
         try test_valueType(type: fn.params[1].declaredType, value: "(String, String)")
 
-        try test_valueType(type: fn.returnType!, value: "ReturnType")
+        try test_valueType(type: fn.returnType, value: "ReturnType")
 
         XCTAssertEqual(fn.body.statements.count, 4)
         let expr = try cast(fn.body.statements[0], ExpressionStatement.self)
