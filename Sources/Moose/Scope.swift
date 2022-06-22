@@ -43,6 +43,18 @@ class Scope {
         return enclosing!.hasVar(name: name)
     }
 
+    func isVarMut(name: String, includeEnclosing: Bool) -> Bool {
+        if mooseConsts.contains(name) {
+            return false
+        }
+
+        guard enclosing != nil, includeEnclosing else {
+            return false
+        }
+
+        return enclosing!.isVarMut(name: name, includeEnclosing: includeEnclosing)
+    }
+
     func getVarType(name: String) throws -> MooseType {
         if let type = mooseVars[name] {
             return type

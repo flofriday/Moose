@@ -7,71 +7,189 @@ import Foundation
 // The typechecker not only validates types it also checks that all variables and functions
 // are visible.
 class Typechecker: Visitor {
-    let program: Program
-    let errors: [CompileErrorMessage] = []
-    let scope: Scope
 
-    init(program: Program) {
-        self.program = program
+    var isGlobal = true
+    var isFunction = false
+    var functionReturnType: MooseType? = nil
+    var errors: [CompileErrorMessage] = []
+    var scope: Scope
 
-        let scopespawner = ScopeSpawner()
-        do {
-            self.scope = try scopespawner.spawn()
-        } catch {
-            self.scope = Scope()
+    init() {
+        self.scope = Scope()
+    }
+
+    func check(program: Program) throws {
+        try program.accept(self)
+
+        let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
+        self.scope = try scopeSpawner.spawn()
+
+        guard errors.count == 0 else {
+            throw CompileError(messages: errors)
         }
     }
 
-    func check() throws {
+    func visit(_ node: Program) throws {
+        for stmt in node.statements {
+            do {
+                try stmt.accept(self)
+            } catch let error as CompileErrorMessage {
+                errors.append(error)
+            }
+        }
+    }
+
+    func visit(_ node: BlockStatement) throws {
+        let wasGlobal = isGlobal
+
+        for stmt in node.statements {
+            do {
+                try stmt.accept(self)
+            } catch let error as CompileErrorMessage {
+                errors.append(error)
+            }
+        }
+
+        isGlobal = wasGlobal
+    }
+
+    func visit(_ node: IfStatement) throws {
+        let condType = try node.condition.accept(self)
+        guard condType == .Bool else {
+            // TODO: the Error highlights the wrong character here
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(condType) but if-conditions need to evaluate to Bool.", token: node.token)
+        }
+
+        try node.consequence.accept(self)
+
+        if let alternative = node.alternative {
+            try alternative.accept(self)
+        }
 
     }
 
-    func visit(_ view: Program) throws {
+    func visit(_ node: Tuple) throws {
+        var types: [MooseType] = []
+
+        for expr in node.expressions {
+            try expr.accept(self)
+            types.append(expr.mooseType!)
+        }
+
+        node.mooseType = .Tuple(types)
+    }
+
+    func visit(_ node: Nil) throws {
+        node.mooseType = .Nil
+    }
+
+    func visit(_ node: CallExpression) throws {
 
     }
 
-    func visit(_ view: AssignStatement) throws {
+    func visit(_ node: AssignStatement) throws {
+        // Calculate the type of the experssion (right side)
+        try node.value.accept(self)
+        let valueType = node.value.mooseType!
+
+        // Verify that the explicit expressed type (if availble) matches the type of the expression
+        if let expressedType = node.type {
+            guard MooseType.from(node.type!) == valueType else {
+                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
+            }
+        }
+
+        // TODO: in the future we want more than just variable assignment to work here
+        let name: String!
+        switch node.assignable {
+        case let id as Identifier:
+            name = id.value
+        default:
+            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        }
+
+        // The following checks only will make sense if you are not in the global scope
+        guard !isGlobal else {
+            return
+        }
+
+        // Checks to do if the variable was already initialized
+        if scope.hasVar(name: name, includeEnclosing: true) {
+            // Check that the variable wasn mutable
+            guard scope.isVarMut(name: name, includeEnclosing: true) else {
+                throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Define '\(name)' as mutable with the the `mut` keyword.", token: node.token)
+            }
+
+            // Check that this new assignment doesn't have the mut keyword as the variable already exists
+            guard !node.mutable else {
+                throw error(message: "Variable '\(name)' was already declared, so the `mut` keyword doesn't make any sense here.\nTipp: Remove the `mut` keyword.", token: node.token)
+            }
+
+            // Check that the new assignment still has the same type from the initialization
+            let currentType = try scope.getVarType(name: name)
+            guard currentType == valueType else {
+                throw error(message: "Variable '\(name)' is has the type \(currentType), but the expression on the right produces a value of the type \(valueType) ", token: node.token)
+            }
+        } else {
+            try scope.addVar(name: name, type: valueType, mutable: node.mutable)
+        }
+    }
+
+    func visit(_ node: ReturnStatement) throws {
+    }
+
+    func visit(_ node: ExpressionStatement) throws {
+        try node.expression.accept(self)
+    }
+
+    func visit(_ node: Identifier) throws {
 
     }
 
-    func visit(_ view: ReturnStatement) throws {
+    func visit(_ node: IntegerLiteral) throws {
+        node.mooseType = .Int
     }
 
-    func visit(_ view: ExpressionStatement) throws {
+    func visit(_ node: Boolean) throws {
+        node.mooseType = .Bool
     }
 
-    func visit(_ view: Identifier) throws {
-
+    func visit(_ node: StringLiteral) throws {
+        node.mooseType = .String
     }
 
-    func visit(_ view: IntegerLiteral) throws {
-
+    func visit(_ node: PrefixExpression) throws {
     }
 
-    func visit(_ view: Boolean) throws {
+    func visit(_ node: InfixExpression) throws {
     }
 
-    func visit(_ view: StringLiteral) throws {
+    func visit(_ node: PostfixExpression) throws {
     }
 
-    func visit(_ view: PrefixExpression) throws {
+    func visit(_ node: VariableDefinition) throws {
     }
 
-    func visit(_ view: InfixExpression) throws {
-    }
+    func visit(_ node: FunctionStatement) throws {
+        let wasGlobal = isGlobal
 
-    func visit(_ view: PostfixExpression) throws {
-    }
+        // Some Code
 
-    func visit(_ view: VariableDefinition) throws {
-    }
-
-    func visit(_ view: FunctionStatement) throws {
+        isGlobal = wasGlobal
 
     }
 
-    func visit(_ view: ValueType) throws {
+    func visit(_ node: ValueType) throws {
 
+    }
+
+    private func error(message: String, token: Token) -> CompileErrorMessage {
+        CompileErrorMessage(
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
+        )
     }
 }
 
@@ -79,10 +197,19 @@ class Typechecker: Visitor {
 // Note: ok there is a pretty big limitation and that is that you can only call funtions in the
 // global scope that were already defined. This also applies to custom operations, but otherwise we would need a pass
 // for classes and functions and one for global variables so yeah.
-class ScopeSpawner: Visitor {
-    let scope = Scope();
+// b: Int = 1 + a()
+// func a() -> Int ...
+//
+// func a() -> Int ...
+// b = 1 + a()
+class GlobalScopeExplorer: Visitor {
 
-    init() {
+    let scope: Scope;
+    let program: Program;
+
+    init(program: Program, scope: Scope) {
+        self.scope = scope
+        self.program = program
     }
 
     func spawn() throws -> Scope {
@@ -91,85 +218,137 @@ class ScopeSpawner: Visitor {
         return scope
     }
 
-    func visit(_ view: Program) throws {
-        for stmt in view.statements {
+    func visit(_ node: Program) throws {
+        for stmt in node.statements {
             try stmt.accept(self)
         }
     }
 
-    func visit(_ view: AssignStatement) throws {
-        // Calculate the type of the experssion (right side)
-        try view.value.accept(self)
-        let valueType = view.value.mooseType!
+    func visit(_ node: BlockStatement) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+    }
 
-        if let expressedType = view.type {
-            guard MooseType.from(view.type!) == valueType else {
-                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: view.token)
+    func visit(_ node: IfStatement) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+    }
+
+    func visit(_ node: Tuple) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+    }
+
+    func visit(_ node: Nil) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+    }
+
+    func visit(_ node: CallExpression) throws {
+    }
+
+    /// Checks initial assignment types
+    /// If assignment, it must have a declared type.
+    ///
+    /// - Parameter node: assign statement
+    /// - Throws:
+    func visit(_ node: AssignStatement) throws {
+
+        guard let assignable = node.assignable else {
+            return
+        }
+
+        // check if it is declaration or just assignment. If it is a declaration without type, throw error
+        guard let vType = node.type else {
+            guard scope.hasVar(name: )
+            throw error(message: "Assignments in global scope must be explicitly typed.", token: node.token)
+        }
+
+        if let ident = node.assignable as? Identifier {
+            let valType = MooseType.from(vType)
+            guard !(scope.hasVar(name: ident.value) && node.mutable) else {
+
+            }
+
+            scope.addVar(name: node.value, type: valType, mutable: node.mutable)
+        } else {
+            throw error(message: "Assignment for '\(type(of: node.assignable))' is not supported.", token: node.token)
+        }
+
+        // Calculate the type of the experssion (right side)
+        try node.value.accept(self)
+        let valueType = node.value.mooseType!
+
+        if let expressedType = node.type {
+            guard MooseType.from(node.type!) == valueType else {
+                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
             }
         }
 
-        let name = view.name.value
+        let name: String!
+        switch node.assignable {
+        case let id as Identifier:
+            name = id.value
+        default:
+            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        }
+
         if scope.hasVar(name: name, includeEnclosing: false) {
             let currentType = try scope.getVarType(name: name)
             guard currentType == valueType else {
-                throw error(message: "Variable '\(name)' is has the type \(currentType), but the expression on the right produces a value of the type \(valueType) ", token: view.token)
+                throw error(message: "Variable '\(name)' is has the type \(currentType), but the expression on the right produces a value of the type \(valueType) ", token: node.token)
             }
         }
 
         if !scope.hasVar(name: name, includeEnclosing: false) {
-            try scope.addVar(name: name, type: valueType, mutable: view.mutable)
+            try scope.addVar(name: name, type: valueType, mutable: node.mutable)
         }
     }
 
-    func visit(_ view: ReturnStatement) throws {
+    func visit(_ node: ReturnStatement) throws {
         // We don't need to do this now
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: ExpressionStatement) throws {
+    func visit(_ node: ExpressionStatement) throws {
         // We don't need to do this now
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: Identifier) throws {
-        let type = try scope.getIdentifierType(name: view.value)
-        //view.mooseType = type
-
-
+    func visit(_ node: Identifier) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: IntegerLiteral) throws {
-
+    func visit(_ node: IntegerLiteral) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: Boolean) throws {
-
+    func visit(_ node: Boolean) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: StringLiteral) throws {
-
+    func visit(_ node: StringLiteral) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: PrefixExpression) throws {
-
+    func visit(_ node: PrefixExpression) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: InfixExpression) throws {
-
+    func visit(_ node: InfixExpression) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: PostfixExpression) throws {
-
+    func visit(_ node: PostfixExpression) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: VariableDefinition) throws {
-
+    func visit(_ node: VariableDefinition) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: FunctionStatement) throws {
-
+    func visit(_ node: FunctionStatement) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ view: ValueType) throws {
-
+    func visit(_ node: ValueType) throws {
+        // throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {

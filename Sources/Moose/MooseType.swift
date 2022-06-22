@@ -13,6 +13,7 @@ indirect enum MooseType: Equatable {
     case List (MooseType)
     case Function ([MooseType], MooseType?) // Associated values are arguments and return value
     case Class (String) // The classname is the associated type
+    case Nil
 
     static func from(_ value: ValueType) -> MooseType {
         // TODO: add more complex types
