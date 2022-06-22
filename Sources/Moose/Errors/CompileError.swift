@@ -15,10 +15,13 @@ class CompileError: Error {
 
 extension CompileError: LocalizedError {
     public var errorDescription: String? {
-        messages.map { message in message.localizedDescription }.joined()
+        messages.map { message in
+                    message.localizedDescription
+                }
+                .joined()
     }
 
-    public func getFullReport(sourcecode: String) {
+    public func getFullReport(sourcecode: String) -> String {
         var out = ""
         let lines = sourcecode.split(separator: "\n")
 
@@ -37,6 +40,6 @@ extension CompileError: LocalizedError {
             out += msg.message
             out += "\n"
         }
-        print(out)
+        return out
     }
 }
