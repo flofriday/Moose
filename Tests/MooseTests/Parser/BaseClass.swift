@@ -11,14 +11,14 @@ class BaseClass: XCTestCase {
         guard let stmt = stmt as? AssignStatement else {
             return (false, "Statement is not of type AssignStatement. got=\(String(describing: type(of: stmt)))")
         }
-        XCTAssertTrue(stmt.token.type == .Assign || stmt.token.type == .Operator(pos: .Infix, assign: true),
-                      "Token is neither .Assign nor .Operator. got=\(stmt.tokenLexeme)")
+        XCTAssertTrue(stmt.getToken.type == .Assign || stmt.getToken.type == .Operator(pos: .Infix, assign: true),
+                      "Token is neither .Assign nor .Operator. got=\(stmt.getToken.lexeme)")
         let assignable = try cast(stmt.assignable, Identifier.self)
         guard name == assignable.value else {
             return (false, "stmt.name.value not '\(name)'. got='\(assignable)'")
         }
-        guard name == assignable.tokenLexeme else {
-            return (false, "stmt.name.tokenLexeme not '\(name)'. got='\(assignable.tokenLexeme)'")
+        guard name == assignable.getToken.lexeme else {
+            return (false, "stmt.name.token.lexeme not '\(name)'. got='\(assignable.getToken.lexeme)'")
         }
         guard mut == stmt.mutable else {
             return (false, "stmt.mutable is not \(mut)")
@@ -36,7 +36,7 @@ class BaseClass: XCTestCase {
     }
 
     func test_returnStatement(s: Statement) throws {
-        XCTAssertEqual(s.tokenLexeme, "return", "s.tokenLiteral not 'return'. got=\(s.tokenLexeme)")
+        XCTAssertEqual(s.getToken.lexeme, "return", "s.tokenLiteral not 'return'. got=\(s.getToken.lexeme)")
         guard s is ReturnStatement else {
             throw TestErrors.parseError("s is not ReturnStatement. gpt=\(type(of: s))")
         }
@@ -47,7 +47,7 @@ class BaseClass: XCTestCase {
             throw TestErrors.parseError("exp not Identifier. got=\(type(of: exp))")
         }
         XCTAssertEqual(ident.value, value)
-        XCTAssertEqual(ident.tokenLexeme, value)
+        XCTAssertEqual(ident.token.lexeme, value)
     }
 
     func test_valueType(type: ValueType, value: String) throws {
