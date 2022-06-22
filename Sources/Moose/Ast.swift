@@ -316,30 +316,21 @@ extension AssignStatement: Statement {
         return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Identifier: Expression {
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
-
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
     var description: String { value }
 }
 
 extension ReturnStatement: Statement {
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
-
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
     var description: String { "\(token.lexeme) \(returnValue.description)" }
 }
 
 extension ExpressionStatement: Statement {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
-
     var description: String { expression.description }
 }
 
@@ -447,9 +438,5 @@ extension ValueType: CustomStringConvertible {
         case .Void:
             return "()"
         }
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
     }
 }

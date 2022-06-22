@@ -7,12 +7,11 @@ import Foundation
 class Scope {
     var mooseVars: [String: MooseType] = [:]
     var mooseConsts: Set<String> = []
-    var mooseFuncs: [String: ([MooseType], MooseType?)] = [:]
+    var mooseFuncs: [String: ([MooseType], MooseType)] = [:]
     var mooseClasses: Set<String> = []
-    var enclosing: Scope? = nil
+    var enclosing: Scope?
 
-    init() {
-    }
+    init() {}
 
     func getIdentifierType(name: String) throws -> MooseType {
         if mooseVars.keys.contains(name) {
@@ -73,7 +72,7 @@ class Scope {
         }
 
         if !mutable {
-            mooseConsts.insert(name);
+            mooseConsts.insert(name)
         }
 
         mooseVars.updateValue(type, forKey: name)
@@ -90,27 +89,25 @@ class Scope {
         }
 
         throw ScopeError(message: "NOT IMPLEMENTED")
-
     }
 
     func addFunc(name: String, args: [MooseType], returnType: MooseType?) throws {
-        /*if let others = mooseFuncs[name] {
-            for other in others {
-                let (otherArgs, _) = other
-                if otherArgs == args {
-                    throw ScopeError(message: "There is already another function with the name '\(name)' and the arguments \(args)")
-                }
-            }
-        }
+        /* if let others = mooseFuncs[name] {
+             for other in others {
+                 let (otherArgs, _) = other
+                 if otherArgs == args {
+                     throw ScopeError(message: "There is already another function with the name '\(name)' and the arguments \(args)")
+                 }
+             }
+         }
 
-        if !mooseFuncs.keys.contains(name) {
-            mooseFuncs.updateValue([], forKey: name)
-        }
+         if !mooseFuncs.keys.contains(name) {
+             mooseFuncs.updateValue([], forKey: name)
+         }
 
-        mooseFuncs[name]!.insert((args, returnType), at: 0)
+         mooseFuncs[name]!.insert((args, returnType), at: 0)
 
-         */
+          */
         throw ScopeError(message: "NOT IMPLEMENTED")
-
     }
 }
