@@ -255,13 +255,22 @@ class ParserTests: BaseClass {
 
             {
             mut a: String = 2;
+
             }
 
-            return a}
+            return a
+
+
+            }
+
+
+            a = b
+
+
             """
 
         let prog = try startParser(input: input)
-        XCTAssertEqual(prog.statements.count, 1)
+        XCTAssertEqual(prog.statements.count, 2)
         let fn = try cast(prog.statements[0], FunctionStatement.self)
         XCTAssertEqual(fn.params.count, 2)
         try test_literalExpression(exp: fn.params[0].name, expected: "x")
