@@ -202,6 +202,14 @@ class Typechecker: Visitor {
         isGlobal = wasGlobal
     }
 
+    func visit(_ node: OperationStatement) throws {
+        let wasGlobal = isGlobal
+
+        // Some Code
+
+        isGlobal = wasGlobal
+    }
+
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
                 line: token.line,
@@ -352,6 +360,10 @@ class GlobalScopeExplorer: Visitor {
     }
 
     func visit(_ node: FunctionStatement) throws {
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+    }
+
+    func visit(_ node: OperationStatement) throws {
         throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 

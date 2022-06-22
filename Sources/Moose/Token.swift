@@ -1,7 +1,41 @@
-enum OpPos: Equatable, Hashable {
+
+enum OpPos: Equatable, Hashable, CustomStringConvertible {
     case Prefix
     case Infix
     case Postfix
+
+    var description: String {
+        switch self {
+        case .Prefix:
+            return "prefix"
+        case .Infix:
+            return "infix"
+        case .Postfix:
+            return "postfix"
+        }
+    }
+
+    var numArgs: Int {
+        switch self {
+        case .Prefix, .Postfix:
+            return 1
+        case .Infix:
+            return 2
+        }
+    }
+
+    static func from(token: TokenType) -> OpPos? {
+        switch token {
+        case .Prefix:
+            return .Prefix
+        case .Infix:
+            return .Infix
+        case .Postfix:
+            return .Postfix
+        default:
+            return nil
+        }
+    }
 }
 
 // include all types

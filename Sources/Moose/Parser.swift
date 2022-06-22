@@ -73,11 +73,12 @@ class Parser {
     func parse() throws -> Program {
         var statements: [Statement] = []
 
+        skip(all: .NLine)
         while !isAtEnd() {
             do {
-                skip(all: .NLine)
                 let stmt = try parseStatement()
                 statements.append(stmt)
+                skip(all: .NLine)
             } catch let e as CompileErrorMessage {
                 // We are inside an error and got confused during parsing.
                 // Let's skip to the next thing we recognize so that we can continue parsing.
@@ -116,6 +117,8 @@ class Parser {
             return try parseFunctionStatement()
         } else if check(type: .LBrace) {
             return try parseBlockStatement()
+        } else if check(oneOf: .Prefix, .Infix, .Postfix) {
+            return try parseOperationStatement()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -191,22 +194,43 @@ class Parser {
         let name = try parseIdentifier()
         let params = try parseFunctionParameters()
 
-        var returnType: MooseType = .Void
-        if !check(type: .LBrace) {
-            let toTok = advance() // > token as infix prefix or postfix op
-            guard
-                case .Operator(pos: _, assign: false) = toTok.type,
-                toTok.lexeme == ">"
-            else {
-                throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
-            }
-            returnType = try parseValueTypeDefinition()
-        }
+        let returnType: MooseType = try parseReturnTypeDefinition() ?? .Void
 
         let body = try parseBlockStatement()
-        remove(all: .NLine, until: .RBrace)
         try consumeStatementEnd()
         return FunctionStatement(token: token, name: name, body: body, params: params, returnType: returnType)
+    }
+
+    func parseOperationStatement() throws -> OperationStatement {
+        let posToken = try consume(oneOf: [.Infix, .Prefix, .Postfix], message: "Expected start of operator definition with positional definition, but got \(peek().lexeme) instead.")
+
+        guard let pos = OpPos.from(token: posToken.type) else {
+            throw error(message: "Could not determine operator position.", token: posToken)
+        }
+
+        guard case .Operator(pos: _, assign: let isAssign) = peek().type else {
+            throw error(message: "Operator name definition expected. Got \(peek().lexeme) instead.", token: peek())
+        }
+        let opToken = advance()
+
+        // is this smart? maybe not, since if the operator name ends with : we can only use this operator as assign operator
+        let opNameExt = isAssign ? ":" : ""
+        let opName = opToken.lexeme + opNameExt
+
+        let paramStartToken = peek()
+        guard paramStartToken.type == .LParen else {
+            throw error(message: "Expected start of operation parameter list, but got '\(peek().lexeme)' instead.", token: peek())
+        }
+
+        let params = try parseFunctionParameters()
+        guard params.count == pos.numArgs else {
+            throw error(message: "Expected \(pos.numArgs) parameter for \(pos) operation, but got \(params.count) parameters instead", token: paramStartToken)
+        }
+
+        let retType: MooseType = try parseReturnTypeDefinition() ?? .Void
+        let body = try parseBlockStatement()
+        try consumeStatementEnd()
+        return OperationStatement(token: posToken, name: opName, position: pos, body: body, params: params, returnType: retType)
     }
 
     func parseFunctionParameters() throws -> [VariableDefinition] {
@@ -228,7 +252,7 @@ class Parser {
     }
 
     func parseBlockStatement() throws -> BlockStatement {
-        let token = try consume(type: .LBrace, message: "expected start of function body starting with {")
+        let token = try consume(type: .LBrace, message: "expected start of body starting with {")
         var stmts = [Statement]()
         skip(all: .NLine)
         while !check(type: .RBrace) {
@@ -390,10 +414,26 @@ class Parser {
         return list
     }
 
+    /// returns type of `> Type`. If there was no `>` nil is returned
+    func parseReturnTypeDefinition() throws -> MooseType? {
+        if !check(type: .LBrace) {
+            let toTok = advance() // > token as infix prefix or postfix op
+            guard
+                case .Operator(pos: _, assign: false) = toTok.type,
+                toTok.lexeme == ">"
+            else {
+                throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
+            }
+            return try parseValueTypeDefinition()
+        }
+
+        return nil
+    }
+
     // -----------------------
     // ---- TypeDefinition ---
 
-    func parseValueTypeDefinition(withVoid: Bool = false) throws -> MooseType {
+    func parseValueTypeDefinition() throws -> MooseType {
         switch peek().type {
         case .Void:
             return try parseVoidTypeDefinition()
