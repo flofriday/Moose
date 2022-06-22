@@ -43,6 +43,7 @@ enum TokenType: Equatable, Hashable {
     case Prefix
     case Postfix
     case Void
+    case Nil
 }
 
 extension TokenType {
@@ -79,6 +80,7 @@ internal func lookUpIdent(ident: String) -> TokenType {
     case "postfix": return .Postfix
     case "prefix": return .Prefix
     case "Void": return .Void
+    case "nil": return .Nil
     default: return .Identifier
     }
 }

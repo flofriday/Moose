@@ -61,6 +61,7 @@ class Parser {
         prefixParseFns[.Boolean(false)] = parseBoolean
         prefixParseFns[.LParen] = parseTupleAndGroupedExpression
         prefixParseFns[.String] = parseStringLiteral
+        prefixParseFns[.Nil] = parseNil
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
         infixParseFns[.LParen] = parseCallExpression
@@ -150,10 +151,24 @@ class Parser {
 
         var expr: Expression = assignable
         if case .Operator(pos: .Infix, assign: true) = token.type {
+            // manipulate ast from a +: 2 to a = a + 2
             expr = try parseInfixExpression(left: expr)
-        } else {
+        } else if check(type: .Assign) {
             token = try consume(oneOf: [.Assign], message: "I expected a '=' after a variable decleration.")
             expr = try parseExpression(.Lowest)
+            guard !(expr is Nil) || type != nil else {
+                throw error(message: "Nil assignment only possible for typed assignments", token: token)
+            }
+        } else {
+            // if no assignment, nil by default
+            // but end of statement expected
+            guard isStatementEnd else {
+                throw error(message: "Assignment or end of statement expected, but got \(token.lexeme) instead", token: token)
+            }
+            guard type != nil else {
+                throw error(message: "Implicit nil assignment is only valid for typed assignables", token: previous())
+            }
+            expr = Nil(token: token)
         }
 
         try consumeStatementEnd()
@@ -270,6 +285,11 @@ class Parser {
         return Identifier(token: ident, value: ident.literal as! String)
     }
 
+    func parseNil() throws -> Nil {
+        let n = try consume(type: .Nil, message: "'nil' was expected")
+        return Nil(token: n)
+    }
+
     func parseIntegerLiteral() throws -> Expression {
         guard let literal = advance().literal as? Int64 else {
             throw genLiteralTypeError(t: previous(), expected: "Int64")
@@ -365,7 +385,7 @@ class Parser {
     // -----------------------
     // ---- TypeDefinition ---
 
-    func parseValueTypeDefinition() throws -> ValueType {
+    func parseValueTypeDefinition(withVoid: Bool = false) throws -> ValueType {
         switch peek().type {
         case .Void:
             return try parseVoidTypeDefinition()

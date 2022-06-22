@@ -11,6 +11,7 @@ class ParserTests: BaseClass {
     func test_assignStatements() throws {
         print("-- \(#function)")
 
+        // (input, ident, value, isMutable, Type)
         let inputs: [(String, String, Any, Bool, String?)] = [
             ("a = 3", "a", Int64(3), false, nil),
             ("mut b = 1", "b", Int64(1), true, nil),
@@ -23,7 +24,8 @@ class ParserTests: BaseClass {
             ("var: String = ident", "var", "ident", false, "String"),
             ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
             ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
-            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))")
+            ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))"),
+            ("(var): Int = 2", "var", 2, false, "Int")
         ]
 
         for (index, i) in inputs.enumerated() {
@@ -315,7 +317,10 @@ class ParserTests: BaseClass {
             ("(1,a) = 1", false),
             ("(a,1) = 1", false),
             ("(a,a,1) = 1", false),
-            ("(a,a,a) = 1", true)
+            ("(a,a,a) = 1", true),
+            ("(a,a,a) = nil", false),
+            ("(a,a): Int = nil", false),
+            ("(a,a): Int = (nil)", false)
         ]
 
         for (i, t) in tests.enumerated() {
@@ -333,6 +338,23 @@ class ParserTests: BaseClass {
             let ass = try cast(prog.statements[0], AssignStatement.self)
             let assignable = try cast(ass.assignable, Tuple.self)
             XCTAssertTrue(assignable.isAssignable)
+        }
+    }
+
+    func test_assertThrows() throws {
+        let tests = [
+            "(a+1) = 1",
+            "a = nil",
+            "a = (nil)"
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let l = Lexer(input: t)
+            let p = Parser(tokens: try l.scan())
+
+            XCTAssertThrowsError(try p.parse())
         }
     }
 }

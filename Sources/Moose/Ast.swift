@@ -68,6 +68,10 @@ struct StringLiteral {
     let value: String
 }
 
+struct Nil {
+    let token: Token
+}
+
 struct PrefixExpression {
     let token: Token
     let op: String // operator
@@ -181,6 +185,12 @@ extension IntegerLiteral: Expression {
     var tokenLiteral: Any? { token.literal }
     var tokenLexeme: String { token.lexeme }
     var description: String { token.lexeme }
+}
+
+extension Nil: Expression {
+    var tokenLiteral: Any? { token.literal }
+    var tokenLexeme: String { token.lexeme }
+    var description: String { "nil" }
 }
 
 extension Boolean: Expression {
