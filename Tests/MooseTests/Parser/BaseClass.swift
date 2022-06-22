@@ -111,4 +111,15 @@ class BaseClass: XCTestCase {
             throw error
         }
     }
+
+    func test_operator(stmt: Statement, name: String, pos: OpPos, argumentCount: Int, returnType: MooseType) throws {
+        guard let op = stmt as? OperationStatement else {
+            throw TestErrors.parseError("op is not OperationStatement. got=\(type(of: stmt))")
+        }
+
+        XCTAssertEqual(op.name, name)
+        XCTAssertEqual(op.position, pos)
+        XCTAssertEqual(op.params.count, argumentCount)
+        XCTAssertEqual(op.returnType, returnType)
+    }
 }

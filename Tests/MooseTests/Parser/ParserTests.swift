@@ -354,7 +354,9 @@ class ParserTests: BaseClass {
         let tests = [
             "(a+1) = 1",
             "a = nil",
-            "a = (nil)"
+            "a = (nil)",
+            "prefix += (a: Int, b: Int) > String {}",
+            "infix += (a: Int b: Int) > String {}"
         ]
 
         for (i, t) in tests.enumerated() {
@@ -363,7 +365,50 @@ class ParserTests: BaseClass {
             let l = Lexer(input: t)
             let p = Parser(tokens: try l.scan())
 
-            XCTAssertThrowsError(try p.parse())
+            XCTAssertThrowsError(try p.parse()) {
+                if let err = $0 as? CompileError {
+                    print(err.getFullReport(sourcecode: t))
+                } else {
+                    print($0)
+                }
+            }
+        }
+    }
+
+    func test_passTests() throws {
+        let tests = [
+            "func a() > (String) > (String) > String {}"
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let l = Lexer(input: t)
+            do {
+                let p = Parser(tokens: try l.scan())
+                _ = try p.parse()
+            } catch let err as CompileError {
+                XCTFail(err.getFullReport(sourcecode: t))
+            } catch {
+                XCTFail(error.localizedDescription)
+            }
+        }
+    }
+
+    func test_operatorDefintionParsing() throws {
+        let tests = [
+            ("infix += (a: Int, b: Int) > String {}", "+=", OpPos.Infix, 2, MooseType.String),
+            ("prefix +: (a: Int) {}", "+:", OpPos.Prefix, 1, MooseType.Void),
+            ("postfix++^ (a: Int) > CustomType {}", "++^", OpPos.Postfix, 1, MooseType.Class("CustomType")),
+            ("infix +=(a: Int, b: (Tuple, Tuple)) > (String) > (Int) { a = b; return g}", "+=", OpPos.Infix, 2, MooseType.Function([.String], .Int))
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(prog.statements.count, 1)
+            try test_operator(stmt: prog.statements[0], name: t.1, pos: t.2, argumentCount: t.3, returnType: t.4)
         }
     }
 }

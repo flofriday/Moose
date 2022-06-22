@@ -117,6 +117,8 @@ class Parser {
             return try parseFunctionStatement()
         } else if check(type: .LBrace) {
             return try parseBlockStatement()
+        } else if check(oneOf: .Prefix, .Infix, .Postfix) {
+            return try parseOperationStatement()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -215,7 +217,11 @@ class Parser {
         let opNameExt = isAssign ? ":" : ""
         let opName = opToken.lexeme + opNameExt
 
-        let paramStartToken = try consume(type: .LParen, message: "Expected start of operation parameter list, but got '\(peek().lexeme)' instead.")
+        let paramStartToken = peek()
+        guard paramStartToken.type == .LParen else {
+            throw error(message: "Expected start of operation parameter list, but got '\(peek().lexeme)' instead.", token: peek())
+        }
+
         let params = try parseFunctionParameters()
         guard params.count == pos.numArgs else {
             throw error(message: "Expected \(pos.numArgs) parameter for \(pos) operation, but got \(params.count) parameters instead", token: paramStartToken)
@@ -427,7 +433,7 @@ class Parser {
     // -----------------------
     // ---- TypeDefinition ---
 
-    func parseValueTypeDefinition(withVoid: Bool = false) throws -> MooseType {
+    func parseValueTypeDefinition() throws -> MooseType {
         switch peek().type {
         case .Void:
             return try parseVoidTypeDefinition()
