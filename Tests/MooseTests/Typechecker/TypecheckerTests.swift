@@ -43,7 +43,11 @@ class TypecheckerTests: TypecheckerBaseClass {
 
             let prog = try parseProgram(t)
             let tc = Typechecker()
-            try tc.check(program: prog)
+            do {
+                try tc.check(program: prog)
+            } let error as CompileError {
+                error.f
+            }
         }
     }
 }

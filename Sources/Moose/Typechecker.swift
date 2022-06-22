@@ -178,7 +178,7 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: PrefixExpression) throws {
-//        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
     }
 
     func visit(_ node: InfixExpression) throws {
