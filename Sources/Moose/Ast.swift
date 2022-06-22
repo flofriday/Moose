@@ -246,6 +246,7 @@ class OperationStatement {
     let token: Token // operator token
     let name: String
     let position: OpPos
+    let body: BlockStatement
     let params: [VariableDefinition]
     let returnType: MooseType
     var mooseType: MooseType?
@@ -404,6 +405,20 @@ extension BlockStatement: Statement {
 extension FunctionStatement: Statement {
     var description: String {
         var out = "func \(name.value)"
+        out += "(\(params.map { $0.description }.joined(separator: ", ")))"
+        out += " > \(returnType.description)"
+        out += " \(body.description)"
+        return out
+    }
+
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
+}
+
+extension OperationStatement: Statement {
+    var description: String {
+        var out = "\(position.description) \(name) "
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
         out += " > \(returnType.description)"
         out += " \(body.description)"

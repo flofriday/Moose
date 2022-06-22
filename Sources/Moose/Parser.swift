@@ -209,6 +209,24 @@ class Parser {
         return FunctionStatement(token: token, name: name, body: body, params: params, returnType: returnType)
     }
 
+    func parseOperationStatement() throws -> OperationStatement {
+        let token = try consume(oneOf: [.Infix, .Prefix, .Postfix], message: "Expected start of operator definition with positional definition, but got \(peek().lexeme) instead.")
+
+        guard let pos = OpPos.from(token: token.type) else {
+            throw error(message: "Could not determine operator position.", token: token)
+        }
+
+        guard case .Operator(pos: _, assign: let isAssign) = peek().type else {
+            throw error(message: "Operator name definition expected. Got \(peek().lexeme) instead.", token: peek())
+        }
+        _ = advance()
+        
+        
+
+        // is this smart? maybe not, since if the operator name ends with : we can only use this operator as assign operator
+        let opNameExt = isAssign ? ":" : ""
+    }
+
     func parseFunctionParameters() throws -> [VariableDefinition] {
         var defs = [VariableDefinition]()
         _ = try consume(type: .LParen, message: "expected begin of parameter definition with (, but got \(peek().lexeme) instead")
