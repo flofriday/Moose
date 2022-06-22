@@ -89,8 +89,8 @@ class Typechecker: Visitor {
         let valueType = node.value.mooseType!
 
         // Verify that the explicit expressed type (if availble) matches the type of the expression
-        if let expressedType = node.type {
-            guard try MooseType.from(node.type!) == valueType else {
+        if let expressedType = node.declaredType {
+            guard node.declaredType == valueType else {
                 throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
             }
         }
@@ -167,8 +167,6 @@ class Typechecker: Visitor {
         isGlobal = wasGlobal
     }
 
-    func visit(_ node: ValueType) throws {}
-
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
             line: token.line,
@@ -238,7 +236,7 @@ class GlobalScopeExplorer: Visitor {
         }
 
         // check if it is declaration or just assignment. If it is a declaration without type, throw error
-        guard let vType = node.type else {
+        guard let declaredType = node.declaredType else {
             for n in assignable.idents {
                 guard scope.hasVar(name: n.value) else {
                     throw error(message: "Assignments in global scope must be explicitly typed.", token: n.token)
@@ -251,10 +249,11 @@ class GlobalScopeExplorer: Visitor {
         // now we know that we have a type declaration with type definition.
         // we dont check if the assignment is currect, since this is done by the type checker
         if let ident = assignable as? Identifier {
-            let valType = try MooseType.from(vType)
-            try scope.addVar(name: ident.value, type: valType, mutable: node.mutable)
+            try scope.addVar(name: ident.value, type: declaredType, mutable: node.mutable)
+
+            // create tuple variables on global scope
         } else if let tuple = assignable as? Tuple {
-            guard case .Tuple(let valTypes) = try MooseType.from(vType) else {
+            guard case .Tuple(let valTypes) = declaredType else {
                 throw error(message: "Type of tuple is not tuple", token: node.token)
             }
             guard tuple.expressions.count == valTypes.count else {
@@ -316,10 +315,6 @@ class GlobalScopeExplorer: Visitor {
 
     func visit(_ node: FunctionStatement) throws {
         throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: ValueType) throws {
-        // throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {

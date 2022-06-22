@@ -24,7 +24,6 @@ protocol Visitor {
     func visit(_ node: Tuple) throws
     func visit(_ node: Nil) throws
     func visit(_ node: CallExpression) throws
-    func visit(_ node: ValueType) throws
 }
 
 protocol Node: CustomStringConvertible {
@@ -55,19 +54,19 @@ class Program {
 }
 
 class AssignStatement {
-    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: ValueType?) {
+    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: MooseType?) {
         self.token = token
         self.assignable = assignable
         self.value = value
         self.mutable = mutable
-        self.type = type
+        self.declaredType = type
     }
 
     let token: Token
     let assignable: Expression
     let value: Expression
     let mutable: Bool
-    var type: ValueType?
+    var declaredType: MooseType?
 }
 
 class Identifier: Assignable, Declareable {
@@ -193,17 +192,17 @@ class PostfixExpression {
 }
 
 class VariableDefinition {
-    init(token: Token, mutable: Bool, name: Identifier, type: ValueType) {
+    init(token: Token, mutable: Bool, name: Identifier, type: MooseType) {
         self.token = token
         self.mutable = mutable
         self.name = name
-        self.type = type
+        self.declaredType = type
     }
 
     let token: Token
     let mutable: Bool
     let name: Identifier
-    let type: ValueType
+    let declaredType: MooseType
     var mooseType: MooseType?
 }
 
@@ -218,7 +217,7 @@ class BlockStatement {
 }
 
 class FunctionStatement {
-    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: ValueType?) {
+    init(token: Token, name: Identifier, body: BlockStatement, params: [VariableDefinition], returnType: MooseType?) {
         self.token = token
         self.name = name
         self.body = body
@@ -230,7 +229,7 @@ class FunctionStatement {
     let name: Identifier
     let body: BlockStatement
     let params: [VariableDefinition]
-    let returnType: ValueType?
+    let returnType: MooseType?
     var mooseType: MooseType?
 }
 
@@ -312,7 +311,7 @@ extension Program: Node {
 extension AssignStatement: Statement {
     var description: String {
         let mut = mutable ? "mut " : ""
-        let type = type != nil ? ": \(type?.description ?? "")" : ""
+        let type = declaredType != nil ? ": \(declaredType?.description ?? "")" : ""
         return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 
@@ -375,7 +374,7 @@ extension PostfixExpression: Expression {
 }
 
 extension VariableDefinition: Node {
-    var description: String { "\(name.value): \(type.description)" }
+    var description: String { "\(name.value): \(declaredType.description)" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
@@ -414,29 +413,5 @@ extension IfStatement: Statement {
 
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
-    }
-}
-
-// ---- Value Type -----
-
-indirect enum ValueType {
-    case Identifier(ident: Identifier)
-    case Tuple(types: [ValueType])
-    case Function(params: [ValueType], returnType: ValueType)
-    case Void
-}
-
-extension ValueType: CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .Identifier(ident: let i):
-            return i.description
-        case .Tuple(types: let ids):
-            return "(\(ids.map { $0.description }.joined(separator: ", ")))"
-        case .Function(params: let params, returnType: let returnType):
-            return "(\(params.map { $0.description }.joined(separator: ", "))) > \(returnType.description)"
-        case .Void:
-            return "()"
-        }
     }
 }

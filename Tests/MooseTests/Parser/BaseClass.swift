@@ -25,12 +25,12 @@ class BaseClass: XCTestCase {
         }
 
         if let refType = typ {
-            guard let stmtType = stmt.type else {
+            guard let stmtType = stmt.declaredType else {
                 return (false, "stmt.type is nil but should be identifier with value '\(refType)'")
             }
             try test_valueType(type: stmtType, value: refType)
         } else {
-            XCTAssertTrue(stmt.type == nil, "stmt.type is not nil. got=\(String(describing: stmt.type))")
+            XCTAssertTrue(stmt.declaredType == nil, "stmt.type is not nil. got=\(String(describing: stmt.declaredType))")
         }
         return (true, "")
     }
@@ -50,7 +50,7 @@ class BaseClass: XCTestCase {
         XCTAssertEqual(ident.token.lexeme, value)
     }
 
-    func test_valueType(type: ValueType, value: String) throws {
+    func test_valueType(type: MooseType, value: String) throws {
         XCTAssertEqual(type.description, value)
     }
 
