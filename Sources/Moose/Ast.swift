@@ -28,13 +28,8 @@ protocol Visitor {
 }
 
 protocol Node: CustomStringConvertible {
-    var tokenLiteral: Any? { get }
-    var tokenLexeme: String { get }
-
+    var getToken: Token { get }
     func accept(_ visitor: Visitor) throws
-
-    // string representation of node
-//    var description: String { get }
 }
 
 protocol Statement: Node {}
@@ -295,18 +290,11 @@ class Tuple: Assignable, Declareable {
 // Node implementations
 
 extension Program: Node {
-    var tokenLiteral: Any? {
-        guard statements.count > 0 else {
-            return nil
+    var getToken: Token {
+        guard let f = statements.first else {
+            return Token(type: .EOF, lexeme: "", line: 1, column: 0)
         }
-        return statements[0].tokenLiteral
-    }
-
-    var tokenLexeme: String {
-        guard statements.count > 0 else {
-            return ""
-        }
-        return statements[0].tokenLexeme
+        return f.getToken
     }
 
     var description: String {
@@ -322,14 +310,7 @@ extension Program: Node {
 }
 
 extension AssignStatement: Statement {
-    var tokenLiteral: Any? {
-        return token.literal
-    }
-
-    var tokenLexeme: String {
-        return token.lexeme
-    }
-
+    var getToken: Token { return token }
     var description: String {
         let mut = mutable ? "mut " : ""
         let type = type != nil ? ": \(type?.description ?? "")" : ""
@@ -342,248 +323,91 @@ extension AssignStatement: Statement {
 }
 
 extension Identifier: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        value
-    }
-
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
     }
+
+    var getToken: Token { token }
+    var description: String { value }
 }
 
 extension ReturnStatement: Statement {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "\(tokenLexeme) \(returnValue.description)"
-    }
-
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
     }
+
+    var getToken: Token { token }
+    var description: String { "\(token.lexeme) \(returnValue.description)" }
 }
 
 extension ExpressionStatement: Statement {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        expression.description
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    var getToken: Token { token }
+    var description: String { expression.description }
 }
 
 extension IntegerLiteral: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        token.lexeme
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { token.lexeme }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Nil: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "nil"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "nil" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Boolean: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        token.lexeme
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { token.lexeme }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension StringLiteral: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "\"\(token.lexeme)\""
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "\"\(token.lexeme)\"" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension Tuple: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "(\(expressions.map { $0.description }.joined(separator: ", ")))"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PrefixExpression: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "(\(op)\(right.description))"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "(\(op)\(right.description))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension InfixExpression: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "(\(left.description) \(op) \(right.description))"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "(\(left.description) \(op) \(right.description))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension PostfixExpression: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "(\(left.description)\(op))"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "(\(left.description)\(op))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension VariableDefinition: Node {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "\(name.value): \(type.description)"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "\(name.value): \(type.description)" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension BlockStatement: Statement {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "{\(statements.map { $0.description }.joined(separator: ";"))}"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension FunctionStatement: Statement {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
+    var getToken: Token { token }
     var description: String {
         var out = "func \(name.value)"
         out += "(\(params.map { $0.description }.joined(separator: ", ")))"
@@ -598,32 +422,13 @@ extension FunctionStatement: Statement {
 }
 
 extension CallExpression: Expression {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
-    var description: String {
-        "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))"
-    }
-
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
-    }
+    var getToken: Token { token }
+    var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
+    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
 extension IfStatement: Statement {
-    var tokenLiteral: Any? {
-        token.literal
-    }
-
-    var tokenLexeme: String {
-        token.lexeme
-    }
-
+    var getToken: Token { token }
     var description: String {
         let base = "if \(condition.description) \(consequence.description)"
         guard let alt = alternative else {
