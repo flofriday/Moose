@@ -204,18 +204,39 @@ class Typechecker: Visitor {
 
     func visit(_ node: OperationStatement) throws {
         let wasGlobal = isGlobal
+        isGlobal = false
 
-        // Some Code
+        guard wasGlobal else {
+            throw error(message: "Operator definition is only allowed in global scope.", token: node.token)
+        }
+
+        try node.body.accept(self)
+
+        // get real return type
+        var realReturnValue: MooseType = .Void
+        if let lastStmt = node.body.statements.last, let retStmt = lastStmt as? ReturnStatement {
+            guard let typ = retStmt.returnValue.mooseType else {
+                throw error(message: "Could not determine return type of body", token: retStmt.token)
+            }
+            realReturnValue = typ
+        }
+
+        // compare declared and real returnType
+        guard realReturnValue == node.returnType else {
+            throw error(message: "Return type of operator is \(realReturnValue), not \(node.returnType) as declared in signature", token: node.token)
+        }
+
+        // TODO: assure it is in scope
 
         isGlobal = wasGlobal
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 }
@@ -268,8 +289,7 @@ class GlobalScopeExplorer: Visitor {
         throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
-    func visit(_ node: CallExpression) throws {
-    }
+    func visit(_ node: CallExpression) throws {}
 
     /// Checks initial assignment types
     /// If assignment, it must have a declared type if it is a declaration.
@@ -364,15 +384,20 @@ class GlobalScopeExplorer: Visitor {
     }
 
     func visit(_ node: OperationStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+        let paramTypes = node.params.map { $0.declaredType }
+        guard !scope.hasOp(name: node.name, opPos: node.position, args: paramTypes, includeEnclosing: false) else {
+            throw error(message: "Operation is already defined with the same signature", token: node.token)
+        }
+
+        scope.addOp(name: node.name, opPos: node.position, args: paramTypes, returnType: node.returnType)
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 }

@@ -7,13 +7,12 @@ import Foundation
 class Scope {
     var mooseVars: [String: MooseType] = [:]
     var mooseConsts: Set<String> = []
-    var mooseFuncs: [String: ([MooseType], MooseType)] = [:] //TODO: this could also be much faster O(1) instead of O(n), however, this is probably most of the time O(1)
+    var mooseFuncs: [String: ([MooseType], MooseType)] = [:] // TODO: this could also be much faster O(1) instead of O(n), however, this is probably most of the time O(1)
     var mooseClasses: Set<String> = []
-    var mooseOps: [String: [(OpPos, [MooseType], MooseType)]] = [:] //TODO: this is mostly really ineficient O(n) while it could be O(1)
+    var mooseOps: [String: [(OpPos, [MooseType], MooseType)]] = [:] // TODO: this is mostly really ineficient O(n) while it could be O(1)
     var enclosing: Scope?
 
-    init() {
-    }
+    init() {}
 
     func getIdentifierType(name: String) throws -> MooseType {
         if mooseVars.keys.contains(name) {

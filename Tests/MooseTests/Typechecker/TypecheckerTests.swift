@@ -16,7 +16,8 @@ class TypecheckerTests: TypecheckerBaseClass {
         let tests = [
             "a = 3",
             "a +: 1",
-            "a: String = 3"
+            "a: String = 3",
+            "prefix * (i: Int) > Int { return true }"
         ]
 
         for (i, t) in tests.enumerated() {
@@ -25,7 +26,13 @@ class TypecheckerTests: TypecheckerBaseClass {
             let prog = try parseProgram(t)
             let tc = Typechecker()
             XCTAssertThrowsError(try tc.check(program: prog)) { err in
-                print(err.localizedDescription)
+                if let err = err as? CompileError {
+                    print(err.getFullReport(sourcecode: t))
+                } else if let err = err as? CompileErrorMessage {
+                    print(err.getFullReport(sourcecode: t))
+                } else {
+                    print(err.localizedDescription)
+                }
             }
         }
     }
@@ -46,11 +53,9 @@ class TypecheckerTests: TypecheckerBaseClass {
             do {
                 try tc.check(program: prog)
             } catch let error as CompileError {
-                print(error.getFullReport(sourcecode: t))
-                XCTFail()
+                XCTFail(error.getFullReport(sourcecode: t))
             } catch let error as CompileErrorMessage {
-                print(error.getFullReport(sourcecode: t))
-                XCTFail()
+                XCTFail(error.getFullReport(sourcecode: t))
             }
         }
     }
