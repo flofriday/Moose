@@ -110,4 +110,9 @@ class Scope {
           */
         throw ScopeError(message: "NOT IMPLEMENTED")
     }
+
+    func remove(variable name: String) {
+        mooseConsts.remove(name)
+        mooseVars.removeValue(forKey: name)
+    }
 }

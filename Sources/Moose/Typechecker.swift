@@ -18,10 +18,14 @@ class Typechecker: Visitor {
     }
 
     func check(program: Program) throws {
-        try program.accept(self)
+        // clear errors
+        errors = []
 
         let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
         scope = try scopeSpawner.spawn()
+        try scopeSpawner.visit(program)
+
+        try program.accept(self)
 
         guard errors.count == 0 else {
             throw CompileError(messages: errors)
@@ -81,12 +85,29 @@ class Typechecker: Visitor {
         node.mooseType = .Nil
     }
 
-    func visit(_ node: CallExpression) throws {}
+    func visit(_ node: CallExpression) throws {
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    }
 
     func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
         try node.value.accept(self)
         let valueType = node.value.mooseType!
+
+        // if we are in global scope, this variable has to be already added to scope!
+        // but we have to check if the stored type is indeed the type of the right expression.
+        if isGlobal, let ass = node.assignable as? Declareable {
+            // we assume only one identifier (from one identifer struct) and ignore tuples with multiple identifier
+            guard ass.idents.count == 1 else {
+                throw fatalError("Declareables other then identifiers are not supported at the moment. We are working on it!")
+            }
+            let name = ass.idents[0].value
+            let storedType = try scope.getVarType(name: name)
+            guard valueType == storedType else {
+                scope.remove(variable: name)
+                throw error(message: "The variable is declared as \(storedType.description) but its actual type is \(valueType.description)", token: ass.token)
+            }
+        }
 
         // Verify that the explicit expressed type (if availble) matches the type of the expression
         if let expressedType = node.declaredType {
@@ -131,13 +152,18 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: ReturnStatement) throws {}
+    func visit(_ node: ReturnStatement) throws {
+//        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        try node.returnValue.accept(self)
+    }
 
     func visit(_ node: ExpressionStatement) throws {
         try node.expression.accept(self)
     }
 
-    func visit(_ node: Identifier) throws {}
+    func visit(_ node: Identifier) throws {
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    }
 
     func visit(_ node: IntegerLiteral) throws {
         node.mooseType = .Int
@@ -151,13 +177,24 @@ class Typechecker: Visitor {
         node.mooseType = .String
     }
 
-    func visit(_ node: PrefixExpression) throws {}
+    func visit(_ node: PrefixExpression) throws {
+//        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        
+        
+        
+    }
 
-    func visit(_ node: InfixExpression) throws {}
+    func visit(_ node: InfixExpression) throws {
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    }
 
-    func visit(_ node: PostfixExpression) throws {}
+    func visit(_ node: PostfixExpression) throws {
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    }
 
-    func visit(_ node: VariableDefinition) throws {}
+    func visit(_ node: VariableDefinition) throws {
+        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    }
 
     func visit(_ node: FunctionStatement) throws {
         let wasGlobal = isGlobal
@@ -183,9 +220,6 @@ class Typechecker: Visitor {
 // for classes and functions and one for global variables so yeah.
 // b: Int = 1 + a()
 // func a() -> Int ...
-//
-// func a() -> Int ...
-// b = 1 + a()
 class GlobalScopeExplorer: Visitor {
     let scope: Scope
     let program: Program
@@ -197,13 +231,18 @@ class GlobalScopeExplorer: Visitor {
 
     func spawn() throws -> Scope {
         // TODO: add more native functions
-        try scope.addFunc(name: "print", args: [.String], returnType: nil)
+//        try scope.addFunc(name: "print", args: [.String], returnType: nil)
         return scope
     }
 
     func visit(_ node: Program) throws {
         for stmt in node.statements {
-            try stmt.accept(self)
+            switch stmt {
+            case is AssignStatement:
+                try stmt.accept(self)
+            default:
+                break
+            }
         }
     }
 

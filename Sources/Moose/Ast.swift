@@ -54,7 +54,7 @@ class Program {
 }
 
 class AssignStatement {
-    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: MooseType?) {
+    init(token: Token, assignable: Assignable, value: Expression, mutable: Bool, type: MooseType?) {
         self.token = token
         self.assignable = assignable
         self.value = value
@@ -63,7 +63,7 @@ class AssignStatement {
     }
 
     let token: Token
-    let assignable: Expression
+    let assignable: Assignable
     let value: Expression
     let mutable: Bool
     var declaredType: MooseType?

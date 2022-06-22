@@ -15,7 +15,6 @@ class Cli {
         }
     }
 
-
     func runRepl() {
         print("Moose Interpreter (https://github.com/flofriday/Moose)")
         print("Written with <3 by Jozott00 and flofriday.")
@@ -43,17 +42,18 @@ class Cli {
             let parser = Parser(tokens: tokens)
             program = try parser.parse()
 
-
             try typechecker.check(program: program!)
 
-            try interpreter.run(program: program!)
+            interpreter.run(program: program!)
 
         } catch let error as CompileError {
-//        printCompileError(error: error, sourcecode: input)
             print(error.getFullReport(sourcecode: input))
             return
-        } catch let error as RuntimeError {
-            //print(error.getFullReport(sourcecode: input))
+        } catch let error as CompileErrorMessage {
+            print(error.getFullReport(sourcecode: input))
+            return
+        } catch _ as RuntimeError {
+            // print(error.getFullReport(sourcecode: input))
             exit(1)
         } catch {
             print(error)
