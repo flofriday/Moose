@@ -204,6 +204,9 @@ class Parser {
     func parseOperationStatement() throws -> OperationStatement {
         let posToken = try consume(oneOf: [.Infix, .Prefix, .Postfix], message: "Expected start of operator definition with positional definition, but got \(peek().lexeme) instead.")
 
+        // remove all newlines since these are not relevant for operator definition
+        remove(all: .NLine, until: .LBrace)
+
         guard let pos = OpPos.from(token: posToken.type) else {
             throw error(message: "Could not determine operator position.", token: posToken)
         }

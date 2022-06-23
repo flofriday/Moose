@@ -14,25 +14,44 @@ class TypecheckerTests: TypecheckerBaseClass {
         print("-- \(#function)")
 
         let tests = [
-            "a = 3",
-            "a +: 1",
             "a: String = 3",
-            "prefix * (i: Int) > Int { return true }"
+            """
+            mut a = 3
+            mut a = 2
+            """,
+            """
+            mut a = 3
+            a: Int = 2
+            """,
+            """
+            mut a = 3
+            a = "String"
+            """,
+            """
+            a = 3
+            a = 2
+            """,
+            "prefix * (i: Int) > Int { return true }",
+            "prefix * (i: Int) { return true }"
         ]
 
         for (i, t) in tests.enumerated() {
             print("Start \(i): \(t)")
 
-            let prog = try parseProgram(t)
-            let tc = Typechecker()
-            XCTAssertThrowsError(try tc.check(program: prog)) { err in
-                if let err = err as? CompileError {
-                    print(err.getFullReport(sourcecode: t))
-                } else if let err = err as? CompileErrorMessage {
-                    print(err.getFullReport(sourcecode: t))
-                } else {
-                    print(err.localizedDescription)
+            do {
+                let prog = try parseProgram(t)
+                let tc = Typechecker()
+                XCTAssertThrowsError(try tc.check(program: prog)) { err in
+                    if let err = err as? CompileError {
+                        print(err.getFullReport(sourcecode: t))
+                    } else if let err = err as? CompileErrorMessage {
+                        print(err.getFullReport(sourcecode: t))
+                    } else {
+                        XCTFail(err.localizedDescription)
+                    }
                 }
+            } catch let err as CompileError {
+                XCTFail(err.getFullReport(sourcecode: t))
             }
         }
     }
@@ -41,16 +60,35 @@ class TypecheckerTests: TypecheckerBaseClass {
         print("-- \(#function)")
 
         let tests = [
+            """
+            prefix * (i: Int) > Int {return 1}
+            """,
+            """
+            prefix* (i: Int) > Int {return 1}
+            """,
+            """
+            infix *(i: Int, a: Int) > Int {return 1}
+            """,
+            """
+            postfix *(i: Int)
+            { 1
+
+            }
+            """,
+            """
+            """,
             "a: Int = 3",
-            "a: Int +: 1"
+            "a = 3"
+//            "a: Int +: 1",
+//            "a +: 1"
         ]
 
         for (i, t) in tests.enumerated() {
             print("Start \(i): \(t)")
 
-            let prog = try parseProgram(t)
-            let tc = Typechecker()
             do {
+                let prog = try parseProgram(t)
+                let tc = Typechecker()
                 try tc.check(program: prog)
             } catch let error as CompileError {
                 XCTFail(error.getFullReport(sourcecode: t))

@@ -89,26 +89,10 @@ class Typechecker: Visitor {
         throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
     }
 
-    // TODO: remove variable on failure if current scope is global
     func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
         try node.value.accept(self)
         let valueType = node.value.mooseType!
-
-        // if we are in global scope, this variable has to be already added to scope!
-        // but we have to check if the stored type is indeed the type of the right expression.
-        if isGlobal, let ass = node.assignable as? Declareable {
-            // we assume only one identifier (from one identifer struct) and ignore tuples with multiple identifier
-            guard ass.idents.count == 1 else {
-                throw fatalError("Declareables other then identifiers are not supported at the moment. We are working on it!")
-            }
-            let name = ass.idents[0].value
-            let storedType = try scope.getVarType(name: name)
-            guard valueType == storedType else {
-                scope.removeVar(variable: name) // remove variable since repl uses same scope
-                throw error(message: "The variable is declared as \(storedType.description) but its actual type is \(valueType.description)", token: ass.token)
-            }
-        }
 
         // Verify that the explicit expressed type (if availble) matches the type of the expression
         if let expressedType = node.declaredType {
@@ -118,7 +102,7 @@ class Typechecker: Visitor {
         }
 
         // TODO: in the future we want more than just variable assignment to work here
-        let name: String!
+        var name: String?
         switch node.assignable {
         case let id as Identifier:
             name = id.value
@@ -126,13 +110,16 @@ class Typechecker: Visitor {
             throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
         }
 
-        // The following checks only will make sense if you are not in the global scope
-        guard !isGlobal else {
-            return
+        guard let name = name else {
+            throw error(message: "INTERNAL ERROR: could not extract name from assignable", token: node.assignable.token)
         }
 
         // Checks to do if the variable was already initialized
         if scope.hasVar(name: name, includeEnclosing: true) {
+            if let t = node.declaredType {
+                throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(name)' already exists.\nTipp: Remove `: \(t.description)`", token: node.assignable.token)
+            }
+
             // Check that the variable wasn mutable
             guard scope.isVarMut(name: name, includeEnclosing: true) else {
                 throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Define '\(name)' as mutable with the the `mut` keyword.", token: node.token)
@@ -146,7 +133,7 @@ class Typechecker: Visitor {
             // Check that the new assignment still has the same type from the initialization
             let currentType = try scope.getVarType(name: name)
             guard currentType == valueType else {
-                throw error(message: "Variable '\(name)' is has the type \(currentType), but the expression on the right produces a value of the type \(valueType) ", token: node.token)
+                throw error(message: "Variable '\(name)' has the type \(currentType), but the expression on the right produces a value of the type \(valueType).", token: node.value.token)
             }
         } else {
             try scope.addVar(name: name, type: valueType, mutable: node.mutable)
@@ -265,8 +252,13 @@ class GlobalScopeExplorer: Visitor {
     func visit(_ node: Program) throws {
         for stmt in node.statements {
             switch stmt {
-            case is AssignStatement:
+            case is OperationStatement:
+                fallthrough
+            case is FunctionStatement:
                 try stmt.accept(self)
+            // assignment not needed since evaluation order is well defined
+            // case is AssignmentStatement:
+            // try stmt.accept(self)
             default:
                 break
             }
@@ -291,50 +283,10 @@ class GlobalScopeExplorer: Visitor {
 
     func visit(_ node: CallExpression) throws {}
 
-    /// Checks initial assignment types
-    /// If assignment, it must have a declared type if it is a declaration.
-    ///
-    /// - Parameter node: assign statement
-    /// - Throws:
+    /// Should not be called from explorer.
+    /// This is because variable definitions in future should not be seen by statements before
     func visit(_ node: AssignStatement) throws {
-        guard let assignable = node.assignable as? Declareable else {
-            return
-        }
-
-        // check if it is declaration or just assignment. If it is a declaration without type, throw error
-        guard let declaredType = node.declaredType else {
-            for n in assignable.idents {
-                guard scope.hasVar(name: n.value) else {
-                    throw error(message: "Assignments in global scope must be explicitly typed.", token: n.token)
-                }
-            }
-            // we are not interrest in this assignment since it is no declaration
-            return
-        }
-
-        // now we know that we have a type declaration with type definition.
-        // we dont check if the assignment is currect, since this is done by the type checker
-        if let ident = assignable as? Identifier {
-            try scope.addVar(name: ident.value, type: declaredType, mutable: node.mutable)
-
-            // create tuple variables on global scope
-        } else if let tuple = assignable as? Tuple {
-            guard case .Tuple(let valTypes) = declaredType else {
-                throw error(message: "Type of tuple is not tuple", token: node.token)
-            }
-            guard tuple.expressions.count == valTypes.count else {
-                throw error(message: "Tuple has not the same amount of length as type declares", token: node.token)
-            }
-            for (i, (e, t)) in zip(tuple.expressions, valTypes).enumerated() {
-                guard let e = e as? Identifier else {
-                    throw error(message: "\(i + 1). element of tuple is not an identier.", token: node.token)
-                }
-                try scope.addVar(name: e.value, type: t, mutable: node.mutable)
-            }
-
-        } else {
-            throw error(message: "Assignment for '\(type(of: node.assignable))' is not supported.", token: node.token)
-        }
+        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
     }
 
     func visit(_ node: ReturnStatement) throws {

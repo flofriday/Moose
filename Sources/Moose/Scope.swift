@@ -36,11 +36,11 @@ class Scope {
             return true
         }
 
-        guard enclosing != nil, includeEnclosing else {
+        guard let enclosing = enclosing, includeEnclosing else {
             return false
         }
 
-        return enclosing!.hasVar(name: name)
+        return enclosing.hasVar(name: name)
     }
 
     func isVarMut(name: String, includeEnclosing: Bool) -> Bool {
@@ -48,11 +48,12 @@ class Scope {
             return false
         }
 
-        guard enclosing != nil, includeEnclosing else {
-            return false
+        // if no more enclosing scopes could contain mutable, it is true
+        guard let enclosing = enclosing, includeEnclosing else {
+            return true
         }
 
-        return enclosing!.isVarMut(name: name, includeEnclosing: includeEnclosing)
+        return enclosing.isVarMut(name: name, includeEnclosing: includeEnclosing)
     }
 
     func getVarType(name: String) throws -> MooseType {
