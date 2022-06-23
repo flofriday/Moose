@@ -14,18 +14,21 @@ import Foundation
 // b: Int = 1 + a()
 // func a() -> Int ...
 class GlobalScopeExplorer: BaseVisitor {
-    let scope: Scope
+    let scope: TypeScope
     let program: Program
 
-    init(program: Program, scope: Scope) {
+    init(program: Program, scope: TypeScope) {
         self.scope = scope
         self.program = program
         super.init("Should not be explored by GlobalScopeExplorer.")
     }
 
-    func spawn() throws -> Scope {
+    func spawn() throws -> TypeScope {
         // TODO: add more native functions
 //        try scope.addFunc(name: "print", args: [.String], returnType: nil)
+
+        // start exploring
+        try visit(program)
         return scope
     }
 
@@ -51,11 +54,14 @@ class GlobalScopeExplorer: BaseVisitor {
 
     override func visit(_ node: OperationStatement) throws {
         let paramTypes = node.params.map { $0.declaredType }
-        guard !scope.hasOp(name: node.name, opPos: node.position, args: paramTypes, includeEnclosing: false) else {
+        guard !scope.has(op: node.name, opPos: node.position, args: paramTypes, includeEnclosing: false) else {
             throw error(message: "Operation is already defined with the same signature", token: node.token)
         }
-
-        scope.addOp(name: node.name, opPos: node.position, args: paramTypes, returnType: node.returnType)
+        do {
+            try scope.add(op: node.name, opPos: node.position, args: paramTypes, returnType: node.returnType)
+        } catch let err as ScopeError {
+            throw error(message: err.message, token: node.token)
+        }
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {

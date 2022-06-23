@@ -11,10 +11,10 @@ class Typechecker: BaseVisitor {
     var isFunction = false
     var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
-    var scope: Scope
+    var scope: TypeScope
 
     init() {
-        self.scope = Scope()
+        self.scope = TypeScope()
         super.init("Typechecker is not yet implemented for this scope.")
     }
 
@@ -24,7 +24,6 @@ class Typechecker: BaseVisitor {
 
         let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
         scope = try scopeSpawner.spawn()
-        try scopeSpawner.visit(program)
 
         try program.accept(self)
 
@@ -116,13 +115,13 @@ class Typechecker: BaseVisitor {
         }
 
         // Checks to do if the variable was already initialized
-        if scope.hasVar(name: name, includeEnclosing: true) {
+        if scope.has(variable: name, includeEnclosing: true) {
             if let t = node.declaredType {
                 throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(name)' already exists.\nTipp: Remove `: \(t.description)`", token: node.assignable.token)
             }
 
             // Check that the variable wasn mutable
-            guard scope.isVarMut(name: name, includeEnclosing: true) else {
+            guard try scope.isMut(variable: name) else {
                 throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Define '\(name)' as mutable with the the `mut` keyword.", token: node.token)
             }
 
@@ -132,12 +131,12 @@ class Typechecker: BaseVisitor {
             }
 
             // Check that the new assignment still has the same type from the initialization
-            let currentType = try scope.getVarType(name: name)
+            let currentType = try scope.typeOf(variable: name)
             guard currentType == valueType else {
                 throw error(message: "Variable '\(name)' has the type \(currentType), but the expression on the right produces a value of the type \(valueType).", token: node.value.token)
             }
         } else {
-            try scope.addVar(name: name, type: valueType, mutable: node.mutable)
+            try scope.add(variable: name, type: valueType, mutable: node.mutable)
         }
     }
 
@@ -184,6 +183,7 @@ class Typechecker: BaseVisitor {
         try node.body.accept(self)
 
         // get real return type
+        // TODO: return could also be in other statement
         var realReturnValue: MooseType = .Void
         if let lastStmt = node.body.statements.last, let retStmt = lastStmt as? ReturnStatement {
             guard let typ = retStmt.returnValue.mooseType else {
