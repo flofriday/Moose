@@ -32,7 +32,13 @@ class TypecheckerTests: TypecheckerBaseClass {
             a = 2
             """,
             "prefix * (i: Int) > Int { return true }",
-            "prefix * (i: Int) { return true }"
+            "prefix * (i: Int) { return true }",
+            """
+            func a() > Int {
+                return true
+                return 2
+            }
+            """
         ]
 
         for (i, t) in tests.enumerated() {

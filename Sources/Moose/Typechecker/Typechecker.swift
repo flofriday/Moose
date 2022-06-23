@@ -166,9 +166,18 @@ class Typechecker: BaseVisitor {
 
     override func visit(_ node: FunctionStatement) throws {
         let wasGlobal = isGlobal
+        let wasFunction = isFunction
+        isFunction = false
 
         // Some Code
+        try node.body.accept(self)
+        let realReturnValue = try getReturnValue(body: node.body)
 
+        guard realReturnValue == node.returnType else {
+            throw error(message: "Return type of function is '\(realReturnValue)', but signature declared it as '\(node.returnType)'", token: node.token)
+        }
+
+        isFunction = wasFunction
         isGlobal = wasGlobal
     }
 
@@ -183,14 +192,7 @@ class Typechecker: BaseVisitor {
         try node.body.accept(self)
 
         // get real return type
-        // TODO: return could also be in other statement
-        var realReturnValue: MooseType = .Void
-        if let lastStmt = node.body.statements.last, let retStmt = lastStmt as? ReturnStatement {
-            guard let typ = retStmt.returnValue.mooseType else {
-                throw error(message: "Could not determine return type of body", token: retStmt.token)
-            }
-            realReturnValue = typ
-        }
+        let realReturnValue: MooseType = try getReturnValue(body: node.body)
 
         // compare declared and real returnType
         guard realReturnValue == node.returnType else {
@@ -209,5 +211,28 @@ class Typechecker: BaseVisitor {
             endCol: token.column + token.lexeme.count,
             message: message
         )
+    }
+}
+
+extension Typechecker {
+    private func getReturnValue(body: BlockStatement) throws -> MooseType {
+        var retType: MooseType?
+        for stmt in body.statements {
+            guard let stmt = stmt as? ReturnStatement else {
+                continue
+            }
+            guard let typ = stmt.returnValue.mooseType else {
+                throw error(message: "Could not determine return type of body", token: stmt.token)
+            }
+            guard let retType = retType else {
+                retType = typ
+                continue
+            }
+
+            guard retType == typ else {
+                throw error(message: "Return type is '\(typ)', but got '\(retType)' as type before.", token: stmt.token)
+            }
+        }
+        return retType ?? .Void
     }
 }

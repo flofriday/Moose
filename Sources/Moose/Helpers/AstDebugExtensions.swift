@@ -13,3 +13,5 @@ protocol AstDebug {
 
     func getSourceRange() -> ((Line, Column), (Line, Column))
 }
+
+// extension Node: AstDebug {}

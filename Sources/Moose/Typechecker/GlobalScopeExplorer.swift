@@ -49,7 +49,12 @@ class GlobalScopeExplorer: BaseVisitor {
     }
 
     override func visit(_ node: FunctionStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
+        let paramTypes = node.params.map { $0.declaredType }
+        do {
+            try scope.add(function: node.name.value, args: paramTypes, returnType: node.returnType)
+        } catch let err as ScopeError {
+            throw error(message: err.message, token: node.token)
+        }
     }
 
     override func visit(_ node: OperationStatement) throws {
