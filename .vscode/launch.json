@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Moose",
+      "program": ".build/debug/Moose",
+      "args": [],
+      "cwd": "${workspaceFolder:Moose}",
+      "preLaunchTask": "swift: Build Debug Moose"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Release Moose",
+      "program": ".build/release/Moose",
+      "args": [],
+      "cwd": "${workspaceFolder:Moose}",
+      "preLaunchTask": "swift: Build Release Moose"
+    }
+  ]
+}

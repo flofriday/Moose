@@ -6,7 +6,7 @@ import Foundation
 
 // The typechecker not only validates types it also checks that all variables and functions
 // are visible.
-class Typechecker: Visitor {
+class Typechecker: BaseVisitor {
     var isGlobal = true
     var isFunction = false
     var functionReturnType: MooseType?
@@ -15,6 +15,7 @@ class Typechecker: Visitor {
 
     init() {
         self.scope = Scope()
+        super.init("Typechecker is not yet implemented for this scope.")
     }
 
     func check(program: Program) throws {
@@ -32,7 +33,7 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: Program) throws {
+    override func visit(_ node: Program) throws {
         for stmt in node.statements {
             do {
                 try stmt.accept(self)
@@ -42,7 +43,7 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: BlockStatement) throws {
+    override func visit(_ node: BlockStatement) throws {
         let wasGlobal = isGlobal
 
         for stmt in node.statements {
@@ -56,7 +57,7 @@ class Typechecker: Visitor {
         isGlobal = wasGlobal
     }
 
-    func visit(_ node: IfStatement) throws {
+    override func visit(_ node: IfStatement) throws {
         try node.condition.accept(self)
         guard node.condition.mooseType == .Bool else {
             // TODO: the Error highlights the wrong character here
@@ -70,7 +71,7 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: Tuple) throws {
+    override func visit(_ node: Tuple) throws {
         var types: [MooseType] = []
 
         for expr in node.expressions {
@@ -81,15 +82,15 @@ class Typechecker: Visitor {
         node.mooseType = .Tuple(types)
     }
 
-    func visit(_ node: Nil) throws {
+    override func visit(_ node: Nil) throws {
         node.mooseType = .Nil
     }
 
-    func visit(_ node: CallExpression) throws {
+    override func visit(_ node: CallExpression) throws {
         throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
     }
 
-    func visit(_ node: AssignStatement) throws {
+    override func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
         try node.value.accept(self)
         let valueType = node.value.mooseType!
@@ -140,48 +141,31 @@ class Typechecker: Visitor {
         }
     }
 
-    func visit(_ node: ReturnStatement) throws {
-//        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+    override func visit(_ node: ReturnStatement) throws {
         try node.returnValue.accept(self)
     }
 
-    func visit(_ node: ExpressionStatement) throws {
+    override func visit(_ node: ExpressionStatement) throws {
         try node.expression.accept(self)
     }
 
-    func visit(_ node: Identifier) throws {
+    override func visit(_ node: Identifier) throws {
         throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
     }
 
-    func visit(_ node: IntegerLiteral) throws {
+    override func visit(_ node: IntegerLiteral) throws {
         node.mooseType = .Int
     }
 
-    func visit(_ node: Boolean) throws {
+    override func visit(_ node: Boolean) throws {
         node.mooseType = .Bool
     }
 
-    func visit(_ node: StringLiteral) throws {
+    override func visit(_ node: StringLiteral) throws {
         node.mooseType = .String
     }
 
-    func visit(_ node: PrefixExpression) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
-    }
-
-    func visit(_ node: InfixExpression) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
-    }
-
-    func visit(_ node: PostfixExpression) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
-    }
-
-    func visit(_ node: VariableDefinition) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
-    }
-
-    func visit(_ node: FunctionStatement) throws {
+    override func visit(_ node: FunctionStatement) throws {
         let wasGlobal = isGlobal
 
         // Some Code
@@ -189,7 +173,7 @@ class Typechecker: Visitor {
         isGlobal = wasGlobal
     }
 
-    func visit(_ node: OperationStatement) throws {
+    override func visit(_ node: OperationStatement) throws {
         let wasGlobal = isGlobal
         isGlobal = false
 
@@ -216,132 +200,6 @@ class Typechecker: Visitor {
         // TODO: assure it is in scope
 
         isGlobal = wasGlobal
-    }
-
-    private func error(message: String, token: Token) -> CompileErrorMessage {
-        CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
-        )
-    }
-}
-
-// A helperclass that spawns the initial global scope.
-// Note: ok there is a pretty big limitation and that is that you can only call funtions in the
-// global scope that were already defined. This also applies to custom operations, but otherwise we would need a pass
-// for classes and functions and one for global variables so yeah.
-// b: Int = 1 + a()
-// func a() -> Int ...
-class GlobalScopeExplorer: Visitor {
-    let scope: Scope
-    let program: Program
-
-    init(program: Program, scope: Scope) {
-        self.scope = scope
-        self.program = program
-    }
-
-    func spawn() throws -> Scope {
-        // TODO: add more native functions
-//        try scope.addFunc(name: "print", args: [.String], returnType: nil)
-        return scope
-    }
-
-    func visit(_ node: Program) throws {
-        for stmt in node.statements {
-            switch stmt {
-            case is OperationStatement:
-                fallthrough
-            case is FunctionStatement:
-                try stmt.accept(self)
-            // assignment not needed since evaluation order is well defined
-            // case is AssignmentStatement:
-            // try stmt.accept(self)
-            default:
-                break
-            }
-        }
-    }
-
-    func visit(_ node: BlockStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: IfStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: Tuple) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: Nil) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: CallExpression) throws {}
-
-    /// Should not be called from explorer.
-    /// This is because variable definitions in future should not be seen by statements before
-    func visit(_ node: AssignStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: ReturnStatement) throws {
-        // We don't need to do this now
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: ExpressionStatement) throws {
-        // We don't need to do this now
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: Identifier) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: IntegerLiteral) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: Boolean) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: StringLiteral) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: PrefixExpression) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: InfixExpression) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: PostfixExpression) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: VariableDefinition) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: FunctionStatement) throws {
-        throw error(message: "Should not be explored by GlobalScopeExplorer.", token: node.token)
-    }
-
-    func visit(_ node: OperationStatement) throws {
-        let paramTypes = node.params.map { $0.declaredType }
-        guard !scope.hasOp(name: node.name, opPos: node.position, args: paramTypes, includeEnclosing: false) else {
-            throw error(message: "Operation is already defined with the same signature", token: node.token)
-        }
-
-        scope.addOp(name: node.name, opPos: node.position, args: paramTypes, returnType: node.returnType)
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
