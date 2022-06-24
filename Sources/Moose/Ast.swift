@@ -2,6 +2,7 @@
 // Created by Johannes Zottele on 16.06.22.
 //
 
+import CoreText
 import Foundation
 
 protocol Node: CustomStringConvertible {
@@ -9,7 +10,10 @@ protocol Node: CustomStringConvertible {
     func accept(_ visitor: Visitor) throws
 }
 
-protocol Statement: Node {}
+protocol Statement: Node {
+    typealias ReturnDec = (MooseType, Bool)? // (type of returns, if all possible branches return)
+    var returnDeclarations: ReturnDec { get set }
+}
 
 protocol Expression: Node {
     var mooseType: MooseType? { get set }
@@ -45,6 +49,7 @@ class AssignStatement {
     let value: Expression
     let mutable: Bool
     var declaredType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class Identifier: Assignable, Declareable {
@@ -74,6 +79,7 @@ class ReturnStatement {
 
     let token: Token
     let returnValue: Expression
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class ExpressionStatement {
@@ -84,6 +90,7 @@ class ExpressionStatement {
 
     let token: Token // first token of expression
     let expression: Expression
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class IntegerLiteral {
@@ -192,6 +199,7 @@ class BlockStatement {
 
     let token: Token
     let statements: [Statement]
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class FunctionStatement {
@@ -209,6 +217,7 @@ class FunctionStatement {
     let params: [VariableDefinition]
     let returnType: MooseType
     var mooseType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class OperationStatement {
@@ -228,6 +237,7 @@ class OperationStatement {
     let params: [VariableDefinition]
     let returnType: MooseType
     var mooseType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class CallExpression {
@@ -255,6 +265,7 @@ class IfStatement {
     let condition: Expression
     let consequence: BlockStatement
     let alternative: BlockStatement?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class Tuple: Assignable, Declareable {

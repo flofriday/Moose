@@ -38,6 +38,68 @@ class TypecheckerTests: TypecheckerBaseClass {
                 return true
                 return 2
             }
+            """,
+            """
+            func a() > Int {
+            {
+                return true
+            }
+                return 2
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            return 2
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            3
+            } else {
+            return 2
+            }
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            return 3
+            } else {
+            }
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            return 3
+            } else {
+            }
+            }
+            """,
+            """
+            if true {
+            return 3
+            } else {
+            }
+            """,
+            """
+            func a() > Void {
+            if true {
+            return
+            } else {
+            }
+            }
+            """,
+            """
+            func a() > Void {
+            if true {
+            2
+            } else {
+            3
+            }
+            }
             """
         ]
 
@@ -82,11 +144,50 @@ class TypecheckerTests: TypecheckerBaseClass {
             }
             """,
             """
+            func a() > Int {
+            {
+                return 2
+            }
+            }
             """,
             "a: Int = 3",
-            "a = 3"
+            "a = 3",
 //            "a: Int +: 1",
-//            "a +: 1"
+//            "a +: 1",
+            """
+            if true {
+            2
+            } else {
+            3
+            }
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            return 3
+            } else {
+            return 2
+            }
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            } else {
+            return 2
+            }
+            return 3
+            }
+            """,
+            """
+            func a() > Int {
+            if true {
+            return 2
+            }
+            return 3
+            }
+            """
         ]
 
         for (i, t) in tests.enumerated() {

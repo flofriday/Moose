@@ -7,6 +7,8 @@ import Foundation
 // The typechecker not only validates types it also checks that all variables and functions
 // are visible.
 class Typechecker: BaseVisitor {
+    typealias ReturnDec = (MooseType, Bool)?
+
     var isGlobal = true
     var isFunction = false
     var functionReturnType: MooseType?
@@ -45,15 +47,42 @@ class Typechecker: BaseVisitor {
     override func visit(_ node: BlockStatement) throws {
         let wasGlobal = isGlobal
 
+        var returnDec: ReturnDec = nil
         for stmt in node.statements {
             do {
                 try stmt.accept(self)
+                returnDec = try newReturnDec(current: returnDec, incoming: stmt)
             } catch let error as CompileErrorMessage {
                 errors.append(error)
             }
         }
 
+        // guard no return statements outside function
+        guard !(!isFunction && returnDec == nil) else {
+            throw error(message: "Returns are only allowed inside functions and operators.", token: findReturnStatement(body: node)?.token ?? node.token)
+        }
+        node.returnDeclarations = returnDec
+
         isGlobal = wasGlobal
+    }
+
+    private func newReturnDec(current: ReturnDec, incoming: Statement) throws -> ReturnDec {
+        guard let (currType, _) = current else {
+            return incoming.returnDeclarations
+        }
+        guard let (incType, incStatus) = incoming.returnDeclarations else {
+            return current
+        }
+        guard currType == incType else {
+            throw error(message: "Different return types occured. This branch returns type \(incType) while previous branch returned \(currType)", token: incoming.token)
+        }
+
+        // if incoming has all brances returning, we return incoming status, else current
+        if incStatus {
+            return (incType, incStatus)
+        } else {
+            return current
+        }
     }
 
     override func visit(_ node: IfStatement) throws {
@@ -64,10 +93,47 @@ class Typechecker: BaseVisitor {
         }
 
         try node.consequence.accept(self)
+        let conRet = node.consequence.returnDeclarations
 
-        if let alternative = node.alternative {
-            try alternative.accept(self)
+        // if alternative doesnt exists, set returnDeclaration to type of consequence but false as if condition doesn't apply it doesn't return
+        guard let alternative = node.alternative else {
+            guard let (conTyp, _) = conRet else {
+                node.returnDeclarations = nil
+                return
+            }
+            node.returnDeclarations = (conTyp, false)
+            return
         }
+
+        try alternative.accept(self)
+        let altRet = alternative.returnDeclarations
+
+        // guard alternative does return in some branch
+        guard let (altTyp, altStatus) = altRet else {
+            // if not, guard that consequence return in some branch
+            guard let (conTyp, _) = conRet else {
+                // if not, the whole if statement doesn't return
+                return node.returnDeclarations = nil
+            }
+            // return typ of consequence, but branch status of false (since alternative doesnt return)
+            return node.returnDeclarations = (conTyp, false)
+        }
+
+        // guard that consequence returns in some branch
+        guard let (conTyp, conStatus) = conRet else {
+            // if not set return type of alternative, with false as status
+            node.returnDeclarations = (altTyp, false)
+            return
+        }
+
+        // guard that alternative and consequence return same types
+        guard conTyp == altTyp else {
+            // if not throw an error
+            throw error(message: "Consequence of if statement returns type \(conTyp) while alternative branch returns \(altTyp)", token: node.token)
+        }
+
+        // set return declaration for if statement. Status is true if all branches in consequence AND in alternative return, else false.
+        node.returnDeclarations = (conTyp, conStatus && altStatus)
     }
 
     override func visit(_ node: Tuple) throws {
@@ -142,6 +208,10 @@ class Typechecker: BaseVisitor {
 
     override func visit(_ node: ReturnStatement) throws {
         try node.returnValue.accept(self)
+        guard let retType = node.returnValue.mooseType else {
+            throw error(message: "Couldn't determine type of return statement.", token: node.returnValue.token)
+        }
+        node.returnDeclarations = (retType, true)
     }
 
     override func visit(_ node: ExpressionStatement) throws {
@@ -167,11 +237,19 @@ class Typechecker: BaseVisitor {
     override func visit(_ node: FunctionStatement) throws {
         let wasGlobal = isGlobal
         let wasFunction = isFunction
+        isGlobal = false
         isFunction = false
 
         // Some Code
         try node.body.accept(self)
-        let realReturnValue = try getReturnValue(body: node.body)
+        var realReturnValue: MooseType = .Void
+        if let (typ, eachBranch) = node.body.returnDeclarations {
+            // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
+            guard node.returnType == .Void || eachBranch else {
+                throw error(message: "Return missing in function body.\nTipp: Add explizit return with value of type '\(node.returnType)' to end of function body", token: node.body.statements.last?.token ?? node.body.token)
+            }
+            realReturnValue = typ
+        }
 
         guard realReturnValue == node.returnType else {
             throw error(message: "Return type of function is '\(realReturnValue)', but signature declared it as '\(node.returnType)'", token: node.token)
@@ -183,7 +261,9 @@ class Typechecker: BaseVisitor {
 
     override func visit(_ node: OperationStatement) throws {
         let wasGlobal = isGlobal
+        let wasFunction = isFunction
         isGlobal = false
+        isFunction = true
 
         guard wasGlobal else {
             throw error(message: "Operator definition is only allowed in global scope.", token: node.token)
@@ -192,7 +272,14 @@ class Typechecker: BaseVisitor {
         try node.body.accept(self)
 
         // get real return type
-        let realReturnValue: MooseType = try getReturnValue(body: node.body)
+        var realReturnValue: MooseType = .Void
+        if let (typ, eachBranch) = node.body.returnDeclarations {
+            // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
+            guard node.returnType == .Void || eachBranch else {
+                throw error(message: "Return missing in operator body.\nTipp: Add explizit return with value of type '\(node.returnType)' to end of operator body", token: node.body.statements.last?.token ?? node.body.token)
+            }
+            realReturnValue = typ
+        }
 
         // compare declared and real returnType
         guard realReturnValue == node.returnType else {
@@ -201,6 +288,7 @@ class Typechecker: BaseVisitor {
 
         // TODO: assure it is in scope
 
+        isFunction = wasFunction
         isGlobal = wasGlobal
     }
 
@@ -215,24 +303,12 @@ class Typechecker: BaseVisitor {
 }
 
 extension Typechecker {
-    private func getReturnValue(body: BlockStatement) throws -> MooseType {
-        var retType: MooseType?
+    private func findReturnStatement(body: BlockStatement) -> ReturnStatement? {
         for stmt in body.statements {
-            guard let stmt = stmt as? ReturnStatement else {
-                continue
-            }
-            guard let typ = stmt.returnValue.mooseType else {
-                throw error(message: "Could not determine return type of body", token: stmt.token)
-            }
-            guard let retType = retType else {
-                retType = typ
-                continue
-            }
-
-            guard retType == typ else {
-                throw error(message: "Return type is '\(typ)', but got '\(retType)' as type before.", token: stmt.token)
+            if let retStmt = stmt as? ReturnStatement {
+                return retStmt
             }
         }
-        return retType ?? .Void
+        return nil
     }
 }
