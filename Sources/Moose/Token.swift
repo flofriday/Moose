@@ -115,6 +115,8 @@ internal func lookUpIdent(ident: String) -> TokenType {
     case "prefix": return .Prefix
     case "Void": return .Void
     case "nil": return .Nil
+    case "if": return .If
+    case "else": return .Else
     default: return .Identifier
     }
 }

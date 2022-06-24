@@ -119,6 +119,8 @@ class Parser {
             return try parseBlockStatement()
         } else if check(oneOf: .Prefix, .Infix, .Postfix) {
             return try parseOperationStatement()
+        } else if check(type: .If) {
+            return try parseIfStatement()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -180,7 +182,10 @@ class Parser {
 
     func parseReturnStatement() throws -> ReturnStatement {
         let token = try consume(type: .Ret, message: "expected that return statement starts with 'return', but got '\(peek())' instead")
-        let val = try parseExpression(.Lowest)
+        var val: Expression?
+        if !isStatementEnd {
+            val = try parseExpression(.Lowest)
+        }
         try consumeStatementEnd()
         return ReturnStatement(token: token, returnValue: val)
     }
@@ -266,13 +271,21 @@ class Parser {
         return BlockStatement(token: token, statements: stmts)
     }
 
-//    func parseIfStatement() throws -> IfStatement {
-//        let token = try consume(type: .If, message: "'if' was expected, but got '\(peek().lexeme)' instead")
-//
-//        let condition = try parseExpression(.Lowest)
-//
-//
-//    }
+    func parseIfStatement() throws -> IfStatement {
+        let token = try consume(type: .If, message: "'if' was expected, but got '\(peek().lexeme)' instead")
+
+        skip(all: .NLine)
+        let condition = try parseExpression(.Lowest)
+        skip(all: .NLine)
+        let consequence = try parseBlockStatement()
+        guard match(types: .Else) else {
+            return IfStatement(token: token, condition: condition, consequence: consequence, alternative: nil)
+        }
+        skip(all: .NLine)
+        let alternative = try parseBlockStatement()
+        try consumeStatementEnd()
+        return IfStatement(token: token, condition: condition, consequence: consequence, alternative: alternative)
+    }
 
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
     func parseExpressionStatement() throws -> ExpressionStatement {

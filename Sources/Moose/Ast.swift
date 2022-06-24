@@ -72,13 +72,13 @@ class Identifier: Assignable, Declareable {
 }
 
 class ReturnStatement {
-    init(token: Token, returnValue: Expression) {
+    init(token: Token, returnValue: Expression?) {
         self.token = token
         self.returnValue = returnValue
     }
 
     let token: Token
-    let returnValue: Expression
+    let returnValue: Expression?
     var returnDeclarations: (MooseType, Bool)?
 }
 
@@ -333,7 +333,7 @@ extension Identifier: Expression {
 
 extension ReturnStatement: Statement {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
-    var description: String { "\(token.lexeme) \(returnValue.description)" }
+    var description: String { "\(token.lexeme) \(returnValue?.description ?? "")" }
 }
 
 extension ExpressionStatement: Statement {

@@ -58,7 +58,7 @@ class Typechecker: BaseVisitor {
         }
 
         // guard no return statements outside function
-        guard !(!isFunction && returnDec == nil) else {
+        guard isFunction || returnDec == nil else {
             throw error(message: "Returns are only allowed inside functions and operators.", token: findReturnStatement(body: node)?.token ?? node.token)
         }
         node.returnDeclarations = returnDec
@@ -207,9 +207,13 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: ReturnStatement) throws {
-        try node.returnValue.accept(self)
-        guard let retType = node.returnValue.mooseType else {
-            throw error(message: "Couldn't determine type of return statement.", token: node.returnValue.token)
+        try node.returnValue?.accept(self)
+        var retType: MooseType = .Void
+        if let expr = node.returnValue {
+            guard let t = expr.mooseType else {
+                throw error(message: "Couldn't determine type of return statement.", token: expr.token)
+            }
+            retType = t
         }
         node.returnDeclarations = (retType, true)
     }
@@ -238,15 +242,15 @@ class Typechecker: BaseVisitor {
         let wasGlobal = isGlobal
         let wasFunction = isFunction
         isGlobal = false
-        isFunction = false
+        isFunction = true
 
         // Some Code
         try node.body.accept(self)
         var realReturnValue: MooseType = .Void
         if let (typ, eachBranch) = node.body.returnDeclarations {
-            // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
+            // if functions defined returnType is not Void and not all branches return, function body need explicit return at end
             guard node.returnType == .Void || eachBranch else {
-                throw error(message: "Return missing in function body.\nTipp: Add explizit return with value of type '\(node.returnType)' to end of function body", token: node.body.statements.last?.token ?? node.body.token)
+                throw error(message: "Return missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", token: node.body.statements.last?.token ?? node.body.token)
             }
             realReturnValue = typ
         }

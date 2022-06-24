@@ -88,7 +88,7 @@ class ParserTests: BaseClass {
             XCTAssertEqual(prog.statements.count, 1)
             try test_returnStatement(s: prog.statements[0])
             let stmt = prog.statements[0] as! ReturnStatement
-            try test_literalExpression(exp: stmt.returnValue, expected: t.1)
+            try test_literalExpression(exp: stmt.returnValue!, expected: t.1)
         }
     }
 

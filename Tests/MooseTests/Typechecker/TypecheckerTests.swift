@@ -52,6 +52,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             if true {
             return 2
             }
+            }
             """,
             """
             func a() > Int {
@@ -85,7 +86,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             }
             """,
             """
-            func a() > Void {
+            func a() > Int {
             if true {
             return
             } else {
@@ -93,7 +94,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             }
             """,
             """
-            func a() > Void {
+            func a() > Int {
             if true {
             2
             } else {
@@ -160,7 +161,6 @@ class TypecheckerTests: TypecheckerBaseClass {
             } else {
             3
             }
-            }
             """,
             """
             func a() > Int {
@@ -186,6 +186,15 @@ class TypecheckerTests: TypecheckerBaseClass {
             return 2
             }
             return 3
+            }
+            """,
+            """
+            func a() {
+            if true {
+            return
+            } else {
+            3
+            }
             }
             """
         ]
