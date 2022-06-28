@@ -1,8 +1,12 @@
 import Darwin
 
 class Cli {
-    let typechecker = Typechecker()
+    let typechecker: Typechecker
     let interpreter = Interpreter()
+
+    init() throws {
+        typechecker = try Typechecker()
+    }
 
     func run() {
         if CommandLine.arguments.count == 1 {
@@ -62,4 +66,4 @@ class Cli {
     }
 }
 
-Cli().run()
+try Cli().run()

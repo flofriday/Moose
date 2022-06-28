@@ -131,8 +131,6 @@ class Parser {
     func parseAssignExpressionStatement() throws -> Statement {
         let mutable = match(types: .Mut)
 
-//        let identifierToken = try consume(type: .Identifier, message: "You can only assign values to identifiers.")
-//        let ident = Identifier(token: identifierToken, value: identifierToken.lexeme)
         let exprToken = peek()
         let assignable = try parseExpression(.Lowest)
 

@@ -15,9 +15,16 @@ class Typechecker: BaseVisitor {
     var errors: [CompileErrorMessage] = []
     var scope: TypeScope
 
-    init() {
+    init() throws {
         self.scope = TypeScope()
         super.init("Typechecker is not yet implemented for this scope.")
+        try addBuiltIns()
+    }
+
+    private func addBuiltIns() throws {
+        for op in BuiltIns.builtInOperators {
+            try scope.add(op: op.name, opPos: op.opPos, args: op.params, returnType: op.returnType)
+        }
     }
 
     func check(program: Program) throws {
@@ -223,7 +230,7 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: Identifier) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        node.mooseType = try scope.typeOf(variable: node.value)
     }
 
     override func visit(_ node: IntegerLiteral) throws {
@@ -294,6 +301,36 @@ class Typechecker: BaseVisitor {
 
         isFunction = wasFunction
         isGlobal = wasGlobal
+    }
+
+    override func visit(_ node: InfixExpression) throws {
+        guard case .Operator(pos: let opPos, assign: let assign) = node.token.type else {
+            throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", token: node.token)
+        }
+
+        if assign {
+            guard let ident = node.left as? Identifier, scope.has(variable: ident.value) else {
+                throw error(message: "Assign operations can only be made on variables that already exist. `\(node.left)` must be declared seperatly.", token: node.token)
+            }
+        }
+
+        try node.left.accept(self)
+        try node.right.accept(self)
+
+        guard let left = node.left.mooseType else {
+            throw error(message: "Couldn't determine type of left side exprssion '\(node.left.description.prefix(20))'...", token: node.left.token)
+        }
+
+        guard let right = node.right.mooseType else {
+            throw error(message: "Couldn't determine type of right side expression '\(node.right.description.prefix(20))'...", token: node.right.token)
+        }
+
+        do {
+            let type = try scope.returnType(op: node.op, opPos: opPos, params: [left, right])
+            node.mooseType = type
+        } catch let err as ScopeError {
+            throw error(message: "Couldn't determine return type of operator: \(err.message)", token: node.token)
+        }
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {

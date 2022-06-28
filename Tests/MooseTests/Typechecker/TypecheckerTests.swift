@@ -101,7 +101,13 @@ class TypecheckerTests: TypecheckerBaseClass {
             3
             }
             }
+            """,
+            "a +: 1", // should throw because a is not declared yet
+            "a: Int +: 1", // should throw because a is not declared yet
             """
+            a: Int = 2
+            a +: 1
+            """, // a is not mutable
         ]
 
         for (i, t) in tests.enumerated() {
@@ -109,7 +115,7 @@ class TypecheckerTests: TypecheckerBaseClass {
 
             do {
                 let prog = try parseProgram(t)
-                let tc = Typechecker()
+                let tc = try Typechecker()
                 XCTAssertThrowsError(try tc.check(program: prog)) { err in
                     if let err = err as? CompileError {
                         print(err.getFullReport(sourcecode: t))
@@ -153,8 +159,10 @@ class TypecheckerTests: TypecheckerBaseClass {
             """,
             "a: Int = 3",
             "a = 3",
-//            "a: Int +: 1",
-//            "a +: 1",
+            """
+            mut a: Int = 2
+            a +: 1
+            """,
             """
             if true {
             2
@@ -196,7 +204,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             3
             }
             }
-            """
+            """,
         ]
 
         for (i, t) in tests.enumerated() {
@@ -204,7 +212,7 @@ class TypecheckerTests: TypecheckerBaseClass {
 
             do {
                 let prog = try parseProgram(t)
-                let tc = Typechecker()
+                let tc = try Typechecker()
                 try tc.check(program: prog)
             } catch let error as CompileError {
                 XCTFail(error.getFullReport(sourcecode: t))
