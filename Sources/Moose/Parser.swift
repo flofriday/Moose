@@ -132,15 +132,18 @@ class Parser {
         let mutable = match(types: .Mut)
 
         let exprToken = peek()
-        let assignable = try parseExpression(.Lowest)
+        let assignee = try parseExpression(.Lowest)
 
         guard mutable || check(oneOf: .Colon, .Assign, .Operator(pos: .Infix, assign: true)) else {
             try consumeStatementEnd()
-            return ExpressionStatement(token: exprToken, expression: assignable)
+            return ExpressionStatement(token: exprToken, expression: assignee)
         }
 
-        guard let assignable = assignable as? Assignable, assignable.isAssignable else {
-            throw error(message: "Expression '\(assignable.description)' is not assignable.", token: exprToken)
+        guard let assignable = assignee as? Assignable, assignable.isAssignable else {
+            // But what if they were? Sure the language would be really complex and it would be kinda useless and one
+            // would have to think hard what the exact semantic would be but it is at least a truly novel idea
+            // (at least I haven't heard about anything like that).
+            throw error(message: "Expressions are not assignable.", node: assignee)
         }
 
         var type: MooseType?
@@ -166,10 +169,10 @@ class Parser {
             // if no assignment, nil by default
             // but end of statement expected
             guard isStatementEnd else {
-                throw error(message: "Assignment or end of statement expected, but got \(token.lexeme) instead", token: token)
+                throw error(message: "Assignment or end of statement expected, but got \(token.lexeme) instead.", token: token)
             }
             guard type != nil else {
-                throw error(message: "Implicit nil assignment is only valid for typed assignables", token: previous())
+                throw error(message: "Implicit nil assignment is only valid for typed assignables.", token: previous())
             }
             expr = Nil(token: token)
         }
@@ -248,7 +251,9 @@ class Parser {
             // expect , seperator
             if !isFirst {
                 _ = try consume(type: .Comma, message: "parameter seperator ',' expected, but got '\(peek().lexeme)' instead")
-            } else { isFirst = false }
+            } else {
+                isFirst = false
+            }
 
             let def = try parseVariableDefinition()
             defs.append(def)
@@ -302,8 +307,6 @@ class Parser {
         }
         var leftExpr = try prefix()
 
-        // -----
-
         // parse postfix expression
         if case .Operator(pos: .Postfix, assign: _) = peek().type {
             guard let postfix = postfixParseFns[peek().type] else {
@@ -311,8 +314,6 @@ class Parser {
             }
             leftExpr = try postfix(leftExpr)
         }
-
-        // -----
 
         // parse infix expression
         while !isAtEnd(), prec.rawValue < curPrecedence.rawValue {
@@ -362,7 +363,8 @@ class Parser {
         _ = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
 
         guard !exprs.isEmpty else {
-            throw error(message: "Priority parentheses have to contain an expression", token: token)
+            // TODO: We should not only point to the opening parenthesis (token) here, but also to the closing.
+            throw error(message: "Parentheses have to contain an expression", token: token)
         }
 
         // if only one expression, it's a group
@@ -402,7 +404,8 @@ class Parser {
     func parseCallExpression(function: Expression) throws -> CallExpression {
         let token = try consume(type: .LParen, message: "excepted '(' for function call, but got \(peek().lexeme) instead.")
         guard let function = function as? Identifier else {
-            throw error(message: "function call is only valid for identifiers, not \(function.description)", token: token)
+            // TODO: If we allow higher order function you could store one in an array and call it from the array right?
+            throw error(message: "Function calls are only valid for identifiers, not for `\(function.description)`", node: function)
         }
 
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
@@ -433,8 +436,8 @@ class Parser {
         if !check(type: .LBrace) {
             let toTok = advance() // > token as infix prefix or postfix op
             guard
-                case .Operator(pos: _, assign: false) = toTok.type,
-                toTok.lexeme == ">"
+                    case .Operator(pos: _, assign: false) = toTok.type,
+                    toTok.lexeme == ">"
             else {
                 throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
             }
@@ -538,10 +541,9 @@ class Parser {
 extension Parser {
     private func consumeStatementEnd() throws {
         if
-            !isAtEnd(),
-            !check(type: .RBrace), // for function body such as f() {x}
-            !match(types: .SemiColon, .NLine)
-        {
+                !isAtEnd(),
+                !check(type: .RBrace), // for function body such as f() {x}
+                !match(types: .SemiColon, .NLine) {
             throw error(message: "I expected, the statement to end here (with a newline or semicolon), but it kept going with '\(peek().lexeme)'.\nTipp: Maybe you forgot an (infix) operator here?", token: peek())
         }
     }
@@ -625,10 +627,22 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
+        )
+    }
+
+    private func error(message: String, node: Node) -> CompileErrorMessage {
+        let locator = AstLocator(node: node)
+        let location = locator.getLocation()
+
+        return CompileErrorMessage(
+                line: location.line,
+                startCol: location.col,
+                endCol: location.endCol,
+                message: message
         )
     }
 

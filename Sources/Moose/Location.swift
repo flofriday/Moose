@@ -6,7 +6,7 @@ import Foundation
 
 struct Location {
     var col: Int
-    var endcol: Int
+    var endCol: Int
     var line: Int
     var endLine: Int
 }

@@ -17,7 +17,7 @@ class AstLocator: Visitor {
     init(node: Node) {
         location = Location(
                 col: node.token.column,
-                endcol: node.token.column + node.token.lexeme.count,
+                endCol: node.token.column + node.token.lexeme.count,
                 line: node.token.line,
                 endLine: node.token.line
         )
@@ -44,8 +44,8 @@ class AstLocator: Visitor {
             location.col = newCol
         }
 
-        if newLine >= location.endLine, newEndCol > location.endcol {
-            location.endcol = newEndCol
+        if newLine >= location.endLine, newEndCol > location.endCol {
+            location.endCol = newEndCol
         }
 
         location.line = min(location.line, newLine)
