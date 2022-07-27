@@ -32,8 +32,12 @@ extension TypeScope {
     }
 
     func has(variable: String, includeEnclosing: Bool = true) -> Bool {
-        if variables.keys.contains(variable) { return true }
-        guard includeEnclosing, let enclosing = enclosing else { return false }
+        if variables.keys.contains(variable) {
+            return true
+        }
+        guard includeEnclosing, let enclosing = enclosing else {
+            return false
+        }
         return enclosing.has(variable: variable, includeEnclosing: includeEnclosing)
     }
 
@@ -50,7 +54,8 @@ extension TypeScope {
     func add(variable: String, type: MooseType, mutable: Bool) throws {
         guard !variables.contains(where: { name, store in
             name == variable && store.0 == type
-        }) else {
+        })
+        else {
             throw ScopeError(message: "'\(variable)' with type '\(type)' is already in scope.")
         }
         variables[variable] = (type, mutable)
@@ -66,19 +71,18 @@ extension TypeScope {
         return false
     }
 
-    private func currentContains(op: String, opPos: OpPos, args: [MooseType]) -> Bool {
+    private func currentContains(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
         guard let hits = ops[op] else {
             return false
         }
         return hits.contains {
-            isOpBy(pos: opPos, params: args, other: $0)
+            isOpBy(pos: opPos, params: params, other: $0)
         }
     }
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
         if let type = ops[op]?
-            .first(where: { isOpBy(pos: opPos, params: params, other: $0) })
-        {
+                .first(where: { isOpBy(pos: opPos, params: params, other: $0) }) {
             return type
         }
         guard let enclosing = enclosing else {
@@ -94,24 +98,24 @@ extension TypeScope {
         return retType
     }
 
-    func has(op: String, opPos: OpPos, args: [MooseType], includeEnclosing: Bool = true) -> Bool {
-        if currentContains(op: op, opPos: opPos, args: args) {
+    func has(op: String, opPos: OpPos, params: [MooseType], includeEnclosing: Bool = true) -> Bool {
+        if currentContains(op: op, opPos: opPos, params: params) {
             return true
         }
         guard includeEnclosing, let enclosing = enclosing else {
             return false
         }
-        return enclosing.has(op: op, opPos: opPos, args: args, includeEnclosing: includeEnclosing)
+        return enclosing.has(op: op, opPos: opPos, params: params, includeEnclosing: includeEnclosing)
     }
 
-    func add(op: String, opPos: OpPos, args: [MooseType], returnType: MooseType) throws {
-        let inCurrent = currentContains(op: op, opPos: opPos, args: args)
+    func add(op: String, opPos: OpPos, params: [MooseType], returnType: MooseType) throws {
+        let inCurrent = currentContains(op: op, opPos: opPos, params: params)
         guard !inCurrent else {
-            throw ScopeError(message: "Operator '\(op)' with params (\(args.map { $0.description }.joined(separator: ","))) is alraedy defined.")
+            throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) is alraedy defined.")
         }
 
         var list = (ops[op] ?? [])
-        list.append((MooseType.Function(args, returnType), opPos))
+        list.append((MooseType.Function(params, returnType), opPos))
         ops.updateValue(list, forKey: op)
     }
 }
@@ -124,19 +128,18 @@ extension TypeScope {
         return false
     }
 
-    private func currentContains(function: String, args: [MooseType]) -> Bool {
+    private func currentContains(function: String, params: [MooseType]) -> Bool {
         guard let hits = funcs[function] else {
             return false
         }
         return hits.contains {
-            isFuncBy(params: args, other: $0)
+            isFuncBy(params: params, other: $0)
         }
     }
 
     func typeOf(function: String, params: [MooseType]) throws -> MooseType {
         if let type = funcs[function]?
-            .first(where: { isFuncBy(params: params, other: $0) })
-        {
+                .first(where: { isFuncBy(params: params, other: $0) }) {
             return type
         }
         guard let enclosing = enclosing else {
@@ -152,23 +155,23 @@ extension TypeScope {
         return retType
     }
 
-    func has(function: String, args: [MooseType], includeEnclosing: Bool = true) -> Bool {
-        if currentContains(function: function, args: args) {
+    func has(function: String, params: [MooseType], includeEnclosing: Bool = true) -> Bool {
+        if currentContains(function: function, params: params) {
             return true
         }
         guard includeEnclosing, let enclosing = enclosing else {
             return false
         }
-        return enclosing.has(function: function, args: args, includeEnclosing: includeEnclosing)
+        return enclosing.has(function: function, params: params, includeEnclosing: includeEnclosing)
     }
 
-    func add(function: String, args: [MooseType], returnType: MooseType) throws {
-        let inCurrent = currentContains(function: function, args: args)
+    func add(function: String, params: [MooseType], returnType: MooseType) throws {
+        let inCurrent = currentContains(function: function, params: params)
         guard !inCurrent else {
-            throw ScopeError(message: "Function '\(function)' with params (\(args.map { $0.description }.joined(separator: ","))) is already defined.")
+            throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) is already defined.")
         }
         var list = (funcs[function] ?? [])
-        list.append(MooseType.Function(args, returnType))
+        list.append(MooseType.Function(params, returnType))
         funcs.updateValue(list, forKey: function)
     }
 }

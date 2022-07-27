@@ -6,8 +6,9 @@ import Foundation
 
 indirect enum MooseType: Equatable {
     case Int
-    case String
+    case Float
     case Bool
+    case String
     case Nil // only used in typechecker, no actual type
     case Void // represents non existing type value. Only usable for function results
     case Class(String) // The classname  is the associated type
@@ -23,6 +24,8 @@ extension MooseType {
             return .String
         case "Int":
             return .Int
+        case "Float":
+            return .Float
         case "Bool":
             return .Bool
         case "Void":
@@ -38,6 +41,8 @@ extension MooseType: CustomStringConvertible {
         switch self {
         case .Int:
             return "Int"
+        case .Float:
+            return "Float"
         case .String:
             return "String"
         case .Bool:
@@ -45,7 +50,7 @@ extension MooseType: CustomStringConvertible {
         case .Nil:
             return "Nil"
         case .Void:
-            return "()"
+            return "Void"
         case .Class(let i):
             return i
         case .Tuple(let ids):

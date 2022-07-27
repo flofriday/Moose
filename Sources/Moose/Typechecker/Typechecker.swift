@@ -23,7 +23,10 @@ class Typechecker: BaseVisitor {
 
     private func addBuiltIns() throws {
         for op in BuiltIns.builtInOperators {
-            try scope.add(op: op.name, opPos: op.opPos, args: op.params, returnType: op.returnType)
+            try scope.add(op: op.name, opPos: op.opPos, params: op.params, returnType: op.returnType)
+        }
+        for fn in BuiltIns.builtInFunctions {
+            try scope.add(function: fn.name, params: fn.params, returnType: fn.returnType)
         }
     }
 
@@ -159,7 +162,18 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: CallExpression) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        // Calculate the arguments
+        for arg in node.arguments {
+            try arg.accept(self)
+        }
+        let paramTypes = node.arguments.map { param in
+            param.mooseType!
+        }
+
+        // Check that the function exists and receive the return type
+        // TODO: Should this also work for variables? Like can I store a function in a variable?
+        let retType = try scope.returnType(function: node.function.description, params: paramTypes)
+        node.mooseType = retType
     }
 
     override func visit(_ node: AssignStatement) throws {

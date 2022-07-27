@@ -8,7 +8,9 @@
 import Foundation
 
 class BuiltIns {
-    static let builtInFunctions = [BuiltInFunction]()
+    static let builtInFunctions = [
+        BuiltInFunction(name: "print", params: [.String], returnType: .Void, function: printBuiltIn),
+    ]
 }
 
 extension BuiltIns {
@@ -19,7 +21,7 @@ extension BuiltIns {
 
 extension BuiltIns {
     class BuiltInFunction {
-        typealias fnType = ([Object]) -> Object
+        typealias fnType = ([MooseObject]) -> MooseObject
 
         let name: String
         let params: [MooseType]
@@ -49,7 +51,15 @@ extension BuiltIns {
     // OperatorFunction
 
     // TODO: currently we use compactMap so we ignore nil value... is this smart? I don't know...
-    static func integerPlus(_ args: [IntegerObj]) -> Object {
-        return IntegerObj(value: args.compactMap { $0.value }.reduce(0, +))
+    static func integerPlus(_ args: [IntegerObj]) -> MooseObject {
+        return IntegerObj(value: args.compactMap {
+                    $0.value
+                }
+                .reduce(0, +))
     }
+}
+
+func printBuiltIn(params: [MooseObject]) -> MooseObject {
+    print(params[0].description)
+    return VoidObj()
 }
