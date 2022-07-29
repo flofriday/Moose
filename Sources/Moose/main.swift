@@ -1,4 +1,8 @@
-import Darwin
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin
+#endif
 
 class Cli {
     let typechecker: Typechecker
@@ -31,7 +35,7 @@ class Cli {
         }
     }
 
-    func runFile(_ file: String) {
+    func runFile(_: String) {
         fputs("Error: Reading from files is not yet supported\n", stderr)
         exit(1)
     }
