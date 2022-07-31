@@ -16,7 +16,7 @@ class Cli {
         if CommandLine.arguments.count == 1 {
             runRepl()
         } else if CommandLine.arguments.count == 2 {
-            runFile(CommandLine.arguments[1])
+            runFile(path: CommandLine.arguments[1])
         } else {
             fputs("Usage: \(CommandLine.arguments[0]) [script]\n", stderr)
             exit(1)
@@ -35,9 +35,14 @@ class Cli {
         }
     }
 
-    func runFile(_: String) {
-        fputs("Error: Reading from files is not yet supported\n", stderr)
-        exit(1)
+    func runFile(path: String) {
+        do {
+            let code = try String(contentsOfFile: path)
+            run(code)
+        } catch {
+            print(error.localizedDescription)
+            exit(1)
+        }
     }
 
     func run(_ input: String) {
