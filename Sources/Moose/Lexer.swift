@@ -135,9 +135,9 @@ extension Lexer {
         return input[pos..<position]
     }
 
-    private func read(_ evaluator: (Character?) -> Bool) -> String {
+    private func read(_ evaluator: (Character) -> Bool) -> String {
         let pos = position
-        while let char = char, evaluator(char) {
+        while let char = char, char.isASCII, evaluator(char) {
             readChar()
         }
         return input[pos..<position]

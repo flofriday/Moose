@@ -4,35 +4,15 @@
 
 import Foundation
 
-protocol Visitor {
-    func visit(_ node: Program) throws
-    func visit(_ node: AssignStatement) throws
-    func visit(_ node: ReturnStatement) throws
-    func visit(_ node: ExpressionStatement) throws
-    func visit(_ node: BlockStatement) throws
-    func visit(_ node: FunctionStatement) throws
-    func visit(_ node: IfStatement) throws
-
-    func visit(_ node: Identifier) throws
-    func visit(_ node: IntegerLiteral) throws
-    func visit(_ node: Boolean) throws
-    func visit(_ node: StringLiteral) throws
-    func visit(_ node: PrefixExpression) throws
-    func visit(_ node: InfixExpression) throws
-    func visit(_ node: PostfixExpression) throws
-    func visit(_ node: VariableDefinition) throws
-    func visit(_ node: Tuple) throws
-    func visit(_ node: Nil) throws
-    func visit(_ node: CallExpression) throws
-    func visit(_ node: OperationStatement) throws
-}
-
 protocol Node: CustomStringConvertible {
     var token: Token { get }
     func accept(_ visitor: Visitor) throws
 }
 
-protocol Statement: Node {}
+protocol Statement: Node {
+    typealias ReturnDec = (MooseType, Bool)? // (type of returns, if all possible branches return)
+    var returnDeclarations: ReturnDec { get set }
+}
 
 protocol Expression: Node {
     var mooseType: MooseType? { get set }
@@ -55,7 +35,7 @@ class Program {
 }
 
 class AssignStatement {
-    init(token: Token, assignable: Expression, value: Expression, mutable: Bool, type: MooseType?) {
+    init(token: Token, assignable: Assignable, value: Expression, mutable: Bool, type: MooseType?) {
         self.token = token
         self.assignable = assignable
         self.value = value
@@ -64,10 +44,11 @@ class AssignStatement {
     }
 
     let token: Token
-    let assignable: Expression
+    let assignable: Assignable
     let value: Expression
     let mutable: Bool
     var declaredType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class Identifier: Assignable, Declareable {
@@ -90,13 +71,14 @@ class Identifier: Assignable, Declareable {
 }
 
 class ReturnStatement {
-    init(token: Token, returnValue: Expression) {
+    init(token: Token, returnValue: Expression?) {
         self.token = token
         self.returnValue = returnValue
     }
 
     let token: Token
-    let returnValue: Expression
+    let returnValue: Expression?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class ExpressionStatement {
@@ -107,6 +89,7 @@ class ExpressionStatement {
 
     let token: Token // first token of expression
     let expression: Expression
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class IntegerLiteral {
@@ -215,6 +198,7 @@ class BlockStatement {
 
     let token: Token
     let statements: [Statement]
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class FunctionStatement {
@@ -232,6 +216,7 @@ class FunctionStatement {
     let params: [VariableDefinition]
     let returnType: MooseType
     var mooseType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class OperationStatement {
@@ -251,6 +236,7 @@ class OperationStatement {
     let params: [VariableDefinition]
     let returnType: MooseType
     var mooseType: MooseType?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class CallExpression {
@@ -278,6 +264,7 @@ class IfStatement {
     let condition: Expression
     let consequence: BlockStatement
     let alternative: BlockStatement?
+    var returnDeclarations: (MooseType, Bool)?
 }
 
 class Tuple: Assignable, Declareable {
@@ -345,7 +332,7 @@ extension Identifier: Expression {
 
 extension ReturnStatement: Statement {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
-    var description: String { "\(token.lexeme) \(returnValue.description)" }
+    var description: String { "\(token.lexeme) \(returnValue?.description ?? "")" }
 }
 
 extension ExpressionStatement: Statement {

@@ -1,20 +1,27 @@
-import Darwin
+#if os(Linux)
+    import Glibc
+#else
+    import Darwin
+#endif
 
 class Cli {
-    let typechecker = Typechecker()
+    let typechecker: Typechecker
     let interpreter = Interpreter()
+
+    init() throws {
+        typechecker = try Typechecker()
+    }
 
     func run() {
         if CommandLine.arguments.count == 1 {
             runRepl()
         } else if CommandLine.arguments.count == 2 {
-            runFile(CommandLine.arguments[1])
+            runFile(path: CommandLine.arguments[1])
         } else {
             fputs("Usage: \(CommandLine.arguments[0]) [script]\n", stderr)
             exit(1)
         }
     }
-
 
     func runRepl() {
         print("Moose Interpreter (https://github.com/flofriday/Moose)")
@@ -28,9 +35,14 @@ class Cli {
         }
     }
 
-    func runFile(_ file: String) {
-        fputs("Error: Reading from files is not yet supported\n", stderr)
-        exit(1)
+    func runFile(path: String) {
+        do {
+            let code = try String(contentsOfFile: path)
+            run(code)
+        } catch {
+            print(error.localizedDescription)
+            exit(1)
+        }
     }
 
     func run(_ input: String) {
@@ -43,17 +55,18 @@ class Cli {
             let parser = Parser(tokens: tokens)
             program = try parser.parse()
 
-
             try typechecker.check(program: program!)
 
-            try interpreter.run(program: program!)
+            interpreter.run(program: program!)
 
         } catch let error as CompileError {
-//        printCompileError(error: error, sourcecode: input)
             print(error.getFullReport(sourcecode: input))
             return
-        } catch let error as RuntimeError {
-            //print(error.getFullReport(sourcecode: input))
+        } catch let error as CompileErrorMessage {
+            print(error.getFullReport(sourcecode: input))
+            return
+        } catch _ as RuntimeError {
+            // print(error.getFullReport(sourcecode: input))
             exit(1)
         } catch {
             print(error)
@@ -62,4 +75,4 @@ class Cli {
     }
 }
 
-Cli().run()
+try Cli().run()

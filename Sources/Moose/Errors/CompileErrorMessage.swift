@@ -22,3 +22,26 @@ extension CompileErrorMessage: LocalizedError {
         return out
     }
 }
+
+extension CompileErrorMessage {
+    public func getFullReport(sourcecode: String) -> String {
+        var out = "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
+
+        let lines = sourcecode.lines
+        var l = line
+        if !(l - 1 < lines.count) {
+            l = lines.count
+        }
+        // The source code line causing the error
+        out += String(format: "%3d| ".blue, line)
+        out += "\(lines[l - 1])\n"
+        out += String(repeating: " ", count: 5 + startCol)
+        out += String(repeating: "^".red, count: endCol - startCol)
+        out += "\n\n"
+
+        // A detailed message explaining the error
+        out += message
+        out += "\n"
+        return out
+    }
+}
