@@ -17,12 +17,12 @@ protocol Scope {
     func returnType(function: String, params: [MooseType]) throws -> MooseType
 
     func has(variable: String, includeEnclosing: Bool) -> Bool
-    func has(function: String, args: [MooseType], includeEnclosing: Bool) -> Bool
-    func has(op: String, opPos: OpPos, args: [MooseType], includeEnclosing: Bool) -> Bool
+    func has(function: String, params: [MooseType], includeEnclosing: Bool) -> Bool
+    func has(op: String, opPos: OpPos, params: [MooseType], includeEnclosing: Bool) -> Bool
 
     func isMut(variable: String) throws -> Bool
 
     func add(variable: String, type: MooseType, mutable: Bool) throws
-    func add(op: String, opPos: OpPos, args: [MooseType], returnType: MooseType) throws
-    func add(function: String, args: [MooseType], returnType: MooseType) throws
+    func add(op: String, opPos: OpPos, params: [MooseType], returnType: MooseType) throws
+    func add(function: String, params: [MooseType], returnType: MooseType) throws
 }

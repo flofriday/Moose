@@ -2,7 +2,6 @@
 // Created by Johannes Zottele on 16.06.22.
 //
 
-import CoreText
 import Foundation
 
 protocol Node: CustomStringConvertible {

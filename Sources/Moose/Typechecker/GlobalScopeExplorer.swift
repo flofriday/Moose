@@ -39,9 +39,9 @@ class GlobalScopeExplorer: BaseVisitor {
                 fallthrough
             case is FunctionStatement:
                 try stmt.accept(self)
-            // assignment not needed since evaluation order is well defined
-            // case is AssignmentStatement:
-            // try stmt.accept(self)
+                    // assignment not needed since evaluation order is well defined
+                    // case is AssignmentStatement:
+                    // try stmt.accept(self)
             default:
                 break
             }
@@ -49,21 +49,25 @@ class GlobalScopeExplorer: BaseVisitor {
     }
 
     override func visit(_ node: FunctionStatement) throws {
-        let paramTypes = node.params.map { $0.declaredType }
+        let paramTypes = node.params.map {
+            $0.declaredType
+        }
         do {
-            try scope.add(function: node.name.value, args: paramTypes, returnType: node.returnType)
+            try scope.add(function: node.name.value, params: paramTypes, returnType: node.returnType)
         } catch let err as ScopeError {
             throw error(message: err.message, token: node.token)
         }
     }
 
     override func visit(_ node: OperationStatement) throws {
-        let paramTypes = node.params.map { $0.declaredType }
-        guard !scope.has(op: node.name, opPos: node.position, args: paramTypes, includeEnclosing: false) else {
+        let paramTypes = node.params.map {
+            $0.declaredType
+        }
+        guard !scope.has(op: node.name, opPos: node.position, params: paramTypes, includeEnclosing: false) else {
             throw error(message: "Operation is already defined with the same signature", token: node.token)
         }
         do {
-            try scope.add(op: node.name, opPos: node.position, args: paramTypes, returnType: node.returnType)
+            try scope.add(op: node.name, opPos: node.position, params: paramTypes, returnType: node.returnType)
         } catch let err as ScopeError {
             throw error(message: err.message, token: node.token)
         }
@@ -71,10 +75,10 @@ class GlobalScopeExplorer: BaseVisitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
-            message: message
+                line: token.line,
+                startCol: token.column,
+                endCol: token.column + token.lexeme.count,
+                message: message
         )
     }
 }

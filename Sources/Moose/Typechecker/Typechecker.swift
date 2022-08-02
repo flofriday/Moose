@@ -23,7 +23,10 @@ class Typechecker: BaseVisitor {
 
     private func addBuiltIns() throws {
         for op in BuiltIns.builtInOperators {
-            try scope.add(op: op.name, opPos: op.opPos, args: op.params, returnType: op.returnType)
+            try scope.add(op: op.name, opPos: op.opPos, params: op.params, returnType: op.returnType)
+        }
+        for fn in BuiltIns.builtInFunctions {
+            try scope.add(function: fn.name, params: fn.params, returnType: fn.returnType)
         }
     }
 
@@ -81,7 +84,7 @@ class Typechecker: BaseVisitor {
             return current
         }
         guard currType == incType else {
-            throw error(message: "Different return types occured. This branch returns type \(incType) while previous branch returned \(currType)", token: incoming.token)
+            throw error(message: "Different return types occured. This branch returns type \(incType) while previous branch returned \(currType)", node: incoming)
         }
 
         // if incoming has all brances returning, we return incoming status, else current
@@ -96,7 +99,7 @@ class Typechecker: BaseVisitor {
         try node.condition.accept(self)
         guard node.condition.mooseType == .Bool else {
             // TODO: the Error highlights the wrong character here
-            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", token: node.token)
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", node: node.condition)
         }
 
         try node.consequence.accept(self)
@@ -136,7 +139,7 @@ class Typechecker: BaseVisitor {
         // guard that alternative and consequence return same types
         guard conTyp == altTyp else {
             // if not throw an error
-            throw error(message: "Consequence of if statement returns type \(conTyp) while alternative branch returns \(altTyp)", token: node.token)
+            throw error(message: "Consequence of if statement returns type \(conTyp) while alternative branch returns \(altTyp)", node: node.alternative!)
         }
 
         // set return declaration for if statement. Status is true if all branches in consequence AND in alternative return, else false.
@@ -159,7 +162,18 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: CallExpression) throws {
-        throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+        // Calculate the arguments
+        for arg in node.arguments {
+            try arg.accept(self)
+        }
+        let paramTypes = node.arguments.map { param in
+            param.mooseType!
+        }
+
+        // Check that the function exists and receive the return type
+        // TODO: Should this also work for variables? Like can I store a function in a variable?
+        let retType = try scope.returnType(function: node.function.description, params: paramTypes)
+        node.mooseType = retType
     }
 
     override func visit(_ node: AssignStatement) throws {
@@ -170,7 +184,7 @@ class Typechecker: BaseVisitor {
         // Verify that the explicit expressed type (if availble) matches the type of the expression
         if let expressedType = node.declaredType {
             guard node.declaredType == valueType else {
-                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", token: node.token)
+                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", node: node.value)
             }
         }
 
@@ -180,33 +194,36 @@ class Typechecker: BaseVisitor {
         case let id as Identifier:
             name = id.value
         default:
-            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", token: node.token)
+            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", node: node.assignable)
         }
 
         guard let name = name else {
-            throw error(message: "INTERNAL ERROR: could not extract name from assignable", token: node.assignable.token)
+            throw error(message: "INTERNAL ERROR: could not extract name from assignable", node: node.assignable)
         }
 
         // Checks to do if the variable was already initialized
         if scope.has(variable: name, includeEnclosing: true) {
             if let t = node.declaredType {
-                throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(name)' already exists.\nTipp: Remove `: \(t.description)`", token: node.assignable.token)
-            }
-
-            // Check that the variable wasn mutable
-            guard try scope.isMut(variable: name) else {
-                throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Define '\(name)' as mutable with the the `mut` keyword.", token: node.token)
+                // TODO: We highlight the variable here instead of the type declaration. At the time of writing we
+                // cannot highlight the declaration because it is not part of the AST and thereby not reachable by the
+                // checker.
+                throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(name)' already exists.\nTipp: Remove `: \(t.description)`", node: node.assignable)
             }
 
             // Check that this new assignment doesn't have the mut keyword as the variable already exists
             guard !node.mutable else {
-                throw error(message: "Variable '\(name)' was already declared, so the `mut` keyword doesn't make any sense here.\nTipp: Remove the `mut` keyword.", token: node.token)
+                throw error(message: "Variable '\(name)' was already declared, so the `mut` keyword doesn't make any sense here.\nTipp: Remove the `mut` keyword.", node: node.assignable)
+            }
+
+            // Check that the variable wasn mutable
+            guard try scope.isMut(variable: name) else {
+                throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Declare '\(name)' as mutable with the the `mut` keyword.", node: node.assignable)
             }
 
             // Check that the new assignment still has the same type from the initialization
             let currentType = try scope.typeOf(variable: name)
             guard currentType == valueType else {
-                throw error(message: "Variable '\(name)' has the type \(currentType), but the expression on the right produces a value of the type \(valueType).", token: node.value.token)
+                throw error(message: "Variable '\(name)' has the type \(currentType), but the expression on the right produces a value of the type \(valueType).", node: node.value)
             }
         } else {
             try scope.add(variable: name, type: valueType, mutable: node.mutable)
@@ -218,7 +235,7 @@ class Typechecker: BaseVisitor {
         var retType: MooseType = .Void
         if let expr = node.returnValue {
             guard let t = expr.mooseType else {
-                throw error(message: "Couldn't determine type of return statement.", token: expr.token)
+                throw error(message: "Couldn't determine type of return statement.", node: expr)
             }
             retType = t
         }
@@ -251,19 +268,19 @@ class Typechecker: BaseVisitor {
         isGlobal = false
         isFunction = true
 
-        // Some Code
         try node.body.accept(self)
         var realReturnValue: MooseType = .Void
         if let (typ, eachBranch) = node.body.returnDeclarations {
             // if functions defined returnType is not Void and not all branches return, function body need explicit return at end
             guard node.returnType == .Void || eachBranch else {
-                throw error(message: "Return missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", token: node.body.statements.last?.token ?? node.body.token)
+                throw error(message: "Return missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", node: node.body.statements.last ?? node.body)
             }
             realReturnValue = typ
         }
 
         guard realReturnValue == node.returnType else {
-            throw error(message: "Return type of function is '\(realReturnValue)', but signature declared it as '\(node.returnType)'", token: node.token)
+            // TODO: We highlight the wrong thing here, but there is no reference to the correct return in the AST here.
+            throw error(message: "Function returns '\(realReturnValue)', but signature requires it as '\(node.returnType)'", token: node.token)
         }
 
         isFunction = wasFunction
@@ -277,7 +294,7 @@ class Typechecker: BaseVisitor {
         isFunction = true
 
         guard wasGlobal else {
-            throw error(message: "Operator definition is only allowed in global scope.", token: node.token)
+            throw error(message: "Operator definition is only allowed in global scope.", node: node)
         }
 
         try node.body.accept(self)
@@ -287,13 +304,14 @@ class Typechecker: BaseVisitor {
         if let (typ, eachBranch) = node.body.returnDeclarations {
             // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
             guard node.returnType == .Void || eachBranch else {
-                throw error(message: "Return missing in operator body.\nTipp: Add explizit return with value of type '\(node.returnType)' to end of operator body", token: node.body.statements.last?.token ?? node.body.token)
+                throw error(message: "Return missing in operator body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of operator body", node: node.body.statements.last ?? node.body)
             }
             realReturnValue = typ
         }
 
         // compare declared and real returnType
         guard realReturnValue == node.returnType else {
+            // TODO: We highlight the wrong thing here
             throw error(message: "Return type of operator is \(realReturnValue), not \(node.returnType) as declared in signature", token: node.token)
         }
 
@@ -305,18 +323,20 @@ class Typechecker: BaseVisitor {
 
     override func visit(_ node: InfixExpression) throws {
         guard case .Operator(pos: let opPos, assign: let assign) = node.token.type else {
-            throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", token: node.token)
+            throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", node: node)
         }
 
         if assign {
             guard let ident = node.left as? Identifier, scope.has(variable: ident.value) else {
-                throw error(message: "Assign operations can only be made on variables that already exist. `\(node.left)` must be declared seperatly.", token: node.token)
+                throw error(message: "Assign operations can only be made on variables that already exist. `\(node.left)` must be declared seperatly.", node: node.left)
             }
         }
 
         try node.left.accept(self)
         try node.right.accept(self)
 
+        // TODO: I think this is too defensive. We can asume that it worked otherwise it would have thrown an error.
+        // Right?
         guard let left = node.left.mooseType else {
             throw error(message: "Couldn't determine type of left side exprssion '\(node.left.description.prefix(20))'...", token: node.left.token)
         }
@@ -338,6 +358,18 @@ class Typechecker: BaseVisitor {
                 line: token.line,
                 startCol: token.column,
                 endCol: token.column + token.lexeme.count,
+                message: message
+        )
+    }
+
+    private func error(message: String, node: Node) -> CompileErrorMessage {
+        let locator = AstLocator(node: node)
+        let location = locator.getLocation()
+
+        return CompileErrorMessage(
+                line: location.line,
+                startCol: location.col,
+                endCol: location.endCol,
                 message: message
         )
     }
