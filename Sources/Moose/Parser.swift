@@ -121,6 +121,8 @@ class Parser {
             return try parseOperationStatement()
         } else if check(type: .If) {
             return try parseIfStatement()
+        } else if check(type: .Class) {
+            return try parseClassDefinition()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -206,9 +208,22 @@ class Parser {
         try consumeStatementEnd()
         return FunctionStatement(token: token, name: name, body: body, params: params, returnType: returnType)
     }
+    
+    func parseAllMethodDefinitions() throws -> [FunctionStatement] {
+        var methods = [FunctionStatement]()
+        skip(all: .NLine)
+        while (check(type: .Func)) {
+            if (check(oneOf: .Prefix, .Infix, .Postfix)) {
+                throw error(message: "Operators have to be defined in global scope not in class definition scope.", token: peek())
+            }
+            methods.append(try parseFunctionStatement())
+            skip(all: .NLine)
+        }
+        return methods
+    }
 
     func parseOperationStatement() throws -> OperationStatement {
-        let posToken = try consume(oneOf: [.Infix, .Prefix, .Postfix], message: "Expected start of operator definition with positional definition, but got \(peek().lexeme) instead.")
+        let posToken = try consume(oneOf: [.Infix, .Prefix, .Postfix], message: "Expected start of operator definition w0ith positional definition, but got \(peek().lexeme) instead.")
 
         // remove all newlines since these are not relevant for operator definition
         remove(all: .NLine, until: .LBrace)
@@ -288,6 +303,20 @@ class Parser {
         let alternative = try parseBlockStatement()
         try consumeStatementEnd()
         return IfStatement(token: token, condition: condition, consequence: consequence, alternative: alternative)
+    }
+    
+    func parseClassDefinition() throws -> ClassStatement {
+        let token = try consume(type: .Class, message: "'class' was expected, but got '\(peek().lexeme)' instead")
+        
+        skip(all: .NLine)
+        let name = try parseIdentifier()
+        skip(all: .NLine)
+        _ = try consume(type: .LBrace, message: "Expected '{' as start of class body, got '\(peek().lexeme)' instead.")
+        skip(all: .NLine)
+        let properties = try parseAllVariableDefinitions()
+        let methods = try parseAllMethodDefinitions()
+        _ = try consume(type: .RBrace, message: "Expected '}' as end of class body, got '\(peek().lexeme)' instead.")
+        return ClassStatement(token: token, name: name, properties: properties, methods: methods)
     }
 
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
@@ -528,13 +557,23 @@ class Parser {
         return list
     }
 
-    // strongly typed, currently used by parameter and class property definitions
+    
+    /// Parses strongly typed variable definitions, currently used by parameter and class property definitions
     func parseVariableDefinition() throws -> VariableDefinition {
         let mut = match(types: .Mut)
         let ident = try parseIdentifier()
         _ = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
         let type = try parseValueTypeDefinition()
         return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
+    }
+    
+    func parseAllVariableDefinitions() throws -> [VariableDefinition] {
+        var definitions = [VariableDefinition]()
+        while (check(oneOf: .Mut, .Identifier)) {
+            definitions.append(try parseVariableDefinition())
+            try consumeStatementEnd()
+        }
+        return definitions
     }
 }
 

@@ -188,6 +188,9 @@ class VariableDefinition {
     let name: Identifier
     let declaredType: MooseType
     var mooseType: MooseType?
+    var returnDeclaration: (MooseType, Bool) {
+        (self.declaredType, true)
+    }
 }
 
 class BlockStatement {
@@ -293,6 +296,22 @@ class Tuple: Assignable, Declareable {
     }
 }
 
+class ClassStatement {
+    let token: Token
+    let name: Identifier
+    let properties: [VariableDefinition]
+    let methods: [FunctionStatement]
+    
+    init(token: Token, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement]) {
+        self.token = token
+        self.name = name
+        self.properties = properties
+        self.methods = methods
+    }
+    
+    var returnDeclarations: (MooseType, Bool)? = nil
+}
+
 // Node implementations
 
 extension Program: Node {
@@ -380,8 +399,8 @@ extension PostfixExpression: Expression {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
-extension VariableDefinition: Node {
-    var description: String { "\(name.value): \(declaredType.description)" }
+extension VariableDefinition: Node {   
+    var description: String { "\(mutable ? "mut " : "")\(name.value): \(declaredType.description)" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
@@ -435,4 +454,17 @@ extension IfStatement: Statement {
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
     }
+}
+
+extension ClassStatement: Statement {
+    var description: String {
+        let props = self.properties.map({"\n \($0.description)"}).joined()
+        let methods = self.methods.map({"\n \($0.description)"}).joined()
+        return "class \(name.value) { \(props)\n \(methods)}"
+    }
+    
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
+    
 }

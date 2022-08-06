@@ -175,5 +175,11 @@ class AstLocator: Visitor {
 
         try node.body.accept(self)
     }
+    
+    func visit(_ node: ClassStatement) throws {
+        update(node)
+        
+        //TODO: implement for rest of class statement
+    }
 
 }

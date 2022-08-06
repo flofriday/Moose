@@ -411,4 +411,36 @@ class ParserTests: BaseClass {
             try test_operator(stmt: prog.statements[0], name: t.1, pos: t.2, argumentCount: t.3, returnType: t.4)
         }
     }
+    
+    func test_classDefinitionsPropertyParsing() throws {
+        // (input, class name, [(property name, type)])
+        typealias testtype = (String, String, [(String, MooseType)])
+        let tests:[testtype] = [
+            ("class test {}", "test", []),
+            ("class test { a: String }", "test", [("a", .String)]),
+            ("class test { a: String; mut b: Int }", "test", [("a", .String), ("b", .Int)]),
+            ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", .String), ("b", .Int)]),
+            ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", .String), ("b", .Int)]),
+            ("class test { func a() {}; func b () {} }", "test", [])
+        ]
+        
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+            
+            let prog = try startParser(input: t.0)
+            XCTAssertEqual(prog.statements.count, 1)
+            let clas = try cast(prog.statements[0], ClassStatement.self)
+            XCTAssertEqual(clas.name.value, t.1)
+            
+            XCTAssertEqual(clas.properties.count, t.2.count)
+            
+            for (prop, tt) in zip(clas.properties, t.2) {
+                XCTAssertEqual(prop.name.value, tt.0)
+                XCTAssertEqual(prop.declaredType, tt.1)
+            }
+            
+            print(clas.description)
+            
+        }
+    }
 }
