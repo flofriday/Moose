@@ -180,6 +180,12 @@ class AstLocator: Visitor {
         update(node)
         
         //TODO: implement for rest of class statement
+        for prop in node.properties {
+            try prop.accept(self)
+        }
+        for meth in node.methods {
+            try meth.accept(self)
+        }
     }
 
 }

@@ -11,6 +11,8 @@ class TypeScope: Scope {
     private var variables: [String: (type: MooseType, mut: Bool)] = [:]
     private var funcs: [String: [MooseType]] = [:]
     private var ops: [String: [(MooseType, OpPos)]] = [:]
+    
+    private var classes: [String: TypeScope] = [:]
 
     let enclosing: TypeScope?
 

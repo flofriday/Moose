@@ -205,6 +205,25 @@ class TypecheckerTests: TypecheckerBaseClass {
             }
             }
             """,
+            "func a (b:Int) { b + 2 }",
+            """
+            b = 3
+            func a (b:Int) { b + 2 }
+            """,
+            "prefix +++ (b:Int) { b + 2 }",
+            """
+            b = 3
+            prefix +++ (b:Int) { b + 2 }
+            """,
+            """
+            a = 2
+            class test {
+                c: Int
+                func c() > Int { return a }
+                func b() { c }
+            }
+            """
+            ,
         ]
 
         for (i, t) in tests.enumerated() {

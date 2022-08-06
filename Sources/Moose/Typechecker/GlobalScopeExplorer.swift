@@ -72,6 +72,10 @@ class GlobalScopeExplorer: BaseVisitor {
             throw error(message: err.message, token: node.token)
         }
     }
+    
+    override func visit(_ node: ClassStatement) throws {
+        
+    }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(

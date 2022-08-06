@@ -26,6 +26,12 @@ In several iterations:
 - [ ] Objects, classes and inheritance
 - [ ] Extending classes and indexing
 
+## TODO
+- [ ] Implement class property assignment and usage
+- [ ] Implement class method call
+- [ ] Implement return of functions (at the moment functions are note considered as value (only for typechecking)
+    - This is because we only consider variables not functions or operators
+
 ## Types
 
 There are only 4 built in types in Moose: `Int, Float, String, Bool`

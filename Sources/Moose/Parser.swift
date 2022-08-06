@@ -213,8 +213,11 @@ class Parser {
         var methods = [FunctionStatement]()
         skip(all: .NLine)
         while (check(type: .Func)) {
-            if (check(oneOf: .Prefix, .Infix, .Postfix)) {
+            guard !check(oneOf: .Prefix, .Infix, .Postfix) else {
                 throw error(message: "Operators have to be defined in global scope not in class definition scope.", token: peek())
+            }
+            guard !check(oneOf: .Class) else {
+                throw error(message: "Class cannot be defined inside of other class. Class definitions are only possible in global scope", token: peek())
             }
             methods.append(try parseFunctionStatement())
             skip(all: .NLine)
