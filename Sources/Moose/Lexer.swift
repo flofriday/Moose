@@ -67,6 +67,8 @@ extension Lexer {
             tok = genToken(.LBracket)
         case ("]", _):
             tok = genToken(.RBracket)
+        case (".", _):
+            tok = genToken(.Dot)
         default:
             guard let unwrappedChar = char else {
                 return genToken(.EOF)

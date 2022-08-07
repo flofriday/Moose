@@ -29,6 +29,7 @@ protocol Visitor {
     func visit(_ node: CallExpression) throws
     func visit(_ node: OperationStatement) throws
     func visit(_ node: ClassStatement) throws
+    func visit(_ node: Dereferer) throws
 }
 
 class BaseVisitor: Visitor {
@@ -115,6 +116,10 @@ class BaseVisitor: Visitor {
     }
     
     func visit(_ node: ClassStatement) throws {
+        fatalError(errorMessage)
+    }
+    
+    func visit(_ node: Dereferer) throws {
         fatalError(errorMessage)
     }
 }

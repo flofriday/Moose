@@ -18,6 +18,9 @@ protocol Expression: Node {
     var mooseType: MooseType? { get set }
 }
 
+/// All nodes that can be on the left side of an assignment.
+///
+/// E.g. ident =, arr[0] =, obj.prop =
 protocol Assignable: Expression {
     var isAssignable: Bool { get }
 }
@@ -301,15 +304,32 @@ class ClassStatement {
     let name: Identifier
     let properties: [VariableDefinition]
     let methods: [FunctionStatement]
-    
+
     init(token: Token, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement]) {
         self.token = token
         self.name = name
         self.properties = properties
         self.methods = methods
     }
-    
-    var returnDeclarations: (MooseType, Bool)? = nil
+
+    var returnDeclarations: (MooseType, Bool)?
+}
+
+/// This class represents the . in object.propertie
+class Dereferer: Assignable {
+    let token: Token
+    var mooseType: MooseType?
+
+    let obj: Identifier
+    let referer: Assignable
+
+    init(token: Token, obj: Identifier, referer: Assignable) {
+        self.token = token
+        self.obj = obj
+        self.referer = referer
+    }
+
+    var isAssignable: Bool { referer.isAssignable }
 }
 
 // Node implementations
@@ -399,7 +419,7 @@ extension PostfixExpression: Expression {
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
 
-extension VariableDefinition: Node {   
+extension VariableDefinition: Node {
     var description: String { "\(mutable ? "mut " : "")\(name.value): \(declaredType.description)" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }
@@ -458,13 +478,22 @@ extension IfStatement: Statement {
 
 extension ClassStatement: Statement {
     var description: String {
-        let props = self.properties.map({"\n \($0.description)"}).joined()
-        let methods = self.methods.map({"\n \($0.description)"}).joined()
+        let props = properties.map { "\n \($0.description)" }.joined()
+        let methods = self.methods.map { "\n \($0.description)" }.joined()
         return "class \(name.value) { \(props)\n \(methods)}"
     }
-    
+
     func accept(_ visitor: Visitor) throws {
         try visitor.visit(self)
     }
-    
+}
+
+extension Dereferer: Expression {
+    func accept(_ visitor: Visitor) throws {
+        try visitor.visit(self)
+    }
+
+    var description: String {
+        "\(obj.description).\(referer.description)"
+    }
 }
