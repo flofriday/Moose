@@ -70,11 +70,13 @@ class StringObj: MooseObject {
 class FunctionObj: MooseObject {
     let name: String
     let type: MooseType
+    let paramNames: [String]
     let value: BlockStatement
 
-    init(name: String, type: MooseType, value: BlockStatement) {
+    init(name: String, type: MooseType, paramNames: [String], value: BlockStatement) {
         self.name = name
         self.type = type
+        self.paramNames = paramNames
         self.value = value
     }
 

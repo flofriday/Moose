@@ -52,8 +52,12 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: ReturnStatement) throws -> MooseObject {
-        return VoidObj()
+    func visit(_ node: ReturnStatement) throws -> MooseObject {
+        var value: MooseObject = VoidObj()
+        if let returnValue = node.returnValue {
+            value = try returnValue.accept(self)
+        }
+        throw ReturnSignal(value: value)
     }
 
     func visit(_ node: ExpressionStatement) throws -> MooseObject {
@@ -70,7 +74,11 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: FunctionStatement) throws -> MooseObject {
+    func visit(_ node: FunctionStatement) throws -> MooseObject {
+        let paramNames = node.params.map { $0.name.value }
+        let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        environment.set(function: obj.name, value: obj)
         return VoidObj()
     }
 
@@ -137,9 +145,23 @@ class Interpreter: Visitor {
         let callee = try environment.get(function: node.function.value, params: argTypes)
         if let callee = callee as? BuiltInFunctionObj {
             return callee.function(args)
-        } else if let callee = callee as? BuiltInFunctionObj {
-            // TODO: Implement other functions
-            return VoidObj()
+        } else if let callee = callee as? FunctionObj {
+            environment = Environment(enclosing: environment)
+
+            let argPairs = Array(zip(callee.paramNames, args))
+            for (name, value) in argPairs {
+                _ = environment.update(variable: name, value: value)
+            }
+
+            var result: MooseObject = VoidObj()
+            do {
+                _ = try callee.value.accept(self)
+            } catch let error as ReturnSignal {
+                result = error.value
+            }
+
+            environment = environment.enclosing!
+            return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
         }
