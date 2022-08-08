@@ -61,7 +61,12 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: BlockStatement) throws -> MooseObject {
+    func visit(_ node: BlockStatement) throws -> MooseObject {
+        environment = Environment(enclosing: environment)
+        for statement in node.statements {
+            _ = try statement.accept(self)
+        }
+        environment = environment.enclosing!
         return VoidObj()
     }
 
@@ -73,7 +78,15 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: IfStatement) throws -> MooseObject {
+    func visit(_ node: IfStatement) throws -> MooseObject {
+        let conditionResult = try node.condition.accept(self) as! BoolObj
+
+        if conditionResult.value! {
+            _ = try node.consequence.accept(self)
+        } else if let alternative = node.alternative {
+            _ = try alternative.accept(self)
+        }
+
         return VoidObj()
     }
 
