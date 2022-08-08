@@ -16,7 +16,7 @@ class Typechecker: BaseVisitor {
     var scope: TypeScope
 
     init() throws {
-        self.scope = TypeScope()
+        scope = TypeScope()
         super.init("Typechecker is not yet implemented for this scope.")
         try addBuiltIns()
     }
@@ -338,7 +338,7 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: InfixExpression) throws {
-        guard case .Operator(pos: let opPos, assign: let assign) = node.token.type else {
+        guard case let .Operator(pos: opPos, assign: assign) = node.token.type else {
             throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", node: node)
         }
 
@@ -392,10 +392,10 @@ class Typechecker: BaseVisitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 
@@ -404,10 +404,10 @@ class Typechecker: BaseVisitor {
         let location = locator.getLocation()
 
         return CompileErrorMessage(
-                line: location.line,
-                startCol: location.col,
-                endCol: location.endCol,
-                message: message
+            line: location.line,
+            startCol: location.col,
+            endCol: location.endCol,
+            message: message
         )
     }
 }
