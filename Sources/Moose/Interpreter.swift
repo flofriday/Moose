@@ -21,9 +21,7 @@ class Interpreter: Visitor {
 
     func visit(_: Program) throws {}
 
-    func visit(_: AssignStatement) throws {
-        
-    }
+    func visit(_: AssignStatement) throws {}
 
     func visit(_: ReturnStatement) throws {}
 
@@ -32,6 +30,8 @@ class Interpreter: Visitor {
     func visit(_: BlockStatement) throws {}
 
     func visit(_: FunctionStatement) throws {}
+
+    func visit(_: ClassStatement) throws {}
 
     func visit(_: IfStatement) throws {}
 
