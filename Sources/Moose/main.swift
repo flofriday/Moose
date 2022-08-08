@@ -57,7 +57,7 @@ class Cli {
 
             try typechecker.check(program: program!)
 
-            interpreter.run(program: program!)
+            try interpreter.run(program: program!)
 
         } catch let error as CompileError {
             print(error.getFullReport(sourcecode: input))
