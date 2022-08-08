@@ -8,27 +8,29 @@
 import Foundation
 
 protocol Visitor {
-    func visit(_ node: Program) throws
-    func visit(_ node: AssignStatement) throws
-    func visit(_ node: ReturnStatement) throws
-    func visit(_ node: ExpressionStatement) throws
-    func visit(_ node: BlockStatement) throws
-    func visit(_ node: FunctionStatement) throws
-    func visit(_ node: IfStatement) throws
+    associatedtype VisitorResult
 
-    func visit(_ node: Identifier) throws
-    func visit(_ node: IntegerLiteral) throws
-    func visit(_ node: Boolean) throws
-    func visit(_ node: StringLiteral) throws
-    func visit(_ node: PrefixExpression) throws
-    func visit(_ node: InfixExpression) throws
-    func visit(_ node: PostfixExpression) throws
-    func visit(_ node: VariableDefinition) throws
-    func visit(_ node: Tuple) throws
-    func visit(_ node: Nil) throws
-    func visit(_ node: CallExpression) throws
-    func visit(_ node: OperationStatement) throws
-    func visit(_ node: ClassStatement) throws
+    func visit(_ node: Program) throws -> VisitorResult
+    func visit(_ node: AssignStatement) throws -> VisitorResult
+    func visit(_ node: ReturnStatement) throws -> VisitorResult
+    func visit(_ node: ExpressionStatement) throws -> VisitorResult
+    func visit(_ node: BlockStatement) throws -> VisitorResult
+    func visit(_ node: FunctionStatement) throws -> VisitorResult
+    func visit(_ node: IfStatement) throws -> VisitorResult
+
+    func visit(_ node: Identifier) throws -> VisitorResult
+    func visit(_ node: IntegerLiteral) throws -> VisitorResult
+    func visit(_ node: Boolean) throws -> VisitorResult
+    func visit(_ node: StringLiteral) throws -> VisitorResult
+    func visit(_ node: PrefixExpression) throws -> VisitorResult
+    func visit(_ node: InfixExpression) throws -> VisitorResult
+    func visit(_ node: PostfixExpression) throws -> VisitorResult
+    func visit(_ node: VariableDefinition) throws -> VisitorResult
+    func visit(_ node: Tuple) throws -> VisitorResult
+    func visit(_ node: Nil) throws -> VisitorResult
+    func visit(_ node: CallExpression) throws -> VisitorResult
+    func visit(_ node: OperationStatement) throws -> VisitorResult
+    func visit(_ node: ClassStatement) throws -> VisitorResult
 }
 
 class BaseVisitor: Visitor {
@@ -37,84 +39,84 @@ class BaseVisitor: Visitor {
     init(_ errorMessage: String? = nil) {
         self.errorMessage = errorMessage ?? "NOT IMPEMENTED: Visitor for this node not implemented!"
     }
-    
-    func visit(_ node: Program) throws {
+
+    func visit(_: Program) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: AssignStatement) throws {
+
+    func visit(_: AssignStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: ReturnStatement) throws {
+
+    func visit(_: ReturnStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: ExpressionStatement) throws {
+
+    func visit(_: ExpressionStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: BlockStatement) throws {
+
+    func visit(_: BlockStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: FunctionStatement) throws {
+
+    func visit(_: FunctionStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: IfStatement) throws {
+
+    func visit(_: IfStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: Identifier) throws {
+
+    func visit(_: Identifier) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: IntegerLiteral) throws {
+
+    func visit(_: IntegerLiteral) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: Boolean) throws {
+
+    func visit(_: Boolean) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: StringLiteral) throws {
+
+    func visit(_: StringLiteral) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: PrefixExpression) throws {
+
+    func visit(_: PrefixExpression) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: InfixExpression) throws {
+
+    func visit(_: InfixExpression) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: PostfixExpression) throws {
+
+    func visit(_: PostfixExpression) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: VariableDefinition) throws {
+
+    func visit(_: VariableDefinition) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: Tuple) throws {
+
+    func visit(_: Tuple) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: Nil) throws {
+
+    func visit(_: Nil) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: CallExpression) throws {
+
+    func visit(_: CallExpression) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: OperationStatement) throws {
+
+    func visit(_: OperationStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: ClassStatement) throws {
+
+    func visit(_: ClassStatement) throws {
         fatalError(errorMessage)
     }
 }

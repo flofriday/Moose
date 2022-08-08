@@ -13,9 +13,9 @@ protocol MooseObject: CustomStringConvertible {
 
 class IntegerObj: MooseObject {
     let type: MooseType = .Int
-    let value: Int?
+    let value: Int64?
 
-    init(value: Int?) {
+    init(value: Int64?) {
         self.value = value
     }
 

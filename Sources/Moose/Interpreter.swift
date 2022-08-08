@@ -9,53 +9,110 @@ class Interpreter: Visitor {
     var environment: Environment
 
     init() {
-        environment = Environment()
+        environment = Environment(enclosing: nil)
         addBuiltIns()
     }
 
     private func addBuiltIns() {}
 
     func run(program: Program) throws {
-        try visit(program)
+        _ = try visit(program)
+        environment.printDebug()
     }
 
-    func visit(_: Program) throws {}
+    func visit(_ node: Program) throws -> MooseObject {
+        for stmt in node.statements {
+            _ = try stmt.accept(self)
+        }
+        return VoidObj()
+    }
 
-    func visit(_: AssignStatement) throws {}
+    func visit(_ node: AssignStatement) throws -> MooseObject {
+        let value = try node.value.accept(self)
 
-    func visit(_: ReturnStatement) throws {}
+        // TODO: in the future we want more than just variable assignment to work here
+        var name: String
+        switch node.assignable {
+        case let id as Identifier:
+            name = id.value
+        default:
+            throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers for assign")
+        }
 
-    func visit(_: ExpressionStatement) throws {}
+        _ = environment.update(variable: name, value: value)
 
-    func visit(_: BlockStatement) throws {}
+        return VoidObj()
+    }
 
-    func visit(_: FunctionStatement) throws {}
+    func visit(_: ReturnStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: ClassStatement) throws {}
+    func visit(_: ExpressionStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: IfStatement) throws {}
+    func visit(_: BlockStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: Identifier) throws {}
+    func visit(_: FunctionStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: IntegerLiteral) throws {}
+    func visit(_: ClassStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: Boolean) throws {}
+    func visit(_: IfStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: StringLiteral) throws {}
+    func visit(_ node: Identifier) throws -> MooseObject {
+        return try environment.get(variable: node.value)
+    }
 
-    func visit(_: PrefixExpression) throws {}
+    func visit(_ node: IntegerLiteral) throws -> MooseObject {
+        return IntegerObj(value: node.value)
+    }
 
-    func visit(_: InfixExpression) throws {}
+    func visit(_ node: Boolean) throws -> MooseObject {
+        return BoolObj(value: node.value)
+    }
 
-    func visit(_: PostfixExpression) throws {}
+    func visit(_ node: StringLiteral) throws -> MooseObject {
+        return StringObj(value: node.value)
+    }
 
-    func visit(_: VariableDefinition) throws {}
+    func visit(_: PrefixExpression) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: Tuple) throws {}
+    func visit(_: InfixExpression) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: Nil) throws {}
+    func visit(_: PostfixExpression) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: CallExpression) throws {}
+    func visit(_: VariableDefinition) throws -> MooseObject {
+        return VoidObj()
+    }
 
-    func visit(_: OperationStatement) throws {}
+    func visit(_: Tuple) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_: Nil) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_: CallExpression) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_: OperationStatement) throws -> MooseObject {
+        return VoidObj()
+    }
 }
