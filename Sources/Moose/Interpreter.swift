@@ -13,11 +13,19 @@ class Interpreter: Visitor {
         addBuiltIns()
     }
 
-    private func addBuiltIns() {}
+    private func addBuiltIns() {
+        // for op in BuiltIns.builtInOperators {
+        //     TODO:
+        // }
+
+        for fn in BuiltIns.builtInFunctions {
+            environment.set(function: fn.name, value: fn)
+        }
+    }
 
     func run(program: Program) throws {
         _ = try visit(program)
-        environment.printDebug()
+        // environment.printDebug()
     }
 
     func visit(_ node: Program) throws -> MooseObject {
@@ -48,7 +56,8 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: ExpressionStatement) throws -> MooseObject {
+    func visit(_ node: ExpressionStatement) throws -> MooseObject {
+        _ = try node.expression.accept(self)
         return VoidObj()
     }
 
@@ -108,8 +117,19 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: CallExpression) throws -> MooseObject {
-        return VoidObj()
+    func visit(_ node: CallExpression) throws -> MooseObject {
+        let args = try node.arguments.map { try $0.accept(self) }
+        let argTypes = args.map { $0.type }
+
+        let callee = try environment.get(function: node.function.value, params: argTypes)
+        if let callee = callee as? BuiltInFunctionObj {
+            return callee.function(args)
+        } else if let callee = callee as? BuiltInFunctionObj {
+            // TODO: Implement other functions
+            return VoidObj()
+        } else {
+            throw RuntimeError(message: "I cannot call \(callee)!")
+        }
     }
 
     func visit(_: OperationStatement) throws -> MooseObject {
