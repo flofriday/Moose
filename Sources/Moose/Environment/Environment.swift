@@ -14,6 +14,7 @@ class Environment {
     let enclosing: Environment?
     private var variables: [String: MooseObject] = [:]
     private var funcs: [String: [MooseObject]] = [:]
+    private var ops: [String: [MooseObject]] = [:]
 
     init(enclosing: Environment?) {
         self.enclosing = enclosing
@@ -90,6 +91,37 @@ extension Environment {
     }
 }
 
+// Define all function operations
+extension Environment {
+    private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
+        if let obj = other as? BuiltInOperatorObj {
+            return obj.opPos == pos && obj.params == params
+        }
+        if let obj = other as? OperatorObj, obj.opPos == pos, case .Function(params, _) = other.type {
+            return true
+        }
+        return false
+    }
+
+    func set(op: String, value: MooseObject) {
+        if ops[op] == nil {
+            ops[op] = []
+        }
+
+        ops[op]!.append(value)
+    }
+
+    func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject {
+        if let obj = ops[op]?.first(where: { isOpBy(pos: pos, params: params, other: $0) }) {
+            return obj
+        }
+        guard let enclosing = enclosing else {
+            throw EnvironmentError(message: "Operation '\(op)' not found.")
+        }
+        return try enclosing.get(op: op, pos: pos, params: params)
+    }
+}
+
 // Some helper functions
 extension Environment {
     func isGlobal() -> Bool {
@@ -124,5 +156,11 @@ extension Environment {
                 print("\t\(function) = \(value.description)")
             }
         }
+        for (op, values) in ops {
+            for value in values {
+                print("\t\(op) = \(value.description)")
+            }
+        }
+        print()
     }
 }

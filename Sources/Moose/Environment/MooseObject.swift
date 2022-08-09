@@ -109,6 +109,19 @@ class BuiltInFunctionObj: MooseObject {
     }
 }
 
+class OperatorObj: FunctionObj {
+    let opPos: OpPos
+
+    init(name: String, opPos: OpPos, type: MooseType, paramNames: [String], value: BlockStatement) {
+        self.opPos = opPos
+        super.init(name: name, type: type, paramNames: paramNames, value: value)
+    }
+
+    override var description: String {
+        return "<\(opPos) operation \(name): \(type.description)>"
+    }
+}
+
 class BuiltInOperatorObj: BuiltInFunctionObj {
     let opPos: OpPos
 
@@ -118,7 +131,7 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 
     override var description: String {
-        return "<built-in operation \(name): \(type.description)>"
+        return "<built-in \(opPos) operation \(name): \(type.description)>"
     }
 }
 

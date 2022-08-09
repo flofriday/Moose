@@ -18,28 +18,28 @@ class BuiltIns {
 
 extension BuiltIns {
     static let builtInOperators = [
-        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: { _ in VoidObj() }),
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerPlusBuiltIn),
     ]
 }
 
 // OperatorFunction
 extension BuiltIns {
     // TODO: currently we use compactMap so we ignore nil value... is this smart? I don't know...
-    static func integerPlus(_ args: [IntegerObj]) -> MooseObject {
+    static func integerPlusBuiltIn(_ args: [MooseObject]) -> MooseObject {
         return IntegerObj(value: args.compactMap {
-            $0.value
+            ($0 as! IntegerObj).value
         }
         .reduce(0, +))
     }
-}
 
-/// A generic print function that can print any MooseObject
-func printBuiltIn(params: [MooseObject]) -> MooseObject {
-    if let str = params[0] as? StringObj {
-        print(str.value ?? "nil")
+    /// A generic print function that can print any MooseObject
+    static func printBuiltIn(params: [MooseObject]) -> MooseObject {
+        if let str = params[0] as? StringObj {
+            print(str.value ?? "nil")
+            return VoidObj()
+        }
+
+        print(params[0].description)
         return VoidObj()
     }
-
-    print(params[0].description)
-    return VoidObj()
 }

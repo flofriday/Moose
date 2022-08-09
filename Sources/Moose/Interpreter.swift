@@ -14,9 +14,9 @@ class Interpreter: Visitor {
     }
 
     private func addBuiltIns() {
-        // for op in BuiltIns.builtInOperators {
-        //     TODO:
-        // }
+        for op in BuiltIns.builtInOperators {
+            environment.set(op: op.name, value: op)
+        }
 
         for fn in BuiltIns.builtInFunctions {
             environment.set(function: fn.name, value: fn)
@@ -26,8 +26,8 @@ class Interpreter: Visitor {
     func run(program: Program) throws {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
-        environment.printDebug()
         _ = try visit(program)
+        // environment.printDebug()
     }
 
     func visit(_ node: Program) throws -> MooseObject {
@@ -69,9 +69,16 @@ class Interpreter: Visitor {
 
     func visit(_ node: BlockStatement) throws -> MooseObject {
         environment = Environment(enclosing: environment)
-        for statement in node.statements {
-            _ = try statement.accept(self)
+        do {
+            for statement in node.statements {
+                _ = try statement.accept(self)
+            }
+        } catch {
+            // Always leave the environment in peace
+            environment = environment.enclosing!
+            throw error
         }
+
         environment = environment.enclosing!
         return VoidObj()
     }
@@ -126,35 +133,7 @@ class Interpreter: Visitor {
         return StringObj(value: node.value)
     }
 
-    func visit(_: PrefixExpression) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_: InfixExpression) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_: PostfixExpression) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_: VariableDefinition) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_: Tuple) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_: Nil) throws -> MooseObject {
-        return VoidObj()
-    }
-
-    func visit(_ node: CallExpression) throws -> MooseObject {
-        let args = try node.arguments.map { try $0.accept(self) }
-        let argTypes = args.map { $0.type }
-
-        let callee = try environment.get(function: node.function.value, params: argTypes)
+    func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
             return callee.function(args)
         } else if let callee = callee as? FunctionObj {
@@ -174,9 +153,72 @@ class Interpreter: Visitor {
 
             environment = environment.enclosing!
             return result
+        } else if let callee = callee as? BuiltInOperatorObj {
+            return callee.function(args)
+        } else if let callee = callee as? OperatorObj {
+            environment = Environment(enclosing: environment)
+
+            let argPairs = Array(zip(callee.paramNames, args))
+            for (name, value) in argPairs {
+                _ = environment.update(variable: name, value: value)
+            }
+
+            var result: MooseObject = VoidObj()
+            do {
+                _ = try callee.value.accept(self)
+            } catch let error as ReturnSignal {
+                result = error.value
+            }
+
+            environment = environment.enclosing!
+            return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
         }
+    }
+
+    func visit(_ node: PrefixExpression) throws -> MooseObject {
+        let args = try [node.right.accept(self)]
+        let argTypes = [node.right.mooseType!]
+
+        let handler = try environment.get(op: node.op, pos: .Prefix, params: argTypes)
+        return try callFunctionOrOperator(callee: handler, args: args)
+    }
+
+    func visit(_ node: InfixExpression) throws -> MooseObject {
+        let args = try [node.left, node.right].map { try $0.accept(self) }
+        let argTypes = [node.left.mooseType!, node.right.mooseType!]
+
+        let handler = try environment.get(op: node.op, pos: .Infix, params: argTypes)
+        return try callFunctionOrOperator(callee: handler, args: args)
+    }
+
+    func visit(_ node: PostfixExpression) throws -> MooseObject {
+        let args = try [node.left.accept(self)]
+        let argTypes = [node.left.mooseType!]
+
+        let handler = try environment.get(op: node.op, pos: .Postfix, params: argTypes)
+        return try callFunctionOrOperator(callee: handler, args: args)
+    }
+
+    func visit(_: VariableDefinition) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_: Tuple) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_: Nil) throws -> MooseObject {
+        return VoidObj()
+    }
+
+    func visit(_ node: CallExpression) throws -> MooseObject {
+        let args = try node.arguments.map { try $0.accept(self) }
+        let argTypes = args.map { $0.type }
+
+        let callee = try environment.get(function: node.function.value, params: argTypes)
+        return try callFunctionOrOperator(callee: callee, args: args)
     }
 
     func visit(_: OperationStatement) throws -> MooseObject {
