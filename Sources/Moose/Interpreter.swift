@@ -125,6 +125,10 @@ class Interpreter: Visitor {
         return IntegerObj(value: node.value)
     }
 
+    func visit(_ node: FloatLiteral) throws -> MooseObject {
+        return FloatObj(value: node.value)
+    }
+
     func visit(_ node: Boolean) throws -> MooseObject {
         return BoolObj(value: node.value)
     }

@@ -20,6 +20,7 @@ protocol Visitor {
 
     func visit(_ node: Identifier) throws -> VisitorResult
     func visit(_ node: IntegerLiteral) throws -> VisitorResult
+    func visit(_ node: FloatLiteral) throws -> VisitorResult
     func visit(_ node: Boolean) throws -> VisitorResult
     func visit(_ node: StringLiteral) throws -> VisitorResult
     func visit(_ node: PrefixExpression) throws -> VisitorResult
@@ -73,6 +74,10 @@ class BaseVisitor: Visitor {
     }
 
     func visit(_: IntegerLiteral) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: FloatLiteral) throws {
         fatalError(errorMessage)
     }
 

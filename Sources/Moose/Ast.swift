@@ -103,6 +103,17 @@ class IntegerLiteral {
     var mooseType: MooseType?
 }
 
+class FloatLiteral {
+    init(token: Token, value: Float64) {
+        self.token = token
+        self.value = value
+    }
+
+    let token: Token
+    let value: Float64
+    var mooseType: MooseType?
+}
+
 class Boolean {
     init(token: Token, value: Bool) {
         self.token = token
@@ -371,6 +382,13 @@ extension ExpressionStatement: Statement {
 }
 
 extension IntegerLiteral: Expression {
+    var description: String { token.lexeme }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+}
+
+extension FloatLiteral: Expression {
     var description: String { token.lexeme }
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)

@@ -253,6 +253,10 @@ class Typechecker: BaseVisitor {
         node.mooseType = .Int
     }
 
+    override func visit(_ node: FloatLiteral) throws {
+        node.mooseType = .Float
+    }
+
     override func visit(_ node: Boolean) throws {
         node.mooseType = .Bool
     }

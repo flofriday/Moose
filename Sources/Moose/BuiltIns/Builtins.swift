@@ -19,11 +19,13 @@ class BuiltIns {
 extension BuiltIns {
     static let builtInOperators = [
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerPlusBuiltIn),
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatPlusBuiltIn),
     ]
 }
 
-// OperatorFunction
+// Buit-in OperatorFunction
 extension BuiltIns {
+    /// Add two integer together with an infix
     // TODO: currently we use compactMap so we ignore nil value... is this smart? I don't know...
     static func integerPlusBuiltIn(_ args: [MooseObject]) -> MooseObject {
         return IntegerObj(value: args.compactMap {
@@ -32,6 +34,18 @@ extension BuiltIns {
         .reduce(0, +))
     }
 
+    /// Add two integer together with an infix
+    // TODO: currently we use compactMap so we ignore nil value... is this smart? I don't know...
+    static func floatPlusBuiltIn(_ args: [MooseObject]) -> MooseObject {
+        return FloatObj(value: args.compactMap {
+            ($0 as! FloatObj).value
+        }
+        .reduce(0, +))
+    }
+}
+
+// Built-in Functions
+extension BuiltIns {
     /// A generic print function that can print any MooseObject
     static func printBuiltIn(params: [MooseObject]) -> MooseObject {
         if let str = params[0] as? StringObj {

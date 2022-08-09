@@ -27,9 +27,9 @@ class IntegerObj: MooseObject {
 
 class FloatObj: MooseObject {
     let type: MooseType = .Float
-    let value: Float?
+    let value: Float64?
 
-    init(value: Float?) {
+    init(value: Float64?) {
         self.value = value
     }
 

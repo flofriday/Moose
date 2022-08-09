@@ -4,22 +4,20 @@
 
 import Foundation
 
-
 // A simple class that finds the position of an expression
 // Note: This is not an optimal solution and will have a lot of off by one errors
 // but it is an improvement over just one token from an expression.
 // The correct solution would be to include positions into the AST nodes.
 class AstLocator: Visitor {
-
     var location: Location
     let node: Node
 
     init(node: Node) {
         location = Location(
-                col: node.token.column,
-                endCol: node.token.column + node.token.lexeme.count,
-                line: node.token.line,
-                endLine: node.token.line
+            col: node.token.column,
+            endCol: node.token.column + node.token.lexeme.count,
+            line: node.token.line,
+            endLine: node.token.line
         )
         self.node = node
     }
@@ -28,8 +26,7 @@ class AstLocator: Visitor {
         // In this class it can never throw.
         do {
             try node.accept(self)
-        } catch {
-        }
+        } catch {}
 
         return location
     }
@@ -114,6 +111,10 @@ class AstLocator: Visitor {
         update(node)
     }
 
+    func visit(_ node: FloatLiteral) throws {
+        update(node)
+    }
+
     func visit(_ node: Boolean) throws {
         update(node)
     }
@@ -175,11 +176,11 @@ class AstLocator: Visitor {
 
         try node.body.accept(self)
     }
-    
+
     func visit(_ node: ClassStatement) throws {
         update(node)
-        
-        //TODO: implement for rest of class statement
+
+        // TODO: implement for rest of class statement
         for prop in node.properties {
             try prop.accept(self)
         }
@@ -187,5 +188,4 @@ class AstLocator: Visitor {
             try meth.accept(self)
         }
     }
-
 }

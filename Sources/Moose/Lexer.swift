@@ -98,7 +98,20 @@ extension Lexer {
                 }
                 return genToken(type, lit, ident)
             } else if isDigit(char: unwrappedChar) {
-                let digit = readNumber()
+                var digit = readNumber()
+
+                if char == Character(".") {
+                    readChar()
+                    digit += "."
+                    digit += readNumber()
+
+                    if let num = Float64(digit) {
+                        return genToken(.Float, num, digit)
+                    } else {
+                        throw error(message: "I thought I was reading a number, but \(digit) is not a float number")
+                    }
+                }
+
                 if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {

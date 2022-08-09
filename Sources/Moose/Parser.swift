@@ -55,6 +55,7 @@ class Parser {
         // TODO: add parse functions
         prefixParseFns[.Identifier] = parseIdentifier
         prefixParseFns[.Int] = parseIntegerLiteral
+        prefixParseFns[.Float] = parseFloatLiteral
         prefixParseFns[.Operator(pos: .Prefix, assign: false)] = parsePrefixExpression
         prefixParseFns[.Operator(pos: .Prefix, assign: true)] = parsePrefixExpression
         prefixParseFns[.Boolean(true)] = parseBoolean
@@ -208,11 +209,11 @@ class Parser {
         try consumeStatementEnd()
         return FunctionStatement(token: token, name: name, body: body, params: params, returnType: returnType)
     }
-    
+
     func parseAllMethodDefinitions() throws -> [FunctionStatement] {
         var methods = [FunctionStatement]()
         skip(all: .NLine)
-        while (check(type: .Func)) {
+        while check(type: .Func) {
             guard !check(oneOf: .Prefix, .Infix, .Postfix) else {
                 throw error(message: "Operators have to be defined in global scope not in class definition scope.", token: peek())
             }
@@ -307,10 +308,10 @@ class Parser {
         try consumeStatementEnd()
         return IfStatement(token: token, condition: condition, consequence: consequence, alternative: alternative)
     }
-    
+
     func parseClassDefinition() throws -> ClassStatement {
         let token = try consume(type: .Class, message: "'class' was expected, but got '\(peek().lexeme)' instead")
-        
+
         skip(all: .NLine)
         let name = try parseIdentifier()
         skip(all: .NLine)
@@ -374,6 +375,13 @@ class Parser {
             throw genLiteralTypeError(t: previous(), expected: "Int64")
         }
         return IntegerLiteral(token: previous(), value: literal)
+    }
+
+    func parseFloatLiteral() throws -> Expression {
+        guard let literal = advance().literal as? Float64 else {
+            throw genLiteralTypeError(t: previous(), expected: "Float64")
+        }
+        return FloatLiteral(token: previous(), value: literal)
     }
 
     func parseBoolean() throws -> Expression {
@@ -468,8 +476,8 @@ class Parser {
         if !check(type: .LBrace) {
             let toTok = advance() // > token as infix prefix or postfix op
             guard
-                    case .Operator(pos: _, assign: false) = toTok.type,
-                    toTok.lexeme == ">"
+                case .Operator(pos: _, assign: false) = toTok.type,
+                toTok.lexeme == ">"
             else {
                 throw error(message: "expected > in function signature to define type, but got \(toTok.lexeme) instead", token: toTok)
             }
@@ -560,7 +568,6 @@ class Parser {
         return list
     }
 
-    
     /// Parses strongly typed variable definitions, currently used by parameter and class property definitions
     func parseVariableDefinition() throws -> VariableDefinition {
         let mut = match(types: .Mut)
@@ -569,10 +576,10 @@ class Parser {
         let type = try parseValueTypeDefinition()
         return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
     }
-    
+
     func parseAllVariableDefinitions() throws -> [VariableDefinition] {
         var definitions = [VariableDefinition]()
-        while (check(oneOf: .Mut, .Identifier)) {
+        while check(oneOf: .Mut, .Identifier) {
             definitions.append(try parseVariableDefinition())
             try consumeStatementEnd()
         }
@@ -583,9 +590,10 @@ class Parser {
 extension Parser {
     private func consumeStatementEnd() throws {
         if
-                !isAtEnd(),
-                !check(type: .RBrace), // for function body such as f() {x}
-                !match(types: .SemiColon, .NLine) {
+            !isAtEnd(),
+            !check(type: .RBrace), // for function body such as f() {x}
+            !match(types: .SemiColon, .NLine)
+        {
             throw error(message: "I expected, the statement to end here (with a newline or semicolon), but it kept going with '\(peek().lexeme)'.\nTipp: Maybe you forgot an (infix) operator here?", token: peek())
         }
     }
@@ -669,10 +677,10 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 
@@ -681,10 +689,10 @@ extension Parser {
         let location = locator.getLocation()
 
         return CompileErrorMessage(
-                line: location.line,
-                startCol: location.col,
-                endCol: location.endCol,
-                message: message
+            line: location.line,
+            startCol: location.col,
+            endCol: location.endCol,
+            message: message
         )
     }
 
