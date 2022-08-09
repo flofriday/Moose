@@ -13,6 +13,9 @@ class BuiltIns {
         BuiltInFunctionObj(name: "print", params: [.Float], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.Bool], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.String], returnType: .Void, function: printBuiltIn),
+
+        BuiltInFunctionObj(name: "exit", params: [], returnType: .Void, function: exitBuiltIn),
+        BuiltInFunctionObj(name: "exit", params: [.Int], returnType: .Void, function: exitBuiltIn),
     ]
 }
 
@@ -55,5 +58,16 @@ extension BuiltIns {
 
         print(params[0].description)
         return VoidObj()
+    }
+
+    /// A generic exit function that may take an argument
+    static func exitBuiltIn(params: [MooseObject]) -> MooseObject {
+        var exitCode: Int32 = 0
+
+        if params.count == 1 {
+            exitCode = Int32(truncatingIfNeeded: (params[0] as! IntegerObj).value!)
+        }
+
+        exit(exitCode)
     }
 }
