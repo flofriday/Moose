@@ -5,32 +5,30 @@ written in [Swift](https://www.swift.org/).
 
 ## Build it yourself
 
+**Note:** We only support macOS, iOS and Linux. On Windows you can use WSL.
+
+You need to [install swift](https://www.swift.org/download/), after which you can run:
+
 ```bash
 swift run Moose
 ```
 
 ## Roadmap
 
-- [ ] Test infrastructure <!--  -->
-- [ ] Token definition <!-- Thu 2022-05-19 -->
+- [x] Test infrastructure
+- [x] Token definition
 
-- [ ] Lexer
-- [ ] Parser (AST) <!-- Thu 2022-05-26 -->
-- [ ] AST Interpreter
+- [x] Lexer
+- [x] Parser (AST)
+- [x] AST Interpreter
 
 In several iterations:
 
-- [ ] Expression evaluation
-- [ ] Statements, control-flow and functions
+- [x] Expression evaluation
+- [x] Statements, control-flow and functions
 - [ ] Lists, dicts and tuples
 - [ ] Objects, classes and inheritance
 - [ ] Extending classes and indexing
-
-## TODO
-- [ ] Implement class property assignment and usage
-- [ ] Implement class method call
-- [ ] Implement return of functions (at the moment functions are note considered as value (only for typechecking)
-    - This is because we only consider variables not functions or operators
 
 ## Types
 
