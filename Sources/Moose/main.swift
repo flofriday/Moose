@@ -65,8 +65,10 @@ class Cli {
         } catch let error as CompileErrorMessage {
             print(error.getFullReport(sourcecode: input))
             return
-        } catch _ as RuntimeError {
+        } catch let error as RuntimeError {
             // print(error.getFullReport(sourcecode: input))
+            print(error)
+            print(error.message)
             exit(1)
         } catch {
             print(error)

@@ -25,4 +25,6 @@ protocol Scope {
     func add(variable: String, type: MooseType, mutable: Bool) throws
     func add(op: String, opPos: OpPos, params: [MooseType], returnType: MooseType) throws
     func add(function: String, params: [MooseType], returnType: MooseType) throws
+
+    func isGlobal() -> Bool
 }

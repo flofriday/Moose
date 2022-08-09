@@ -9,7 +9,6 @@ import Foundation
 class Typechecker: BaseVisitor {
     typealias ReturnDec = (MooseType, Bool)?
 
-    var isGlobal = true
     var isFunction = false
     var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
@@ -34,8 +33,8 @@ class Typechecker: BaseVisitor {
         // clear errors
         errors = []
 
-        let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
-        scope = try scopeSpawner.spawn()
+        let explorer = GlobalScopeExplorer(program: program, scope: scope)
+        scope = try explorer.populate()
 
         try program.accept(self)
 
@@ -55,8 +54,6 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: BlockStatement) throws {
-        let wasGlobal = isGlobal
-        isGlobal = false
         pushNewScope()
 
         var returnDec: ReturnDec = nil
@@ -76,7 +73,6 @@ class Typechecker: BaseVisitor {
         node.returnDeclarations = returnDec
 
         try popScope()
-        isGlobal = wasGlobal
     }
 
     private func newReturnDec(current: ReturnDec, incoming: Statement) throws -> ReturnDec {
@@ -266,9 +262,7 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: FunctionStatement) throws {
-        let wasGlobal = isGlobal
         let wasFunction = isFunction
-        isGlobal = false
         isFunction = true
         pushNewScope()
 
@@ -293,16 +287,13 @@ class Typechecker: BaseVisitor {
 
         try popScope()
         isFunction = wasFunction
-        isGlobal = wasGlobal
     }
 
     override func visit(_ node: OperationStatement) throws {
-        let wasGlobal = isGlobal
         let wasFunction = isFunction
-        isGlobal = false
         isFunction = true
 
-        guard wasGlobal else {
+        guard scope.isGlobal() else {
             throw error(message: "Operator definition is only allowed in global scope.", node: node)
         }
 
@@ -333,7 +324,6 @@ class Typechecker: BaseVisitor {
 
         try popScope()
         isFunction = wasFunction
-        isGlobal = wasGlobal
     }
 
     override func visit(_ node: InfixExpression) throws {
@@ -369,13 +359,11 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: ClassStatement) throws {
-        let wasGlobal = isGlobal
-        isGlobal = false
-        pushNewScope()
-
-        guard wasGlobal else {
+        guard scope.isGlobal() else {
             throw error(message: "Classes can only be defined in global scope.", node: node)
         }
+
+        pushNewScope()
 
         for prop in node.properties {
             try scope.add(variable: prop.name.value, type: prop.declaredType, mutable: prop.mutable)
@@ -386,7 +374,6 @@ class Typechecker: BaseVisitor {
         }
 
         try popScope()
-        isGlobal = wasGlobal
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {

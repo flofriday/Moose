@@ -24,8 +24,10 @@ class Interpreter: Visitor {
     }
 
     func run(program: Program) throws {
+        let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
+        environment = try explorer.populate()
+        environment.printDebug()
         _ = try visit(program)
-        // environment.printDebug()
     }
 
     func visit(_ node: Program) throws -> MooseObject {
@@ -75,6 +77,11 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: FunctionStatement) throws -> MooseObject {
+        // The global scope was already added by GlobalEnvironmentExplorer
+        guard !environment.isGlobal() else {
+            return VoidObj()
+        }
+
         let paramNames = node.params.map { $0.name.value }
         let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
         let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
@@ -83,6 +90,11 @@ class Interpreter: Visitor {
     }
 
     func visit(_: ClassStatement) throws -> MooseObject {
+        // The global scope was already added by GlobalEnvironmentExplorer
+        guard !environment.isGlobal() else {
+            return VoidObj()
+        }
+
         return VoidObj()
     }
 
@@ -168,6 +180,11 @@ class Interpreter: Visitor {
     }
 
     func visit(_: OperationStatement) throws -> MooseObject {
+        // The global scope was already added by GlobalEnvironmentExplorer
+        guard !environment.isGlobal() else {
+            return VoidObj()
+        }
+
         return VoidObj()
     }
 }

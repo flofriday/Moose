@@ -11,7 +11,7 @@ class TypeScope: Scope {
     private var variables: [String: (type: MooseType, mut: Bool)] = [:]
     private var funcs: [String: [MooseType]] = [:]
     private var ops: [String: [(MooseType, OpPos)]] = [:]
-    
+
     private var classes: [String: TypeScope] = [:]
 
     let enclosing: TypeScope?
@@ -84,7 +84,8 @@ extension TypeScope {
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
         if let type = ops[op]?
-                .first(where: { isOpBy(pos: opPos, params: params, other: $0) }) {
+            .first(where: { isOpBy(pos: opPos, params: params, other: $0) })
+        {
             return type
         }
         guard let enclosing = enclosing else {
@@ -94,7 +95,7 @@ extension TypeScope {
     }
 
     func returnType(op: String, opPos: OpPos, params: [MooseType]) throws -> MooseType {
-        guard case .Function(_, let retType) = try typeOf(op: op, opPos: opPos, params: params).0 else {
+        guard case let .Function(_, retType) = try typeOf(op: op, opPos: opPos, params: params).0 else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
         }
         return retType
@@ -141,7 +142,8 @@ extension TypeScope {
 
     func typeOf(function: String, params: [MooseType]) throws -> MooseType {
         if let type = funcs[function]?
-                .first(where: { isFuncBy(params: params, other: $0) }) {
+            .first(where: { isFuncBy(params: params, other: $0) })
+        {
             return type
         }
         guard let enclosing = enclosing else {
@@ -151,7 +153,7 @@ extension TypeScope {
     }
 
     func returnType(function: String, params: [MooseType]) throws -> MooseType {
-        guard case .Function(_, let retType) = try typeOf(function: function, params: params) else {
+        guard case let .Function(_, retType) = try typeOf(function: function, params: params) else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
         }
         return retType
@@ -175,5 +177,11 @@ extension TypeScope {
         var list = (funcs[function] ?? [])
         list.append(MooseType.Function(params, returnType))
         funcs.updateValue(list, forKey: function)
+    }
+}
+
+extension TypeScope {
+    func isGlobal() -> Bool {
+        return enclosing == nil
     }
 }

@@ -90,6 +90,13 @@ extension Environment {
     }
 }
 
+// Some helper functions
+extension Environment {
+    func isGlobal() -> Bool {
+        return enclosing == nil
+    }
+}
+
 // Debug functions to get a better look into what the current environment is
 // doing
 extension Environment {
@@ -102,7 +109,11 @@ extension Environment {
             enclosing.printDebug(header: false)
         }
 
-        print("--- Environment ---")
+        if isGlobal() {
+            print("--- Environment (global) ---")
+        } else {
+            print("--- Environment ---")
+        }
         print("Variables: ")
         for (variable, value) in variables {
             print("\t\(variable): \(value.type.description) = \(value.description)")
