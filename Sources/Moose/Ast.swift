@@ -20,14 +20,20 @@ protocol Expression: Node {
 
 /// All nodes that can be on the left side of an assignment.
 ///
-/// E.g. ident =, arr[0] =, obj.prop =
+/// E.g. `ident =`, `arr[0] =`, `obj.prop =`
 protocol Assignable: Expression {
     var isAssignable: Bool { get }
 }
 
+/// Defines nodes that can be declared as new variable (idents and tuples)
 protocol Declareable: Assignable {
     var idents: [Identifier] { get }
 }
+
+/// Defines nodes that can be used as referer or obj in dereferer nodes.
+///
+/// Such as `arr[0].fun()`  `ident.arr[0]` and `fun().ident`
+protocol Referible: Expression {}
 
 class Program {
     let statements: [Statement]
@@ -54,7 +60,7 @@ class AssignStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
-class Identifier: Assignable, Declareable {
+class Identifier: Assignable, Declareable, Referible {
     init(token: Token, value: String) {
         self.token = token
         self.value = value
@@ -315,21 +321,26 @@ class ClassStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
-/// This class represents the . in object.propertie
-class Dereferer: Assignable {
+/// This class represents the `.` in `object.propertie`
+class Dereferer: Assignable, Referible {
     let token: Token
     var mooseType: MooseType?
 
-    let obj: Identifier
-    let referer: Assignable
+    let obj: Referible
+    let referer: Referible
 
-    init(token: Token, obj: Identifier, referer: Assignable) {
+    init(token: Token, obj: Referible, referer: Referible) {
         self.token = token
         self.obj = obj
         self.referer = referer
     }
 
-    var isAssignable: Bool { referer.isAssignable }
+    var isAssignable: Bool {
+        guard let referer = referer as? Assignable else {
+            return false
+        }
+        return referer.isAssignable
+    }
 }
 
 // Node implementations
@@ -457,7 +468,7 @@ extension OperationStatement: Statement {
     }
 }
 
-extension CallExpression: Expression {
+extension CallExpression: Referible {
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
     func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
 }

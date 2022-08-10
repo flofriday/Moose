@@ -15,6 +15,7 @@ enum Precendence: Int {
     case Postfix
     case Call
     case Index
+    case Reference // obj dereference with .
 }
 
 class Parser {
@@ -35,6 +36,7 @@ class Parser {
         .Operator(pos: .Prefix, assign: false): .Prefix,
         .Operator(pos: .Postfix, assign: false): .Postfix,
         .LParen: .Call,
+        .Dot: .Reference,
     ]
 
     let opPrecendences: [String: Precendence] = [
@@ -65,6 +67,7 @@ class Parser {
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
         infixParseFns[.LParen] = parseCallExpression
+        infixParseFns[.Dot] = parseDereferer
 
         postfixParseFns[.Operator(pos: .Postfix, assign: true)] = parsePostfixExpression
         postfixParseFns[.Operator(pos: .Postfix, assign: false)] = parsePostfixExpression
@@ -358,8 +361,22 @@ class Parser {
         return leftExpr
     }
 
+    func parseDereferer(_ lhs: Expression) throws -> Dereferer {
+        guard let obj = lhs as? Referible else {
+            throw error(message: "Left side of dot-reference must be a Referible such as `ident`, `arr[0]` and `func()`.", node: lhs)
+        }
+        let token = try consume(type: .Dot, message: ". was expected, got '\(peek().lexeme)' instead.")
+        guard check(type: .Identifier) else {
+            throw error(message: "Identifier was expected for reference, got `\(peek().lexeme)` instead.", token: peek())
+        }
+        let ref = try parseExpression(curPrecedence)
+        guard let ref = ref as? Referible else {
+            throw error(message: "Right side of dot-reference must be a Referible such as `ident`, `arr[0]` and `func()`.", node: lhs)
+        }
+        return Dereferer(token: token, obj: obj, referer: ref)
+    }
+
     func parseIdentifier() throws -> Identifier {
-//        let ident = advance()
         let ident = try consume(type: .Identifier, message: "Identifier was expected")
         return Identifier(token: ident, value: ident.literal as! String)
     }
