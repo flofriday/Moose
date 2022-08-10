@@ -551,8 +551,8 @@ extension ClassStatement: Statement {
 }
 
 extension Dereferer: Expression {
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        return try visitor.visit(self)
     }
 
     var description: String {

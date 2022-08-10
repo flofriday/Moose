@@ -222,8 +222,8 @@ class ParserTests: BaseClass {
 
         let tests = [
             ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
-            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > () {}"),
-            ("func AS() {x}", "func AS() > () {x}"),
+            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
+            ("func AS() {x}", "func AS() > Void {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
             ("func AS() >Int{x}", "func AS() > Int {x}"),
@@ -299,8 +299,8 @@ class ParserTests: BaseClass {
         let tests = [
             ("a: Test = 1", "Test"),
             ("a: (Test, Test) = 1", "(Test, Test)"),
-            ("a: () > Void = 1", "() > ()"),
-            ("a: () > () = 1", "() > ()"),
+            ("a: () > Void = 1", "() > Void"),
+            ("a: () > () = 1", "() > Void"),
             ("a: (Int) > String = 1", "(Int) > String"),
             ("a: (Int, String) > String = 1", "(Int, String) > String"),
             ("a: (Int, () > (String)) > String = 1", "(Int, () > String) > String"),
@@ -450,9 +450,8 @@ class ParserTests: BaseClass {
             ("(hello.false).ident", false),
             ("123.ident", false),
             ("ident.false", false),
-            ("123.123", false),
             ("foo().bar()", true),
-            ("(fuc().fun()).(ident.fun(2))", true)
+            ("(fuc().fun()).(ident.fun(2))", false)
         ]
 
         for (i, t) in tests.enumerated() {
