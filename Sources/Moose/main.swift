@@ -70,6 +70,10 @@ class Cli {
             print(error)
             print(error.message)
             exit(1)
+        } catch let error as NilUsagePanic {
+            print("NIL Usage Panic: The program crashed because a nil was dereferenced.")
+            print("Unfortunatly we cannot tell you where it happend, sorry.")
+            exit(1)
         } catch {
             print(error)
             exit(1)

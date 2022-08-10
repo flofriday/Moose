@@ -87,7 +87,7 @@ class FunctionObj: MooseObject {
 }
 
 class BuiltInFunctionObj: MooseObject {
-    typealias fnType = ([MooseObject]) -> MooseObject
+    typealias fnType = ([MooseObject]) throws -> MooseObject
 
     let name: String
     let params: [MooseType]

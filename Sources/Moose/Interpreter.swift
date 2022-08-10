@@ -139,7 +139,7 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return callee.function(args)
+            return try callee.function(args)
         } else if let callee = callee as? FunctionObj {
             environment = Environment(enclosing: environment)
 
@@ -158,7 +158,7 @@ class Interpreter: Visitor {
             environment = environment.enclosing!
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
-            return callee.function(args)
+            return try callee.function(args)
         } else if let callee = callee as? OperatorObj {
             environment = Environment(enclosing: environment)
 
