@@ -17,7 +17,6 @@ swift run Moose
 
 - [x] Test infrastructure
 - [x] Token definition
-
 - [x] Lexer
 - [x] Parser (AST)
 - [x] AST Interpreter

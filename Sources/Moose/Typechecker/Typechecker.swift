@@ -171,8 +171,12 @@ class Typechecker: BaseVisitor {
 
         // Check that the function exists and receive the return type
         // TODO: Should this also work for variables? Like can I store a function in a variable?
-        let retType = try scope.returnType(function: node.function.description, params: paramTypes)
-        node.mooseType = retType
+        do {
+            let retType = try scope.returnType(function: node.function.description, params: paramTypes)
+            node.mooseType = retType
+        } catch let scopeError as ScopeError {
+            throw self.error(message: scopeError.message, node: node)
+        }
     }
 
     override func visit(_ node: AssignStatement) throws {
