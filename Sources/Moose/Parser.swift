@@ -57,6 +57,7 @@ class Parser {
         // TODO: add parse functions
         prefixParseFns[.Identifier] = parseIdentifier
         prefixParseFns[.Int] = parseIntegerLiteral
+        prefixParseFns[.Float] = parseFloatLiteral
         prefixParseFns[.Operator(pos: .Prefix, assign: false)] = parsePrefixExpression
         prefixParseFns[.Operator(pos: .Prefix, assign: true)] = parsePrefixExpression
         prefixParseFns[.Boolean(true)] = parseBoolean
@@ -391,6 +392,13 @@ class Parser {
             throw genLiteralTypeError(t: previous(), expected: "Int64")
         }
         return IntegerLiteral(token: previous(), value: literal)
+    }
+
+    func parseFloatLiteral() throws -> Expression {
+        guard let literal = advance().literal as? Float64 else {
+            throw genLiteralTypeError(t: previous(), expected: "Float64")
+        }
+        return FloatLiteral(token: previous(), value: literal)
     }
 
     func parseBoolean() throws -> Expression {

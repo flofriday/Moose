@@ -9,14 +9,13 @@ import Foundation
 class Typechecker: BaseVisitor {
     typealias ReturnDec = (MooseType, Bool)?
 
-    var isGlobal = true
     var isFunction = false
     var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
     var scope: TypeScope
 
     init() throws {
-        self.scope = TypeScope()
+        scope = TypeScope()
         super.init("Typechecker is not yet implemented for this scope.")
         try addBuiltIns()
     }
@@ -34,8 +33,8 @@ class Typechecker: BaseVisitor {
         // clear errors
         errors = []
 
-        let scopeSpawner = GlobalScopeExplorer(program: program, scope: scope)
-        scope = try scopeSpawner.spawn()
+        let explorer = GlobalScopeExplorer(program: program, scope: scope)
+        scope = try explorer.populate()
 
         try program.accept(self)
 
@@ -55,8 +54,6 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: BlockStatement) throws {
-        let wasGlobal = isGlobal
-        isGlobal = false
         pushNewScope()
 
         var returnDec: ReturnDec = nil
@@ -76,7 +73,6 @@ class Typechecker: BaseVisitor {
         node.returnDeclarations = returnDec
 
         try popScope()
-        isGlobal = wasGlobal
     }
 
     private func newReturnDec(current: ReturnDec, incoming: Statement) throws -> ReturnDec {
@@ -175,8 +171,12 @@ class Typechecker: BaseVisitor {
 
         // Check that the function exists and receive the return type
         // TODO: Should this also work for variables? Like can I store a function in a variable?
-        let retType = try scope.returnType(function: node.function.description, params: paramTypes)
-        node.mooseType = retType
+        do {
+            let retType = try scope.returnType(function: node.function.description, params: paramTypes)
+            node.mooseType = retType
+        } catch let scopeError as ScopeError {
+            throw self.error(message: scopeError.message, node: node)
+        }
     }
 
     override func visit(_ node: AssignStatement) throws {
@@ -257,6 +257,10 @@ class Typechecker: BaseVisitor {
         node.mooseType = .Int
     }
 
+    override func visit(_ node: FloatLiteral) throws {
+        node.mooseType = .Float
+    }
+
     override func visit(_ node: Boolean) throws {
         node.mooseType = .Bool
     }
@@ -266,16 +270,14 @@ class Typechecker: BaseVisitor {
     }
 
     override func visit(_ node: FunctionStatement) throws {
-        let wasGlobal = isGlobal
         let wasFunction = isFunction
-        isGlobal = false
         isFunction = true
         pushNewScope()
-        
+
         for param in node.params {
             try scope.add(variable: param.name.value, type: param.declaredType, mutable: param.mutable)
         }
-        
+
         try node.body.accept(self)
         var realReturnValue: MooseType = .Void
         if let (typ, eachBranch) = node.body.returnDeclarations {
@@ -291,22 +293,18 @@ class Typechecker: BaseVisitor {
             throw error(message: "Function returns '\(realReturnValue)', but signature requires it as '\(node.returnType)'", token: node.token)
         }
 
-        
         try popScope()
         isFunction = wasFunction
-        isGlobal = wasGlobal
     }
 
     override func visit(_ node: OperationStatement) throws {
-        let wasGlobal = isGlobal
         let wasFunction = isFunction
-        isGlobal = false
         isFunction = true
-        
-        guard wasGlobal else {
+
+        guard scope.isGlobal() else {
             throw error(message: "Operator definition is only allowed in global scope.", node: node)
         }
-        
+
         pushNewScope()
         for param in node.params {
             try scope.add(variable: param.name.value, type: param.declaredType, mutable: false)
@@ -334,11 +332,10 @@ class Typechecker: BaseVisitor {
 
         try popScope()
         isFunction = wasFunction
-        isGlobal = wasGlobal
     }
 
     override func visit(_ node: InfixExpression) throws {
-        guard case .Operator(pos: let opPos, assign: let assign) = node.token.type else {
+        guard case let .Operator(pos: opPos, assign: assign) = node.token.type else {
             throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", node: node)
         }
 
@@ -368,34 +365,31 @@ class Typechecker: BaseVisitor {
             throw error(message: "Couldn't determine return type of operator: \(err.message)", token: node.token)
         }
     }
-    
+
     override func visit(_ node: ClassStatement) throws {
-        let wasGlobal = isGlobal
-        isGlobal = false
-        pushNewScope()
-        
-        guard wasGlobal else {
+        guard scope.isGlobal() else {
             throw error(message: "Classes can only be defined in global scope.", node: node)
         }
-        
+
+        pushNewScope()
+
         for prop in node.properties {
             try scope.add(variable: prop.name.value, type: prop.declaredType, mutable: prop.mutable)
         }
-        
+
         for meth in node.methods {
             try meth.accept(self)
         }
-        
+
         try popScope()
-        isGlobal = wasGlobal
     }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-                line: token.line,
-                startCol: token.column,
-                endCol: token.column + token.lexeme.count,
-                message: message
+            line: token.line,
+            startCol: token.column,
+            endCol: token.column + token.lexeme.count,
+            message: message
         )
     }
 
@@ -404,10 +398,10 @@ class Typechecker: BaseVisitor {
         let location = locator.getLocation()
 
         return CompileErrorMessage(
-                line: location.line,
-                startCol: location.col,
-                endCol: location.endCol,
-                message: message
+            line: location.line,
+            startCol: location.col,
+            endCol: location.endCol,
+            message: message
         )
     }
 }
@@ -421,17 +415,17 @@ extension Typechecker {
         }
         return nil
     }
-    
+
     /// Replaces current scope by new scope, whereby the old scope is the enclosing scope of the new scope
     private func pushNewScope() {
-        self.scope = TypeScope(enclosing: self.scope)
+        scope = TypeScope(enclosing: scope)
     }
-    
+
     /// Replaces the current scope by the enclosing scope of the current scope. If it doesn't has an enclosing scope, the internal error occures.
     private func popScope() throws {
-        guard let enclosing = self.scope.enclosing else {
-            throw CompileErrorMessage(line: 1, startCol: 1,endCol: 1, message: "INTERNAL ERROR: Could not pop current scope \n\n\(self.scope)\n\n since it's enclosing scope is nil!")
+        guard let enclosing = scope.enclosing else {
+            throw CompileErrorMessage(line: 1, startCol: 1, endCol: 1, message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
         }
-        self.scope = enclosing
+        scope = enclosing
     }
 }

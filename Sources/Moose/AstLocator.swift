@@ -111,6 +111,10 @@ class AstLocator: Visitor {
         update(node)
     }
 
+    func visit(_ node: FloatLiteral) throws {
+        update(node)
+    }
+
     func visit(_ node: Boolean) throws {
         update(node)
     }
@@ -158,6 +162,7 @@ class AstLocator: Visitor {
     func visit(_ node: CallExpression) throws {
         update(node)
 
+        try node.function.accept(self)
         for expr in node.arguments {
             try expr.accept(self)
         }

@@ -43,6 +43,7 @@ enum TokenType: Equatable, Hashable {
     case EOF
 
     case Int
+    case Float
     case Identifier
     case Operator(pos: OpPos, assign: Bool)
 

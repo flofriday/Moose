@@ -5,4 +5,9 @@
 import Foundation
 
 class RuntimeError: Error {
+    var message: String
+
+    init(message: String) {
+        self.message = message
+    }
 }

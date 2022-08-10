@@ -6,7 +6,7 @@ import Foundation
 
 protocol Node: CustomStringConvertible {
     var token: Token { get }
-    func accept(_ visitor: Visitor) throws
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R
 }
 
 protocol Statement: Node {
@@ -49,7 +49,7 @@ class AssignStatement {
         self.assignable = assignable
         self.value = value
         self.mutable = mutable
-        self.declaredType = type
+        declaredType = type
     }
 
     let token: Token
@@ -109,6 +109,17 @@ class IntegerLiteral {
 
     let token: Token
     let value: Int64
+    var mooseType: MooseType?
+}
+
+class FloatLiteral {
+    init(token: Token, value: Float64) {
+        self.token = token
+        self.value = value
+    }
+
+    let token: Token
+    let value: Float64
     var mooseType: MooseType?
 }
 
@@ -189,7 +200,7 @@ class VariableDefinition {
         self.token = token
         self.mutable = mutable
         self.name = name
-        self.declaredType = type
+        declaredType = type
     }
 
     let token: Token
@@ -360,7 +371,7 @@ extension Program: Node {
         .joined(separator: "\n")
     }
 
-    func accept(_ visitor: Visitor) throws {
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
 }
@@ -372,72 +383,110 @@ extension AssignStatement: Statement {
         return "\(mut)\(assignable.description)\(type) = \(value.description)"
     }
 
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension Identifier: Expression {
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+
     var description: String { value }
 }
 
 extension ReturnStatement: Statement {
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+
     var description: String { "\(token.lexeme) \(returnValue?.description ?? "")" }
 }
 
 extension ExpressionStatement: Statement {
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+
     var description: String { expression.description }
 }
 
 extension IntegerLiteral: Expression {
     var description: String { token.lexeme }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+}
+
+extension FloatLiteral: Expression {
+    var description: String { token.lexeme }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension Nil: Expression {
     var description: String { "nil" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension Boolean: Expression {
     var description: String { token.lexeme }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension StringLiteral: Expression {
     var description: String { "\"\(token.lexeme)\"" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension Tuple: Expression {
     var description: String { "(\(expressions.map { $0.description }.joined(separator: ", ")))" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension PrefixExpression: Expression {
     var description: String { "(\(op)\(right.description))" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension InfixExpression: Expression {
     var description: String { "(\(left.description) \(op) \(right.description))" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension PostfixExpression: Expression {
     var description: String { "(\(left.description)\(op))" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension VariableDefinition: Node {
     var description: String { "\(mutable ? "mut " : "")\(name.value): \(declaredType.description)" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension BlockStatement: Statement {
     var description: String { "{\(statements.map { $0.description }.joined(separator: ";"))}" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension FunctionStatement: Statement {
@@ -449,7 +498,7 @@ extension FunctionStatement: Statement {
         return out
     }
 
-    func accept(_ visitor: Visitor) throws {
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
 }
@@ -463,14 +512,16 @@ extension OperationStatement: Statement {
         return out
     }
 
-    func accept(_ visitor: Visitor) throws {
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
 }
 
 extension CallExpression: Referible {
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
-    func accept(_ visitor: Visitor) throws { try visitor.visit(self) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
 }
 
 extension IfStatement: Statement {
@@ -482,7 +533,7 @@ extension IfStatement: Statement {
         return base + "else \(alt.description)"
     }
 
-    func accept(_ visitor: Visitor) throws {
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
 }
@@ -494,8 +545,8 @@ extension ClassStatement: Statement {
         return "class \(name.value) { \(props)\n \(methods)}"
     }
 
-    func accept(_ visitor: Visitor) throws {
-        try visitor.visit(self)
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        return try visitor.visit(self)
     }
 }
 

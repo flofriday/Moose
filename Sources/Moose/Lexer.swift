@@ -40,18 +40,15 @@ extension Lexer {
         var tok: Token?
         skipWhitespace()
         skipComment()
-        column = position
 
         switch (char, peekChar()) {
         case ("\n", _):
-            line += 1
-            column = 0
             tok = genToken(.NLine)
-        case ("=", let peek) where !isOpChar(char: peek):
+        case let ("=", peek) where !isOpChar(char: peek):
             tok = genToken(.Assign)
         case (";", _):
             tok = genToken(.SemiColon)
-        case (":", let peek) where !isOpChar(char: peek):
+        case let (":", peek) where !isOpChar(char: peek):
             tok = genToken(.Colon)
         case ("(", _):
             tok = genToken(.LParen)
@@ -98,12 +95,25 @@ extension Lexer {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
                 var lit: Any = ident
-                if case .Boolean(let val) = type {
+                if case let .Boolean(val) = type {
                     lit = val
                 }
                 return genToken(type, lit, ident)
             } else if isDigit(char: unwrappedChar) {
-                let digit = readNumber()
+                var digit = readNumber()
+
+                if char == Character(".") {
+                    readChar()
+                    digit += "."
+                    digit += readNumber()
+
+                    if let num = Float64(digit) {
+                        return genToken(.Float, num, digit)
+                    } else {
+                        throw error(message: "I thought I was reading a number, but \(digit) is not a float number")
+                    }
+                }
+
                 if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {
@@ -126,7 +136,7 @@ extension Lexer {
         while let char = char, isLetter(char: char) {
             readChar()
         }
-        return input[pos..<position]
+        return input[pos ..< position]
     }
 
     private func readNumber() -> String {
@@ -134,7 +144,7 @@ extension Lexer {
         while let char = char, isDigit(char: char) {
             readChar()
         }
-        return input[pos..<position]
+        return input[pos ..< position]
     }
 
     private func read(_ evaluator: (Character) -> Bool) -> String {
@@ -142,7 +152,7 @@ extension Lexer {
         while let char = char, char.isASCII, evaluator(char) {
             readChar()
         }
-        return input[pos..<position]
+        return input[pos ..< position]
     }
 }
 
@@ -176,8 +186,14 @@ extension Lexer {
             char = nil
         } else {
             char = input[readPosition]
+
+            if readPosition > 0, input[readPosition - 1].isNewline {
+                line += 1
+                column = 0
+            }
         }
         position = readPosition
+        column += 1
         readPosition += 1
     }
 
@@ -228,7 +244,8 @@ extension Lexer {
     }
 
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
-        Token(type: type, lexeme: lexeme, literal: lit, line: line, column: column)
+        let startCol = column - lexeme.count - 1
+        return Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
     }
 }
 
