@@ -110,25 +110,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             """, // a is not mutable
         ]
 
-        for (i, t) in tests.enumerated() {
-            print("Start \(i): \(t)")
-
-            do {
-                let prog = try parseProgram(t)
-                let tc = try Typechecker()
-                XCTAssertThrowsError(try tc.check(program: prog)) { err in
-                    if let err = err as? CompileError {
-                        print(err.getFullReport(sourcecode: t))
-                    } else if let err = err as? CompileErrorMessage {
-                        print(err.getFullReport(sourcecode: t))
-                    } else {
-                        XCTFail(err.localizedDescription)
-                    }
-                }
-            } catch let err as CompileError {
-                XCTFail(err.getFullReport(sourcecode: t))
-            }
-        }
+        try runInvalidTests(tests)
     }
 
     func test_pass() throws {
@@ -142,7 +124,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             prefix* (i: Int) > Int {return 1}
             """,
             """
-            infix *(i: Int, a: Int) > Int {return 1}
+            infix **(i: Int, a: Int) > Int {return 1}
             """,
             """
             postfix *(i: Int)
@@ -222,22 +204,9 @@ class TypecheckerTests: TypecheckerBaseClass {
                 func c() > Int { return a }
                 func b() { c }
             }
-            """
-            ,
+            """,
         ]
 
-        for (i, t) in tests.enumerated() {
-            print("Start \(i): \(t)")
-
-            do {
-                let prog = try parseProgram(t)
-                let tc = try Typechecker()
-                try tc.check(program: prog)
-            } catch let error as CompileError {
-                XCTFail(error.getFullReport(sourcecode: t))
-            } catch let error as CompileErrorMessage {
-                XCTFail(error.getFullReport(sourcecode: t))
-            }
-        }
+        try runValidTests(tests)
     }
 }

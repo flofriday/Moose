@@ -159,60 +159,6 @@ class Typechecker: Visitor {
         node.mooseType = .Nil
     }
 
-    func visit(_ node: AssignStatement) throws {
-        // Calculate the type of the experssion (right side)
-        try node.value.accept(self)
-        let valueType = node.value.mooseType!
-
-        // Verify that the explicit expressed type (if availble) matches the type of the expression
-        if let expressedType = node.declaredType {
-            guard node.declaredType == valueType else {
-                throw error(message: "The expression on the right produces a value of the type \(valueType) but you explicitly require the type to be \(expressedType).", node: node.value)
-            }
-        }
-
-        // TODO: in the future we want more than just variable assignment to work here
-        var name: String?
-        switch node.assignable {
-        case let id as Identifier:
-            name = id.value
-        default:
-            throw error(message: "NOT IMPLEMENTED: can only parse identifiers for assign", node: node.assignable)
-        }
-
-        guard let name = name else {
-            throw error(message: "INTERNAL ERROR: could not extract name from assignable", node: node.assignable)
-        }
-
-        // Checks to do if the variable was already initialized
-        if scope.has(variable: name, includeEnclosing: true) {
-            if let t = node.declaredType {
-                // TODO: We highlight the variable here instead of the type declaration. At the time of writing we
-                // cannot highlight the declaration because it is not part of the AST and thereby not reachable by the
-                // checker.
-                throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(name)' already exists.\nTipp: Remove `: \(t.description)`", node: node.assignable)
-            }
-
-            // Check that this new assignment doesn't have the mut keyword as the variable already exists
-            guard !node.mutable else {
-                throw error(message: "Variable '\(name)' was already declared, so the `mut` keyword doesn't make any sense here.\nTipp: Remove the `mut` keyword.", node: node.assignable)
-            }
-
-            // Check that the variable wasn mutable
-            guard try scope.isMut(variable: name) else {
-                throw error(message: "Variable '\(name)' is inmutable and cannot be reassigned.\nTipp: Declare '\(name)' as mutable with the the `mut` keyword.", node: node.assignable)
-            }
-
-            // Check that the new assignment still has the same type from the initialization
-            let currentType = try scope.typeOf(variable: name)
-            guard currentType == valueType else {
-                throw error(message: "Variable '\(name)' has the type \(currentType), but the expression on the right produces a value of the type \(valueType).", node: node.value)
-            }
-        } else {
-            try scope.add(variable: name, type: valueType, mutable: node.mutable)
-        }
-    }
-
     func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
         var retType: MooseType = .Void

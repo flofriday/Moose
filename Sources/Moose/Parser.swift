@@ -149,7 +149,7 @@ class Parser {
             // But what if they were? Sure the language would be really complex and it would be kinda useless and one
             // would have to think hard what the exact semantic would be but it is at least a truly novel idea
             // (at least I haven't heard about anything like that).
-            throw error(message: "Expressions are not assignable.", node: assignee)
+            throw error(message: "Expressions like `\(assignee.description)` are not assignable.", node: assignee)
         }
 
         var type: MooseType?
