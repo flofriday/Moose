@@ -31,6 +31,8 @@ class BuiltIns {
 
         BuiltInFunctionObj(name: "exit", params: [], returnType: .Void, function: exitBuiltIn),
         BuiltInFunctionObj(name: "exit", params: [.Int], returnType: .Void, function: exitBuiltIn),
+
+        BuiltInFunctionObj(name: "environment", params: [], returnType: .Void, function: environmentBuiltIn),
     ]
 }
 
@@ -74,6 +76,11 @@ extension BuiltIns {
 // However the Moose Typechecker already confirms that they are only called
 // with the correct arguments so in the implementation here we can do force
 // casts.
+//
+// All Builtin functions can only accept an array of MooseObject, because they
+// all need to fulfill the same interface, however they can return a more strict
+// type, therefore I would encourage you to select the most specific type for
+// the return and document which argument types you accept with an commentar.
 extension BuiltIns {
     /// A generic cast function that can convert Integer, Float and Bool to String.
     static func castToStringBuiltIn(params: [MooseObject]) -> StringObj {
@@ -145,6 +152,14 @@ extension BuiltIns {
         }
 
         exit(exitCode)
+    }
+
+    /// Print the current environment to see what the interpreter thinks is
+    /// going on. This in mostly for interpreter development and debugging.
+    static func environmentBuiltIn(params _: [MooseObject]) -> VoidObj {
+        let interpreter = Interpreter.shared
+        interpreter.environment.printDebug()
+        return VoidObj()
     }
 }
 

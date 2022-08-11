@@ -29,7 +29,6 @@ class Interpreter: Visitor {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
         _ = try visit(program)
-        // environment.printDebug()
     }
 
     func visit(_ node: Program) throws -> MooseObject {
