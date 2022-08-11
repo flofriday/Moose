@@ -6,7 +6,7 @@
 
 class Cli {
     let typechecker: Typechecker
-    let interpreter = Interpreter()
+    let interpreter = Interpreter.shared
 
     init() throws {
         typechecker = try Typechecker()

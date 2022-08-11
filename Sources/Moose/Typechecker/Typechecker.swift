@@ -6,7 +6,7 @@ import Foundation
 
 // The typechecker not only validates types it also checks that all variables and functions
 // are visible.
-class Typechecker: BaseVisitor {
+class Typechecker: Visitor {
     typealias ReturnDec = (MooseType, Bool)?
 
     var isFunction = false
@@ -16,7 +16,6 @@ class Typechecker: BaseVisitor {
 
     init() throws {
         scope = TypeScope()
-        super.init("Typechecker is not yet implemented for this scope.")
         try addBuiltIns()
     }
 
@@ -43,7 +42,7 @@ class Typechecker: BaseVisitor {
         }
     }
 
-    override func visit(_ node: Program) throws {
+    func visit(_ node: Program) throws {
         for stmt in node.statements {
             do {
                 try stmt.accept(self)
@@ -53,7 +52,7 @@ class Typechecker: BaseVisitor {
         }
     }
 
-    override func visit(_ node: BlockStatement) throws {
+    func visit(_ node: BlockStatement) throws {
         pushNewScope()
 
         var returnDec: ReturnDec = nil
@@ -94,7 +93,7 @@ class Typechecker: BaseVisitor {
         }
     }
 
-    override func visit(_ node: IfStatement) throws {
+    func visit(_ node: IfStatement) throws {
         try node.condition.accept(self)
         guard node.condition.mooseType == .Bool else {
             // TODO: the Error highlights the wrong character here
@@ -145,7 +144,7 @@ class Typechecker: BaseVisitor {
         node.returnDeclarations = (conTyp, conStatus && altStatus)
     }
 
-    override func visit(_ node: Tuple) throws {
+    func visit(_ node: Tuple) throws {
         var types: [MooseType] = []
 
         for expr in node.expressions {
@@ -156,30 +155,11 @@ class Typechecker: BaseVisitor {
         node.mooseType = .Tuple(types)
     }
 
-    override func visit(_ node: Nil) throws {
+    func visit(_ node: Nil) throws {
         node.mooseType = .Nil
     }
 
-    override func visit(_ node: CallExpression) throws {
-        // Calculate the arguments
-        for arg in node.arguments {
-            try arg.accept(self)
-        }
-        let paramTypes = node.arguments.map { param in
-            param.mooseType!
-        }
-
-        // Check that the function exists and receive the return type
-        // TODO: Should this also work for variables? Like can I store a function in a variable?
-        do {
-            let retType = try scope.returnType(function: node.function.description, params: paramTypes)
-            node.mooseType = retType
-        } catch let scopeError as ScopeError {
-            throw self.error(message: scopeError.message, node: node)
-        }
-    }
-
-    override func visit(_ node: AssignStatement) throws {
+    func visit(_ node: AssignStatement) throws {
         // Calculate the type of the experssion (right side)
         try node.value.accept(self)
         let valueType = node.value.mooseType!
@@ -233,7 +213,7 @@ class Typechecker: BaseVisitor {
         }
     }
 
-    override func visit(_ node: ReturnStatement) throws {
+    func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
         var retType: MooseType = .Void
         if let expr = node.returnValue {
@@ -245,31 +225,31 @@ class Typechecker: BaseVisitor {
         node.returnDeclarations = (retType, true)
     }
 
-    override func visit(_ node: ExpressionStatement) throws {
+    func visit(_ node: ExpressionStatement) throws {
         try node.expression.accept(self)
     }
 
-    override func visit(_ node: Identifier) throws {
+    func visit(_ node: Identifier) throws {
         node.mooseType = try scope.typeOf(variable: node.value)
     }
 
-    override func visit(_ node: IntegerLiteral) throws {
+    func visit(_ node: IntegerLiteral) throws {
         node.mooseType = .Int
     }
 
-    override func visit(_ node: FloatLiteral) throws {
+    func visit(_ node: FloatLiteral) throws {
         node.mooseType = .Float
     }
 
-    override func visit(_ node: Boolean) throws {
+    func visit(_ node: Boolean) throws {
         node.mooseType = .Bool
     }
 
-    override func visit(_ node: StringLiteral) throws {
+    func visit(_ node: StringLiteral) throws {
         node.mooseType = .String
     }
 
-    override func visit(_ node: FunctionStatement) throws {
+    func visit(_ node: FunctionStatement) throws {
         let wasFunction = isFunction
         isFunction = true
         pushNewScope()
@@ -290,101 +270,18 @@ class Typechecker: BaseVisitor {
 
         guard realReturnValue == node.returnType else {
             // TODO: We highlight the wrong thing here, but there is no reference to the correct return in the AST here.
-            throw error(message: "Function returns '\(realReturnValue)', but signature requires it as '\(node.returnType)'", token: node.token)
+            throw error(message: "Function returns '\(realReturnValue)', but signature requires it as '\(node.returnType)'", node: node)
         }
 
         try popScope()
         isFunction = wasFunction
     }
 
-    override func visit(_ node: OperationStatement) throws {
-        let wasFunction = isFunction
-        isFunction = true
-
-        guard scope.isGlobal() else {
-            throw error(message: "Operator definition is only allowed in global scope.", node: node)
-        }
-
-        pushNewScope()
-        for param in node.params {
-            try scope.add(variable: param.name.value, type: param.declaredType, mutable: false)
-        }
-
-        try node.body.accept(self)
-
-        // get real return type
-        var realReturnValue: MooseType = .Void
-        if let (typ, eachBranch) = node.body.returnDeclarations {
-            // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
-            guard node.returnType == .Void || eachBranch else {
-                throw error(message: "Return missing in operator body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of operator body", node: node.body.statements.last ?? node.body)
-            }
-            realReturnValue = typ
-        }
-
-        // compare declared and real returnType
-        guard realReturnValue == node.returnType else {
-            // TODO: We highlight the wrong thing here
-            throw error(message: "Return type of operator is \(realReturnValue), not \(node.returnType) as declared in signature", token: node.token)
-        }
-
-        // TODO: assure it is in scope
-
-        try popScope()
-        isFunction = wasFunction
+    func visit(_ node: VariableDefinition) throws {
+        node.mooseType = node.declaredType
     }
 
-    override func visit(_ node: InfixExpression) throws {
-        guard case let .Operator(pos: opPos, assign: assign) = node.token.type else {
-            throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(node.token.type) instead.", node: node)
-        }
-
-        if assign {
-            guard let ident = node.left as? Identifier, scope.has(variable: ident.value) else {
-                throw error(message: "Assign operations can only be made on variables that already exist. `\(node.left)` must be declared seperatly.", node: node.left)
-            }
-        }
-
-        try node.left.accept(self)
-        try node.right.accept(self)
-
-        // TODO: I think this is too defensive. We can asume that it worked otherwise it would have thrown an error.
-        // Right?
-        guard let left = node.left.mooseType else {
-            throw error(message: "Couldn't determine type of left side exprssion '\(node.left.description.prefix(20))'...", token: node.left.token)
-        }
-
-        guard let right = node.right.mooseType else {
-            throw error(message: "Couldn't determine type of right side expression '\(node.right.description.prefix(20))'...", token: node.right.token)
-        }
-
-        do {
-            let type = try scope.returnType(op: node.op, opPos: opPos, params: [left, right])
-            node.mooseType = type
-        } catch let err as ScopeError {
-            throw error(message: "Couldn't determine return type of operator: \(err.message)", token: node.token)
-        }
-    }
-
-    override func visit(_ node: ClassStatement) throws {
-        guard scope.isGlobal() else {
-            throw error(message: "Classes can only be defined in global scope.", node: node)
-        }
-
-        pushNewScope()
-
-        for prop in node.properties {
-            try scope.add(variable: prop.name.value, type: prop.declaredType, mutable: prop.mutable)
-        }
-
-        for meth in node.methods {
-            try meth.accept(self)
-        }
-
-        try popScope()
-    }
-
-    private func error(message: String, token: Token) -> CompileErrorMessage {
+    internal func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
             line: token.line,
             startCol: token.column,
@@ -393,7 +290,7 @@ class Typechecker: BaseVisitor {
         )
     }
 
-    private func error(message: String, node: Node) -> CompileErrorMessage {
+    internal func error(message: String, node: Node) -> CompileErrorMessage {
         let locator = AstLocator(node: node)
         let location = locator.getLocation()
 
@@ -417,12 +314,12 @@ extension Typechecker {
     }
 
     /// Replaces current scope by new scope, whereby the old scope is the enclosing scope of the new scope
-    private func pushNewScope() {
+    func pushNewScope() {
         scope = TypeScope(enclosing: scope)
     }
 
     /// Replaces the current scope by the enclosing scope of the current scope. If it doesn't has an enclosing scope, the internal error occures.
-    private func popScope() throws {
+    func popScope() throws {
         guard let enclosing = scope.enclosing else {
             throw CompileErrorMessage(line: 1, startCol: 1, endCol: 1, message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
         }

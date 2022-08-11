@@ -149,10 +149,6 @@ class AstLocator: Visitor {
         for expr in node.expressions {
             try expr.accept(self)
         }
-
-        for id in node.idents {
-            try id.accept(self)
-        }
     }
 
     func visit(_ node: Nil) throws {

@@ -1,0 +1,56 @@
+//
+//  File.swift
+//
+//
+//  Created by Johannes Zottele on 11.08.22.
+//
+
+import Foundation
+
+extension Typechecker {
+    /// CallExpressions are responisble for classic function calls and constructor calls
+    func visit(_ node: CallExpression) throws {
+        // Calculate the arguments
+        for arg in node.arguments {
+            try arg.accept(self)
+        }
+        let paramTypes = node.arguments.map { param in
+            param.mooseType!
+        }
+
+        // Check that the function exists and receive the return type
+        // TODO: Should this also work for variables? Like can I store a function in a variable?
+        // IF SO we have to add an other catch block
+        do {
+            let retType = try scope.returnType(function: node.function.value, params: paramTypes)
+            node.mooseType = retType
+        } catch _ as ScopeError {
+            // If no function where found, we check if it is a class constructor call
+            do {
+                try checkConstructorCall(node)
+            } catch _ as ScopeError {
+                throw self.error(message: "Couldn't find callable `\(node.function)` in current scope.", node: node)
+            }
+        }
+    }
+
+    private func checkConstructorCall(_ node: CallExpression) throws {
+        guard let classScope = scope.getScope(clas: node.function.value) else {
+            throw ScopeError(message: "Couldn't find class \(node.function.value)")
+        }
+
+        let astClass = classScope.astNode
+
+        guard classScope.propertyCount == node.arguments.count, node.arguments.count == astClass.properties.count else {
+            throw error(message: "Constructor needs \(astClass.properties.count), but got \(node.arguments.count) instead.", node: node)
+        }
+
+        for (arg, prop) in zip(node.arguments, astClass.properties) {
+            guard arg.mooseType == prop.declaredType else {
+                throw error(message: "Property `\(prop.name.value)` is of type `\(prop.declaredType)`, but got `\(arg.mooseType?.description ?? "Unknown")` instead.", node: arg)
+            }
+        }
+
+        node.mooseType = .Class(astClass.name.value	)
+    }
+}

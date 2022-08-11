@@ -14,7 +14,7 @@ import Foundation
 // b: Int = 1 + a()
 // func a() -> Int ...
 class GlobalScopeExplorer: BaseVisitor {
-    let scope: TypeScope
+    var scope: TypeScope
     let program: Program
 
     init(program: Program, scope: TypeScope) {
@@ -34,6 +34,8 @@ class GlobalScopeExplorer: BaseVisitor {
             case is OperationStatement:
                 fallthrough
             case is FunctionStatement:
+                try stmt.accept(self)
+            case is ClassStatement:
                 try stmt.accept(self)
             default:
                 break
@@ -66,13 +68,41 @@ class GlobalScopeExplorer: BaseVisitor {
         }
     }
 
-    override func visit(_: ClassStatement) throws {}
+    override func visit(_ node: ClassStatement) throws {
+        guard scope.isGlobal() else {
+            throw error(message: "Classes can only be defined in global scope.", node: node)
+        }
+
+        let classScope = ClassTypeScope(enclosing: scope, astNode: node)
+
+        for prop in node.properties {
+            try classScope.add(variable: prop.name.value, type: prop.declaredType, mutable: prop.mutable)
+        }
+
+        for meth in node.methods {
+            try classScope.add(function: meth.name.value, params: meth.params.map { $0.declaredType }, returnType: meth.returnType)
+        }
+
+        try scope.add(clas: node.name.value, scope: classScope)
+    }
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
             line: token.line,
             startCol: token.column,
             endCol: token.column + token.lexeme.count,
+            message: message
+        )
+    }
+
+    private func error(message: String, node: Node) -> CompileErrorMessage {
+        let locator = AstLocator(node: node)
+        let location = locator.getLocation()
+
+        return CompileErrorMessage(
+            line: location.line,
+            startCol: location.col,
+            endCol: location.endCol,
             message: message
         )
     }
