@@ -87,7 +87,7 @@ class FunctionObj: MooseObject {
 }
 
 class BuiltInFunctionObj: MooseObject {
-    typealias fnType = ([MooseObject]) -> MooseObject
+    typealias fnType = ([MooseObject]) throws -> MooseObject
 
     let name: String
     let params: [MooseType]
@@ -135,7 +135,24 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-// TODO: implement for complex type like: classes, tuples, lists and functions
+class TupleObj: MooseObject {
+    let type: MooseType
+    let value: [MooseObject]?
+
+    init(type: MooseType, value: [MooseObject]?) {
+        self.type = type
+        self.value = value
+    }
+
+    var description: String {
+        var out = "("
+        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += ")"
+        return out
+    }
+}
+
+// TODO: implement for complex type like: classes, tuples and lists
 
 // TODO: Why is Void an Object? Can you actually create an object of the type void?
 class VoidObj: MooseObject {

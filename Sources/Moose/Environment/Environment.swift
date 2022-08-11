@@ -150,16 +150,28 @@ extension Environment {
         for (variable, value) in variables {
             print("\t\(variable): \(value.type.description) = \(value.description)")
         }
+        if variables.isEmpty {
+            print("\t<empty>")
+        }
+
         print("Functions: ")
         for (function, values) in funcs {
             for value in values {
                 print("\t\(function) = \(value.description)")
             }
         }
+        if funcs.isEmpty {
+            print("\t<empty>")
+        }
+
+        print("Operators: ")
         for (op, values) in ops {
             for value in values {
                 print("\t\(op) = \(value.description)")
             }
+        }
+        if ops.isEmpty {
+            print("\t<empty>")
         }
         print()
     }

@@ -29,7 +29,6 @@ class Interpreter: Visitor {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
         _ = try visit(program)
-        // environment.printDebug()
     }
 
     func visit(_ node: Program) throws -> MooseObject {
@@ -141,7 +140,7 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return callee.function(args)
+            return try callee.function(args)
         } else if let callee = callee as? FunctionObj {
             environment = Environment(enclosing: environment)
 
@@ -160,7 +159,7 @@ class Interpreter: Visitor {
             environment = environment.enclosing!
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
-            return callee.function(args)
+            return try callee.function(args)
         } else if let callee = callee as? OperatorObj {
             environment = Environment(enclosing: environment)
 
@@ -211,8 +210,9 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: Tuple) throws -> MooseObject {
-        return VoidObj()
+    func visit(_ node: Tuple) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return TupleObj(type: node.mooseType!, value: args)
     }
 
     func visit(_: Nil) throws -> MooseObject {
