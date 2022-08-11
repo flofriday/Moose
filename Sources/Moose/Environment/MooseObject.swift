@@ -135,7 +135,7 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-// TODO: implement for complex type like: classes, tuples, lists and functions
+// TODO: implement for complex type like: classes, tuples and lists
 
 // TODO: Why is Void an Object? Can you actually create an object of the type void?
 class VoidObj: MooseObject {
