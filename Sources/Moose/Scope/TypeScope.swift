@@ -12,7 +12,7 @@ class TypeScope: Scope {
     private var funcs: [String: [MooseType]] = [:]
     private var ops: [String: [(MooseType, OpPos)]] = [:]
 
-    private var classes: [String: TypeScope] = [:]
+    private var classes: [String: ClassTypeScope] = [:]
 
     let enclosing: TypeScope?
 
@@ -183,5 +183,42 @@ extension TypeScope {
 extension TypeScope {
     func isGlobal() -> Bool {
         return enclosing == nil
+    }
+}
+
+extension TypeScope {
+    func add(clas: String, scope: ClassTypeScope) throws {
+        guard !has(clas: clas) else {
+            throw ScopeError(message: "Class with name '\(clas)' does already exist. Class names must be unique.")
+        }
+
+        classes[clas] = scope
+    }
+
+    func has(clas: String) -> Bool {
+        return classes.contains(where: { $0.key == clas })
+    }
+
+    func getScope(clas: String) -> ClassTypeScope? {
+        return classes[clas] ?? enclosing?.getScope(clas: clas)
+    }
+
+    var variableCount: Int {
+        return variables.count
+    }
+}
+
+/// Class Scope specific methods
+/// Also holds the corresponding ast class node
+class ClassTypeScope: TypeScope {
+    let astNode: ClassStatement
+
+    init(enclosing: TypeScope? = nil, astNode: ClassStatement) {
+        self.astNode = astNode
+        super.init(enclosing: enclosing)
+    }
+
+    var propertyCount: Int {
+        return super.variableCount
     }
 }

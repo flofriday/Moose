@@ -5,10 +5,12 @@
 import Foundation
 
 class Interpreter: Visitor {
+    static let shared = Interpreter()
+
     var errors: [RuntimeError] = []
     var environment: Environment
 
-    init() {
+    private init() {
         environment = Environment(enclosing: nil)
         addBuiltIns()
     }

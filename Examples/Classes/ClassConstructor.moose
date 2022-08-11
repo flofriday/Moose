@@ -1,0 +1,12 @@
+
+b = Test(3)
+c: Bool = b.testFunc()
+
+
+class Test {
+    	a: Int
+	
+	func testFunc() > String { 
+		return "Hello World"
+	}	 
+}
