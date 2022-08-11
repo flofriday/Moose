@@ -210,8 +210,9 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: Tuple) throws -> MooseObject {
-        return VoidObj()
+    func visit(_ node: Tuple) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return TupleObj(type: node.mooseType!, value: args)
     }
 
     func visit(_: Nil) throws -> MooseObject {
