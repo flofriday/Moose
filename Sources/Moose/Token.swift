@@ -63,6 +63,8 @@ enum TokenType: Equatable, Hashable {
     case LBracket
     case RBracket
 
+    case Dot
+
     // Keywords
     case Mut
     case Func

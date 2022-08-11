@@ -222,8 +222,8 @@ class ParserTests: BaseClass {
 
         let tests = [
             ("func a (b: String) > Int {}", "func a(b: String) > Int {}"),
-            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > () {}"),
-            ("func AS() {x}", "func AS() > () {x}"),
+            ("func a (b: String, c: Int) {}", "func a(b: String, c: Int) > Void {}"),
+            ("func AS() {x}", "func AS() > Void {x}"),
             ("func AS()>Int{x}", "func AS() > Int {x}"),
             ("func AS()> Int{x}", "func AS() > Int {x}"),
             ("func AS() >Int{x}", "func AS() > Int {x}"),
@@ -299,8 +299,8 @@ class ParserTests: BaseClass {
         let tests = [
             ("a: Test = 1", "Test"),
             ("a: (Test, Test) = 1", "(Test, Test)"),
-            ("a: () > Void = 1", "() > ()"),
-            ("a: () > () = 1", "() > ()"),
+            ("a: () > Void = 1", "() > Void"),
+            ("a: () > () = 1", "() > Void"),
             ("a: (Int) > String = 1", "(Int) > String"),
             ("a: (Int, String) > String = 1", "(Int, String) > String"),
             ("a: (Int, () > (String)) > String = 1", "(Int, () > String) > String"),
@@ -411,11 +411,11 @@ class ParserTests: BaseClass {
             try test_operator(stmt: prog.statements[0], name: t.1, pos: t.2, argumentCount: t.3, returnType: t.4)
         }
     }
-    
+
     func test_classDefinitionsPropertyParsing() throws {
         // (input, class name, [(property name, type)])
         typealias testtype = (String, String, [(String, MooseType)])
-        let tests:[testtype] = [
+        let tests: [testtype] = [
             ("class test {}", "test", []),
             ("class test { a: String }", "test", [("a", .String)]),
             ("class test { a: String; mut b: Int }", "test", [("a", .String), ("b", .Int)]),
@@ -423,24 +423,56 @@ class ParserTests: BaseClass {
             ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", .String), ("b", .Int)]),
             ("class test { func a() {}; func b () {} }", "test", [])
         ]
-        
+
         for (i, t) in tests.enumerated() {
             print("Start \(i): \(t)")
-            
+
             let prog = try startParser(input: t.0)
             XCTAssertEqual(prog.statements.count, 1)
             let clas = try cast(prog.statements[0], ClassStatement.self)
             XCTAssertEqual(clas.name.value, t.1)
-            
+
             XCTAssertEqual(clas.properties.count, t.2.count)
-            
+
             for (prop, tt) in zip(clas.properties, t.2) {
                 XCTAssertEqual(prop.name.value, tt.0)
                 XCTAssertEqual(prop.declaredType, tt.1)
             }
-            
+
             print(clas.description)
-            
+        }
+    }
+
+    func test_derefererParsing() throws {
+        let tests = [
+            ("hello().ident", true),
+            ("hello.(test.ident)", false), // should not work since (test.ident) should not be referible
+            ("(hello.false).ident", false),
+            ("123.ident", false),
+            ("ident.false", false),
+            ("foo().bar()", true),
+            ("(fuc().fun()).(ident.fun(2))", false)
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let p = Parser(tokens: try Lexer(input: t.0).scan())
+            if !t.1 {
+                XCTAssertThrowsError(try p.parse()) { err in print(err.localizedDescription) }
+                continue
+            }
+
+            do {
+                let prog = try p.parse()
+                XCTAssertEqual(prog.statements.count, 1)
+                let expr = try cast(prog.statements[0], ExpressionStatement.self)
+                let deref = try cast(expr.expression, Dereferer.self)
+                XCTAssertEqual(deref.description, t.0)
+            } catch {
+                print("Got error: \(error.localizedDescription)")
+                throw error
+            }
         }
     }
 }
