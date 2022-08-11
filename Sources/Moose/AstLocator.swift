@@ -189,4 +189,11 @@ class AstLocator: Visitor {
             try meth.accept(self)
         }
     }
+
+    func visit(_ node: Dereferer) throws {
+        update(node)
+
+        try node.obj.accept(self)
+        try node.referer.accept(self)
+    }
 }

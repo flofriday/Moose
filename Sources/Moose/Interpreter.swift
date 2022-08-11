@@ -233,4 +233,8 @@ class Interpreter: Visitor {
 
         return VoidObj()
     }
+
+    func visit(_: Dereferer) throws -> MooseObject {
+        return VoidObj()
+    }
 }
