@@ -36,7 +36,7 @@ extension Typechecker {
         // compare declared and real returnType
         guard realReturnValue == node.returnType else {
             // TODO: We highlight the wrong thing here
-            throw error(message: "Return type of operator is \(realReturnValue), not \(node.returnType) as declared in signature", token: node.token)
+            throw error(message: "Return type of operator is \(realReturnValue), not \(node.returnType) as declared in signature", node: node)
         }
 
         // TODO: assure it is in scope
@@ -74,14 +74,24 @@ extension Typechecker {
             throw error(message: "INTERNAL ERROR: token type should be .Operator, but got \(token.type) instead.", token: token)
         }
 
+        try operands.forEach { try $0.accept(self) }
+        let opType = try scope.returnType(op: op, opPos: opPos, params: operands.compactMap { $0.mooseType })
+
         // if it is an assign operation, check if most left operand is identifier
         if assign {
             guard let ident = operands[0] as? Identifier, scope.has(variable: ident.value) else {
                 throw error(message: "Assign operations can only be made on variables that already exist. `\(operands[0])` must be declared seperatly.", node: operands[0])
             }
+
+            guard try scope.isMut(variable: ident.value) else {
+                throw error(message: "Variable `\(ident.value)` is unmutable.\nTip: Add the `mut` keyword to the variable declaration.", node: ident)
+            }
+
+            guard try scope.typeOf(variable: ident.value) == opType else {
+                throw error(message: "Variable `\(ident.value)` is of type \(ident.mooseType!.description), but operation `\(op)` with params (\(operands.compactMap { $0.mooseType?.description }.joined(separator: ", "))) produces \(opType).", node: ident)
+            }
         }
 
-        try operands.forEach { try $0.accept(self) }
-        return try scope.returnType(op: op, opPos: opPos, params: operands.compactMap { $0.mooseType })
+        return opType
     }
 }

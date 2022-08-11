@@ -59,6 +59,7 @@ class AstLocator: Visitor {
     }
 
     func visit(_ node: AssignStatement) throws {
+        update(node)
         try node.assignable.accept(self)
         try node.value.accept(self)
     }
@@ -72,10 +73,12 @@ class AstLocator: Visitor {
     }
 
     func visit(_ node: ExpressionStatement) throws {
+        update(node)
         try node.expression.accept(self)
     }
 
     func visit(_ node: BlockStatement) throws {
+        update(node)
         guard node.statements.count > 0 else {
             return
         }

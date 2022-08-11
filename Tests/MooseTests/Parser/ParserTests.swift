@@ -475,4 +475,26 @@ class ParserTests: BaseClass {
             }
         }
     }
+
+    func test_comments() throws {
+        let tests = [
+            "// simple test",
+            """
+            // simple test
+            // simple test
+            """,
+            """
+            // simple test
+
+            // simple test
+            """
+        ]
+
+        for (i, t) in tests.enumerated() {
+            print("Start \(i): \(t)")
+
+            let p = try startParser(input: t)
+            XCTAssertEqual(p.statements.count, 0)
+        }
+    }
 }

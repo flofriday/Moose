@@ -39,7 +39,7 @@ extension Lexer {
     func nextToken() throws -> Token {
         var tok: Token?
         skipWhitespace()
-        skipComment()
+        while skipComment() {}
 
         switch (char, peekChar()) {
         case ("\n", _):
@@ -217,11 +217,12 @@ extension Lexer {
         }
     }
 
-    private func skipComment() {
+    private func skipComment() -> Bool {
         guard let char = char, char == "/", peekChar() == "/" else {
-            return
+            return false
         }
         skipUntil(ch: "\n")
+        return true
     }
 
     private func peekChar() -> Character? {

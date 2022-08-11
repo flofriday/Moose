@@ -1,11 +1,12 @@
+// Test comment
+// Test 2
 
 
+mut x = 20
 
-x = 20
-
-print(x--)
+print(x--:)
 
 
 postfix -- (a: Int) > Int {
-	return a + 3
+	return a + 1
 }
