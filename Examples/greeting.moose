@@ -1,0 +1,12 @@
+print("Hi handsome, what is your name?")
+name = input()
+print("And how old are you?")
+(age, errMsg) = parseInt(input())
+
+// TODO: check if errMsg
+
+if age < 5 {
+    print("Aren't you adorable, already using a PC like a real hacker")
+} else {
+    print("Nice to meet you " + name + "!")
+}
