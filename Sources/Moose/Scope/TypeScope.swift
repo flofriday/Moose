@@ -28,7 +28,9 @@ extension TypeScope {
             return type.0
         }
         guard let enclosing = enclosing else {
-            throw ScopeError(message: "'\(variable)' isn't visible in the current scope.")
+            // TODO: We could find similarly named variables here and suggest
+            // them
+            throw ScopeError(message: "Couldn't find variable '\(variable)' in the current scope.")
         }
         return try enclosing.typeOf(variable: variable)
     }
@@ -48,7 +50,9 @@ extension TypeScope {
             return type.1
         }
         guard let enclosing = enclosing else {
-            throw ScopeError(message: "'\(variable)' isn't visible in the current scope.")
+            // TODO: We could find similarly named variables here and suggest
+            // them
+            throw ScopeError(message: "Couldn't find variable '\(variable)' in the current scope.")
         }
         return try enclosing.isMut(variable: variable)
     }

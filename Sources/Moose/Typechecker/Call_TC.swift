@@ -29,7 +29,12 @@ extension Typechecker {
             do {
                 try checkConstructorCall(node)
             } catch _ as ScopeError {
-                throw self.error(message: "Couldn't find callable `\(node.function)` in current scope.", node: node)
+                // TODO: We could do even more here, and iterate over the scopes
+                // finding all functions with the correct name but differend
+                // type and listing them.
+                // Or maybe even finding similarly named functions with the
+                // correct types.
+                throw self.error(message: "Couldn't find callable `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))` in current scope.", node: node)
             }
         }
     }
@@ -51,6 +56,6 @@ extension Typechecker {
             }
         }
 
-        node.mooseType = .Class(astClass.name.value	)
+        node.mooseType = .Class(astClass.name.value)
     }
 }
