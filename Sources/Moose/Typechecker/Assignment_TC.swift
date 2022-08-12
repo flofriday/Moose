@@ -132,13 +132,13 @@ extension Typechecker {
 
     /// Transform datastructure to tuple. Such as (a,b) -> (String, Int), tupVar -> (
     private func toTupleType(expression: Expression, size: Int) throws -> [MooseType] {
-        switch expression {
-        case let t as Tuple:
-            guard t.expressions.count >= size else {
-                throw error(message: "Tuple on right side has \(t.expressions.count) values, while at least \(size) are needed by left side of assignment.", node: expression)
+        switch expression.mooseType {
+        case let .Tuple(types):
+            guard types.count >= size else {
+                throw error(message: "Tuple on right side has \(types.count) values, while at least \(size) are needed by left side of assignment.", node: expression)
             }
 
-            return t.expressions.map { $0.mooseType! }
+            return types
         default:
             throw error(message: "Could not unwrap \(expression.mooseType!) to tuple.", node: expression)
         }
