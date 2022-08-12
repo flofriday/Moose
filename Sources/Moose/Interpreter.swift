@@ -42,15 +42,20 @@ class Interpreter: Visitor {
         let value = try node.value.accept(self)
 
         // TODO: in the future we want more than just variable assignment to work here
-        var name: String
         switch node.assignable {
         case let id as Identifier:
-            name = id.value
-        default:
-            throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers for assign")
-        }
+            _ = environment.update(variable: id.value, value: value)
 
-        _ = environment.update(variable: name, value: value)
+        case let tuple as Tuple:
+            // TODO: many things can be unwrapped into tuples, like classes
+            // and lists.
+            let valueTuple = value as! TupleObj
+            for (n, id) in tuple.idents.enumerated() {
+                _ = environment.update(variable: id.value, value: valueTuple.value![n])
+            }
+        default:
+            throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
+        }
 
         return VoidObj()
     }
