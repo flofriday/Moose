@@ -7,7 +7,7 @@
 
 import Foundation
 
-class TupleTests: TypecheckerBaseClass {
+extension TypecheckerTests {
     func test_Tuples_throwsErrors() throws {
         print("-- \(#function)")
 
@@ -30,10 +30,20 @@ class TupleTests: TypecheckerBaseClass {
             mut a = 3
             mut (a, b) = (1,2)
             """,
-            //            """
-            //            """,
-            //            """
-            //            """,
+
+            """
+            class Test { a: Bool; }
+            (a, b) = Test(true)
+            """,
+            """
+            mut a = 3
+            class Test { a: Bool; b: Int}
+            (a, b) = Test(true, 1)
+            """,
+            """
+            class Test { a: Bool; b: Int}
+            (a, b): (Int, Int) = Test(true, 1)
+            """,
             //            """
             //            """,
         ]
@@ -45,7 +55,7 @@ class TupleTests: TypecheckerBaseClass {
         print("-- \(#function)")
 
         let tests = [
-            "(a,b) = (1,2)",
+            //            "(a,b) = (1,2)",
             """
             mut a = 3
             (a,b) = (1,3)
@@ -68,12 +78,52 @@ class TupleTests: TypecheckerBaseClass {
             mut a = 3
             (a, b) = (1 + 4,2 * 4)
             """,
-            //            """
-            //            """,
-            //            """
-            //            """,
-            //            """
-            //            """,
+            """
+            a = (1,3)
+            (b,c) = a
+            """,
+            """
+            a = (1,3,4,5)
+            (b,c) = a
+            """,
+            """
+            class test { a: Int; b: Int }
+            (b,c) = test(1,3)
+            """,
+            """
+            class test { a: Int; b: Bool }
+            a = test(12+3, true)
+            (b,c) = a
+            """,
+            """
+            class test { a: Bool; b: Int; c: String }
+            a = test(true, 2, "Test")
+            (b,c): (Bool, Int) = a
+            """,
+            """
+            mut a = 3
+            class Test { a: Int; b: Int}
+            (a, b) = Test(1, 3)
+            """,
+            """
+            ((c,d), b) = ((1, 3), 2)
+            """,
+            """
+            (a, b) = (((true,"Hello"), 3), 2)
+            ((x,y),d): ((Bool, String), Int) = a
+            """,
+            """
+            class Test { a: (Bool, Int); b: Int}
+            a = Test((true, 3), 3)
+            ((bol, str), b) = a
+            """,
+            """
+            (a, b) = (((true,"Hello"), 3), 2)
+            mut x = false
+            ((x,y),d): ((Bool, String), Int) = a
+            """,
+//            """
+//            """,
         ]
 
         try runValidTests(tests)
