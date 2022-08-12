@@ -29,6 +29,9 @@ class BuiltIns {
         BuiltInFunctionObj(name: "print", params: [.Bool], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.String], returnType: .Void, function: printBuiltIn),
 
+        BuiltInFunctionObj(name: "input", params: [], returnType: .String, function: inputBuiltIn),
+        BuiltInFunctionObj(name: "open", params: [.String], returnType: .Tuple([.String, .String]), function: openBuiltIn),
+
         BuiltInFunctionObj(name: "exit", params: [], returnType: .Void, function: exitBuiltIn),
         BuiltInFunctionObj(name: "exit", params: [.Int], returnType: .Void, function: exitBuiltIn),
 
@@ -135,6 +138,31 @@ extension BuiltIns {
 
         print(params[0].description)
         return VoidObj()
+    }
+
+    /// A function to read a single line from stdin.
+    /// The functions always succeed and never returns nil.
+    static func inputBuiltIn(_: [MooseObject]) -> StringObj {
+        return StringObj(value: readLine())
+    }
+
+    /// A function to read a file, given a path.
+    /// The functions returns a String tuple. The first one is the string of the
+    /// file content if the function succeeds, the second one is nil if it
+    /// succeeds and otherwise a error message of what went wrong.
+    static func openBuiltIn(_ params: [MooseObject]) throws -> TupleObj {
+        try assertNoNil(params)
+        let path = (params[0] as! StringObj).value!
+
+        var value: String?
+        var errMsg: String?
+        do {
+            value = try String(contentsOfFile: path)
+        } catch {
+            errMsg = error.localizedDescription
+        }
+
+        return TupleObj(type: .Tuple([.String, .String]), value: [StringObj(value: value), StringObj(value: errMsg)])
     }
 
     /// A generic exit function that may take an argument
