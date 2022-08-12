@@ -176,7 +176,11 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: Identifier) throws {
-        node.mooseType = try scope.typeOf(variable: node.value)
+        do {
+            node.mooseType = try scope.typeOf(variable: node.value)
+        } catch let scopeError as ScopeError {
+            throw error(message: scopeError.message, node: node)
+        }
     }
 
     func visit(_ node: IntegerLiteral) throws {
