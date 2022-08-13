@@ -47,7 +47,7 @@ extension Typechecker {
         let astClass = classScope.astNode
 
         guard classScope.propertyCount == node.arguments.count, node.arguments.count == astClass.properties.count else {
-            throw error(message: "Constructor needs \(astClass.properties.count), but got \(node.arguments.count) instead.", node: node)
+            throw error(message: "Constructor needs \(astClass.properties.count) arguments (\(astClass.properties.map { $0.declaredType.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
         }
 
         for (arg, prop) in zip(node.arguments, astClass.properties) {

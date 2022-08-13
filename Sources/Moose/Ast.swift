@@ -23,11 +23,7 @@ protocol Expression: Node {
 /// E.g. `ident =`, `arr[0] =`, `obj.prop =`
 protocol Assignable: Expression {
     var isAssignable: Bool { get }
-}
-
-/// Defines nodes that can be declared as new variable (idents and tuples)
-protocol Declareable: Assignable {
-    var idents: [Identifier] { get }
+    var assignables: [Assignable] { get }
 }
 
 /// Defines nodes that can be used as referer or obj in dereferer nodes.
@@ -60,7 +56,7 @@ class AssignStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
-class Identifier: Assignable, Declareable, Referible {
+class Identifier: Assignable, Referible {
     init(token: Token, value: String) {
         self.token = token
         self.value = value
@@ -74,7 +70,7 @@ class Identifier: Assignable, Declareable, Referible {
         true
     }
 
-    var idents: [Identifier] {
+    var assignables: [Assignable] {
         [self]
     }
 }
@@ -290,7 +286,7 @@ class IfStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
-class Tuple: Assignable, Declareable {
+class Tuple: Assignable {
     init(token: Token, expressions: [Expression]) {
         self.token = token
         self.expressions = expressions
@@ -302,17 +298,17 @@ class Tuple: Assignable, Declareable {
 
     var isAssignable: Bool {
         return expressions.reduce(true) { prev, exp in
-            guard exp is Identifier else {
+            guard let exp = exp as? Assignable else {
                 return false
             }
-            return prev && true
+            return prev && exp.isAssignable
         }
     }
 
-    var idents: [Identifier] {
-        expressions.map {
-            $0 as! Identifier
-        }
+    var assignables: [Assignable] {
+        expressions.compactMap {
+            ($0 as? Assignable)?.assignables
+        }.flatMap { $0 }
     }
 }
 
@@ -351,6 +347,10 @@ class Dereferer: Assignable, Referible {
             return false
         }
         return referer.isAssignable
+    }
+
+    var assignables: [Assignable] {
+        return [self]
     }
 }
 

@@ -1,0 +1,15 @@
+
+
+peter = Person("Peter", 29, 80.49, false)
+
+(name, age) = peter
+
+print(name)
+print(age)
+
+class Person {
+	name: String
+	age: Int
+	weight: Float
+	female: Bool
+}
