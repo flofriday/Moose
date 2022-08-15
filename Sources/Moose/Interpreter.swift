@@ -45,7 +45,6 @@ class Interpreter: Visitor {
             if let nilObj = value as? NilObj {
                 newValue = try nilObj.toObject(type: valueType)
             }
-            print("newValue: \(newValue) \(newValue.type)")
             _ = environment.update(variable: id.value, value: newValue)
 
         case let tuple as Tuple:
