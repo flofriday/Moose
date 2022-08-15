@@ -38,17 +38,27 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    private func assign(dst: Assignable, value: MooseObject) throws {
+    private func assign(valueType: MooseType, dst: Assignable, value: MooseObject) throws {
         switch dst {
         case let id as Identifier:
-            _ = environment.update(variable: id.value, value: value)
+            var newValue = value
+            if let nilObj = value as? NilObj {
+                newValue = try nilObj.toObject(type: valueType)
+            }
+            print("newValue: \(newValue) \(newValue.type)")
+            _ = environment.update(variable: id.value, value: newValue)
 
         case let tuple as Tuple:
             // TODO: many things can be unwrapped into tuples, like classes
             // and lists.
-            let valueTuple = value as! TupleObj
-            for (n, assignable) in tuple.assignables.enumerated() {
-                try assign(dst: assignable, value: valueTuple.value![n])
+            switch valueType {
+            case let .Tuple(types):
+                let valueTuple = value as! TupleObj
+                for (n, assignable) in tuple.assignables.enumerated() {
+                    try assign(valueType: types[n], dst: assignable, value: valueTuple.value![n])
+                }
+            default:
+                throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
             }
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
@@ -57,6 +67,7 @@ class Interpreter: Visitor {
 
     func visit(_ node: AssignStatement) throws -> MooseObject {
         let value = try node.value.accept(self)
+        try assign(valueType: node.declaredType ?? node.value.mooseType!, dst: node.assignable, value: value)
 
         return VoidObj()
     }
@@ -222,7 +233,7 @@ class Interpreter: Visitor {
     }
 
     func visit(_: Nil) throws -> MooseObject {
-        return VoidObj()
+        return NilObj()
     }
 
     func visit(_ node: CallExpression) throws -> MooseObject {
