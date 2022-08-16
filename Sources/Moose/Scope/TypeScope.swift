@@ -128,11 +128,24 @@ extension TypeScope {
 }
 
 extension TypeScope {
+    /// A function has to have same params OR the given params to check is .Nil
+    ///
+    ///  @params Parameter to check against (could contain .Nil params)
+    ///  @other Function to check aganst
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
-        if case .Function(params, _) = other {
-            return true
+        guard
+            case let .Function(paras, _) = other,
+            paras.count == params.count
+        else {
+            return false
         }
-        return false
+
+        return zip(params, paras)
+            .reduce(true) { acc, zip in
+                let (param, para) = zip
+                guard param == .Nil || param == para else { return false }
+                return acc
+            }
     }
 
     private func currentContains(function: String, params: [MooseType]) -> Bool {
@@ -145,10 +158,15 @@ extension TypeScope {
     }
 
     func typeOf(function: String, params: [MooseType]) throws -> MooseType {
-        if let type = funcs[function]?
-            .first(where: { isFuncBy(params: params, other: $0) })
+        if let types = funcs[function]?
+            .filter({ isFuncBy(params: params, other: $0) })
         {
-            return type
+            if types.count > 1 {
+                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+            }
+            if types.count == 1 {
+                return types.first!
+            }
         }
         guard let enclosing = enclosing else {
             throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")

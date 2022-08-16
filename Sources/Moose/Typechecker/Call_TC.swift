@@ -24,7 +24,7 @@ extension Typechecker {
         do {
             let retType = try scope.returnType(function: node.function.value, params: paramTypes)
             node.mooseType = retType
-        } catch _ as ScopeError {
+        } catch let err as ScopeError {
             // If no function where found, we check if it is a class constructor call
             do {
                 try checkConstructorCall(node)
@@ -34,7 +34,7 @@ extension Typechecker {
                 // type and listing them.
                 // Or maybe even finding similarly named functions with the
                 // correct types.
-                throw self.error(message: "Couldn't find callable `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))` in current scope.", node: node)
+                throw self.error(message: "Couldn't find callable `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))` in current scope: \(err.message)", node: node)
             }
         }
     }

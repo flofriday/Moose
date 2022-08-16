@@ -66,10 +66,19 @@ extension Environment {
 // Define all function operations
 extension Environment {
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
-        if case .Function(params, _) = other {
-            return true
+        guard
+            case let .Function(paras, _) = other,
+            paras.count == params.count
+        else {
+            return false
         }
-        return false
+
+        return zip(params, paras)
+            .reduce(true) { acc, zip in
+                let (param, para) = zip
+                guard param == .Nil || param == para else { return false }
+                return acc
+            }
     }
 
     func set(function: String, value: MooseObject) {
@@ -81,9 +90,17 @@ extension Environment {
     }
 
     func get(function: String, params: [MooseType]) throws -> MooseObject {
-        if let obj = funcs[function]?.first(where: { isFuncBy(params: params, other: $0.type) }) {
-            return obj
+        if let objs = funcs[function]?
+            .filter({ isFuncBy(params: params, other: $0.type) })
+        {
+            if objs.count > 1 {
+                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+            }
+            if objs.count == 1 {
+                return objs.first!
+            }
         }
+
         guard let enclosing = enclosing else {
             throw EnvironmentError(message: "Function '\(function)' not found.")
         }
