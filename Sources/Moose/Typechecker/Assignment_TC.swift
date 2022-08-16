@@ -108,7 +108,7 @@ extension Typechecker {
     private func assign(valueType: MooseType, to variable: Identifier, with declaredType: MooseType?, on node: AssignStatement) throws {
         // if assignment is declared with type, check if expression has same type as declared
         if let declaredType = declaredType {
-            guard valueType == declaredType else {
+            guard valueType == declaredType || valueType == .Nil else {
                 throw error(message: "Declared type for variable `\(variable.value)` is `\(declaredType.description)` but you want to assign value of type `\(valueType)`", node: node)
             }
         }
@@ -138,7 +138,8 @@ extension Typechecker {
                 throw error(message: "Since variable `\(variable.value)` does already exist in scope, you cannot use the `mut` keyword.", node: node)
             }
         } else {
-            try scope.add(variable: variable.value, type: valueType, mutable: node.mutable)
+            let type: MooseType = node.declaredType ?? valueType
+            try scope.add(variable: variable.value, type: type, mutable: node.mutable)
         }
     }
 

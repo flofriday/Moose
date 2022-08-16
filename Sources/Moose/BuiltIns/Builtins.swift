@@ -24,10 +24,17 @@ class BuiltIns {
         BuiltInFunctionObj(name: "String", params: [.Float], returnType: .String, function: castToStringBuiltIn),
         BuiltInFunctionObj(name: "String", params: [.Bool], returnType: .String, function: castToStringBuiltIn),
 
+        BuiltInFunctionObj(name: "parseInt", params: [.String], returnType: .Tuple([.Int, .String]), function: parseIntBuiltIn),
+        BuiltInFunctionObj(name: "parseFloat", params: [.String], returnType: .Tuple([.Int, .Float]), function: parseFloatBuiltIn),
+        BuiltInFunctionObj(name: "parseBool", params: [.String], returnType: .Tuple([.Int, .Bool]), function: parseBoolBuiltIn),
+
         BuiltInFunctionObj(name: "print", params: [.Int], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.Float], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.Bool], returnType: .Void, function: printBuiltIn),
         BuiltInFunctionObj(name: "print", params: [.String], returnType: .Void, function: printBuiltIn),
+
+        BuiltInFunctionObj(name: "input", params: [], returnType: .String, function: inputBuiltIn),
+        BuiltInFunctionObj(name: "open", params: [.String], returnType: .Tuple([.String, .String]), function: openBuiltIn),
 
         BuiltInFunctionObj(name: "exit", params: [], returnType: .Void, function: exitBuiltIn),
         BuiltInFunctionObj(name: "exit", params: [.Int], returnType: .Void, function: exitBuiltIn),
@@ -67,6 +74,9 @@ extension BuiltIns {
         // Bool calculations
         BuiltInOperatorObj(name: "&&", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolAndBuiltIn),
         BuiltInOperatorObj(name: "||", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolOrBuiltIn),
+
+        // String calculations
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringConcatBuiltIn),
     ]
 }
 
@@ -126,6 +136,75 @@ extension BuiltIns {
         return BoolObj(value: value == 0 ? false : true)
     }
 
+    /// A cast function that can parse a String to an Integer.
+    /// The function returns a value-error tuple.
+    static func parseIntBuiltIn(params: [MooseObject]) -> TupleObj {
+        let input = (params[0] as! StringObj).value
+
+        let tupleType = MooseType.Tuple([.Int, .String])
+        guard let input = input else {
+            // TODO: Should this be an error?
+            // This is not an error but a nil string is just a nil integer
+            return TupleObj(type: tupleType, value: [IntegerObj(value: nil), StringObj(value: nil)])
+        }
+
+        var errMsg: String?
+        let value = Int64(input)
+        if value == nil {
+            errMsg = "Cannot parse '\(input)' to an Integer."
+        }
+        return TupleObj(type: tupleType, value: [IntegerObj(value: value), StringObj(value: errMsg)])
+    }
+
+    /// A cast function that can parse a String to an Integer.
+    /// The function returns a value-error tuple.
+    static func parseFloatBuiltIn(params: [MooseObject]) -> TupleObj {
+        let input = (params[0] as! StringObj).value
+
+        let tupleType = MooseType.Tuple([.Float, .String])
+        guard let input = input else {
+            // TODO: Should this be an error?
+            // This is not an error but a nil string is just a nil integer
+            return TupleObj(type: tupleType, value: [FloatObj(value: nil), StringObj(value: nil)])
+        }
+
+        var errMsg: String?
+        let value = Float64(input)
+        if value == nil {
+            errMsg = "Cannot parse '\(input)' to a Float."
+        }
+        return TupleObj(type: tupleType, value: [FloatObj(value: value), StringObj(value: errMsg)])
+    }
+
+    /// A cast function that can parse a String to an Integer.
+    /// The function returns a value-error tuple.
+    static func parseBoolBuiltIn(params: [MooseObject]) -> TupleObj {
+        let input = (params[0] as! StringObj).value
+
+        let tupleType = MooseType.Tuple([.Int, .String])
+        guard let input = input else {
+            // TODO: Should this be an error?
+            // This is not an error but a nil string is just a nil integer
+            return TupleObj(type: tupleType, value: [IntegerObj(value: nil), StringObj(value: nil)])
+        }
+
+        var errMsg: String?
+        var value: Bool?
+        switch input {
+        case "true":
+            value = true
+        case "false":
+            value = false
+        default:
+            break
+        }
+
+        if value == nil {
+            errMsg = "Cannot parse '\(input)' to an Bool."
+        }
+        return TupleObj(type: tupleType, value: [BoolObj(value: value), StringObj(value: errMsg)])
+    }
+
     /// A generic print function that can print any MooseObject
     static func printBuiltIn(params: [MooseObject]) -> VoidObj {
         if let str = params[0] as? StringObj {
@@ -135,6 +214,31 @@ extension BuiltIns {
 
         print(params[0].description)
         return VoidObj()
+    }
+
+    /// A function to read a single line from stdin.
+    /// The functions always succeed and never returns nil.
+    static func inputBuiltIn(_: [MooseObject]) -> StringObj {
+        return StringObj(value: readLine())
+    }
+
+    /// A function to read a file, given a path.
+    /// The functions returns a String tuple. The first one is the string of the
+    /// file content if the function succeeds, the second one is nil if it
+    /// succeeds and otherwise a error message of what went wrong.
+    static func openBuiltIn(_ params: [MooseObject]) throws -> TupleObj {
+        try assertNoNil(params)
+        let path = (params[0] as! StringObj).value!
+
+        var value: String?
+        var errMsg: String?
+        do {
+            value = try String(contentsOfFile: path)
+        } catch {
+            errMsg = error.localizedDescription
+        }
+
+        return TupleObj(type: .Tuple([.String, .String]), value: [StringObj(value: value), StringObj(value: errMsg)])
     }
 
     /// A generic exit function that may take an argument
@@ -354,5 +458,14 @@ extension BuiltIns {
         let a = (args[0] as! BoolObj).value!
         let b = (args[1] as! BoolObj).value!
         return BoolObj(value: a || b)
+    }
+
+    // Concatenation for strings
+    static func stringConcatBuiltIn(_ args: [MooseObject]) throws -> StringObj {
+        try assertNoNil(args)
+
+        let a = (args[0] as! StringObj).value!
+        let b = (args[1] as! StringObj).value!
+        return StringObj(value: a + b)
     }
 }

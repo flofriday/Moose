@@ -154,11 +154,56 @@ class TupleObj: MooseObject {
 
 // TODO: implement for complex type like: classes, tuples and lists
 
-// TODO: Why is Void an Object? Can you actually create an object of the type void?
+// Void is an Object because we *need* to return some MooseObject in our
+// visitor. Therefore this is a placeholder.
+// Users cannot actually access this type, its just there for internals.
 class VoidObj: MooseObject {
     let type: MooseType = .Void
 
     var description: String {
         type.description
+    }
+}
+
+// This doesn't seem to make sense but it is needed for nil Literals.
+// Nil Literals a kinda cursed, so when you write a nil literal we don't know
+// the type of them (as to contrast to every other literal).
+// So we also need to create an extra object for Nil literals and then convert
+// them to the needed object once we know what type they should have.
+//
+// This however introduces a whole list of other weired behaivor like, with
+// function overloading. If there is `a(x: Int)` and `a(x: String)` and
+// you call `a(nil)` we don't actually know which function you meant,
+// so we require you to cast that explicitly.
+class NilObj: MooseObject {
+    let type: MooseType = .Nil
+
+    var description: String {
+        type.description
+    }
+
+    func toObject(type: MooseType) throws -> MooseObject {
+        switch type {
+        case .Int:
+            return IntegerObj(value: nil)
+        case .Float:
+            return FloatObj(value: nil)
+        case .Bool:
+            return BoolObj(value: nil)
+        case .String:
+            return StringObj(value: nil)
+        case .Nil:
+            return NilObj()
+        case .Void:
+            return VoidObj()
+        case .Class:
+            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to class")
+        case .Tuple:
+            return TupleObj(type: type, value: nil)
+        case .List:
+            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to list")
+        case .Function:
+            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
+        }
     }
 }
