@@ -49,7 +49,8 @@ extension TypecheckerTests {
         try runInvalidTests(name: #function, tests)
     }
 
-q        let tests = [
+    func test_Tuples_doesRunThrough() throws {
+        let tests = [
             //            "(a,b) = (1,2)",
             """
             mut a = 3
