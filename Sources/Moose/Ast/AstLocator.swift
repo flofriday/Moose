@@ -158,6 +158,10 @@ class AstLocator: Visitor {
         update(node)
     }
 
+    func visit(_ node: Me) throws {
+        update(node)
+    }
+
     func visit(_ node: CallExpression) throws {
         update(node)
 
@@ -194,5 +198,20 @@ class AstLocator: Visitor {
 
         try node.obj.accept(self)
         try node.referer.accept(self)
+    }
+
+    func visit(_ node: List) throws {
+        update(node)
+
+        for expr in node.expressions {
+            try expr.accept(self)
+        }
+    }
+
+    func visit(_ node: IndexExpression) throws {
+        update(node)
+
+        try node.indexable.accept(self)
+        try node.index.accept(self)
     }
 }

@@ -11,8 +11,6 @@ import XCTest
 
 class TypecheckerTests: TypecheckerBaseClass {
     func test_throwsErrors() throws {
-        print("-- \(#function)")
-
         let tests = [
             "a: String = 3",
             """
@@ -110,12 +108,10 @@ class TypecheckerTests: TypecheckerBaseClass {
             """, // a is not mutable
         ]
 
-        try runInvalidTests(tests)
+        try runInvalidTests(name: #function, tests)
     }
 
     func test_pass() throws {
-        print("-- \(#function)")
-
         let tests = [
             """
             prefix * (i: Int) > Int {return 1}
@@ -207,6 +203,6 @@ class TypecheckerTests: TypecheckerBaseClass {
             """,
         ]
 
-        try runValidTests(tests)
+        try runValidTests(name: #function, tests)
     }
 }

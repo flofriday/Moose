@@ -36,6 +36,7 @@ class Parser {
         .Operator(pos: .Prefix, assign: false): .Prefix,
         .Operator(pos: .Postfix, assign: false): .Postfix,
         .LParen: .Call,
+        .LBracket: .Index,
         .Dot: .Reference,
     ]
 
@@ -63,11 +64,14 @@ class Parser {
         prefixParseFns[.Boolean(true)] = parseBoolean
         prefixParseFns[.Boolean(false)] = parseBoolean
         prefixParseFns[.LParen] = parseTupleAndGroupedExpression
+        prefixParseFns[.LBracket] = parseList
         prefixParseFns[.String] = parseStringLiteral
         prefixParseFns[.Nil] = parseNil
+        prefixParseFns[.Me] = parseMe
 
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
         infixParseFns[.LParen] = parseCallExpression
+        infixParseFns[.LBracket] = parseIndex
         infixParseFns[.Dot] = parseDereferer
 
         postfixParseFns[.Operator(pos: .Postfix, assign: true)] = parsePostfixExpression
@@ -387,6 +391,11 @@ class Parser {
         return Nil(token: n)
     }
 
+    func parseMe() throws -> Me {
+        let token = try consume(type: .Me, message: "Expected keyword `me`, but got `\(peek().lexeme)` instead.")
+        return Me(token: token)
+    }
+
     func parseIntegerLiteral() throws -> Expression {
         guard let literal = advance().literal as? Int64 else {
             throw genLiteralTypeError(t: previous(), expected: "Int64")
@@ -516,6 +525,8 @@ class Parser {
             return MooseType.toClass(ident.value)
         case .LParen:
             return try parseTupleGroupFunction_TypeDefinition()
+        case .LBracket:
+            return try parseListTypeDefinition()
         default:
             throw error(message: "Could not find type definition parsing method for token \(peek().type)", token: peek())
         }
@@ -524,6 +535,13 @@ class Parser {
     func parseVoidTypeDefinition() throws -> MooseType {
         let _ = try consume(type: .Void, message: "expected 'Void', but got \(peek().lexeme) instead")
         return .Void
+    }
+
+    func parseListTypeDefinition() throws -> MooseType {
+        _ = try consume(type: .LBracket, message: "Expected a starting '[', but got \(peek().lexeme) instead.")
+        let type = try parseValueTypeDefinition()
+        _ = try consume(type: .RBracket, message: "Expected a closing ']', but got \(peek().lexeme) instead.")
+        return .List(type)
     }
 
     @available(*, deprecated, message: "This method is deprecated since parseTupleGroupFunction_TypeDefinition is used to parse Tuple")
@@ -629,7 +647,7 @@ extension Parser {
         return false
     }
 
-    private func consume(type: TokenType, message: String) throws -> Token {
+    internal func consume(type: TokenType, message: String) throws -> Token {
         try consume(oneOf: [type], message: message)
     }
 
@@ -679,7 +697,7 @@ extension Parser {
         return tokens[current + 1]
     }
 
-    private func peek() -> Token {
+    internal func peek() -> Token {
         guard current < tokens.count else {
             return tokens[tokens.count - 1]
         }
@@ -701,7 +719,7 @@ extension Parser {
         )
     }
 
-    private func error(message: String, node: Node) -> CompileErrorMessage {
+    func error(message: String, node: Node) -> CompileErrorMessage {
         let locator = AstLocator(node: node)
         let location = locator.getLocation()
 

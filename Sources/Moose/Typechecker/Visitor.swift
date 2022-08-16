@@ -29,10 +29,13 @@ protocol Visitor {
     func visit(_ node: VariableDefinition) throws -> VisitorResult
     func visit(_ node: Tuple) throws -> VisitorResult
     func visit(_ node: Nil) throws -> VisitorResult
+    func visit(_ node: Me) throws -> VisitorResult
     func visit(_ node: CallExpression) throws -> VisitorResult
     func visit(_ node: OperationStatement) throws -> VisitorResult
     func visit(_ node: ClassStatement) throws -> VisitorResult
     func visit(_ node: Dereferer) throws -> VisitorResult
+    func visit(_ node: List) throws -> VisitorResult
+    func visit(_ node: IndexExpression) throws -> VisitorResult
 }
 
 class BaseVisitor: Visitor {
@@ -114,6 +117,10 @@ class BaseVisitor: Visitor {
         fatalError(errorMessage)
     }
 
+    func visit(_: Me) throws {
+        fatalError(errorMessage)
+    }
+
     func visit(_: CallExpression) throws {
         fatalError(errorMessage)
     }
@@ -121,12 +128,20 @@ class BaseVisitor: Visitor {
     func visit(_: OperationStatement) throws {
         fatalError(errorMessage)
     }
-    
-    func visit(_ node: Dereferer) throws {
+
+    func visit(_: Dereferer) throws {
         fatalError(errorMessage)
     }
 
     func visit(_: ClassStatement) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: List) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: IndexExpression) throws {
         fatalError(errorMessage)
     }
 }

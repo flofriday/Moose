@@ -237,6 +237,18 @@ class Interpreter: Visitor {
     }
 
     func visit(_: Dereferer) throws -> MooseObject {
-        return VoidObj()
+        fatalError("Not implemented Dereferer")
+    }
+
+    func visit(_: List) throws -> MooseObject {
+        fatalError("Not implemented List")
+    }
+
+    func visit(_: IndexExpression) throws -> MooseObject {
+        fatalError("Not implemented IndexExpression")
+    }
+
+    func visit(_: Me) throws -> MooseObject {
+        fatalError("Not implemented Me")
     }
 }

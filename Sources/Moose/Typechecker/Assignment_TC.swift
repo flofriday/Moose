@@ -31,8 +31,55 @@ extension Typechecker {
             try assign(valueType: valueType, to: ident, with: declaredType, on: node)
         case let tuple as Tuple:
             try assign(valueType: valueType, to: tuple, with: declaredType, on: node)
+        case let indexing as IndexExpression:
+            try assign(valueType: valueType, to: indexing, with: declaredType, on: node)
+        case let dereferer as Dereferer:
+            try assign(valueType: valueType, to: dereferer, with: declaredType, on: node)
         default:
-            throw error(message: "Assignment to `\(assignable.description)` with is not valid.", node: node)
+            throw error(message: "Assignment to `\(assignable.description)` is not valid.", node: node)
+        }
+    }
+
+    private func assign(valueType: MooseType, to dereferer: Dereferer, with declaredType: MooseType?, on node: AssignStatement) throws {
+        // TODO: is something like `mut A().b = 2` or `A().b: Int = 2` allowed? Currently yes. it just doesnt effect anything.
+        if let declaredType = declaredType {
+            guard declaredType == valueType else {
+                throw error(message: "The declared type `\(declaredType)` does not match the actual type `\(valueType)`", node: node)
+            }
+        }
+
+        // TODO: Doesn't work yet! Also if property is not mutable, it cannot get checked!
+        try dereferer.accept(self)
+
+        guard case let .Class(className) = dereferer.obj.mooseType else {
+            throw error(message: "Expected object of class. Instead got object of type \(dereferer.obj.mooseType?.description ?? "Unknown").", node: dereferer.obj)
+        }
+
+        guard let classScope = scope.getScope(clas: className) else {
+            throw error(message: "No class `\(className)` found in scope.", node: node)
+        }
+
+        let oldscope = scope
+        scope = classScope
+
+        try assign(valueType: valueType, to: dereferer.referer, with: declaredType, on: node)
+
+        scope = oldscope
+    }
+
+    private func assign(valueType: MooseType, to indexing: IndexExpression, with declaredType: MooseType?, on node: AssignStatement) throws {
+        // TODO: is something like `mut a[0] = 2` or `a[0]: Int = 2` allowed? Currently yes. it just doesnt effect anything.
+        if let declaredType = declaredType {
+            guard declaredType == valueType else {
+                throw error(message: "The declared type `\(declaredType)` does not match the actual type `\(valueType)`", node: node)
+            }
+        }
+
+        // processs own mooseType and check if everything is valid
+        try indexing.accept(self)
+
+        guard valueType == indexing.mooseType else {
+            throw error(message: "`\(indexing.indexable.description)` is of type `\(indexing.mooseType!)`, but you want to assign a value of type `\(valueType)`. ", node: node)
         }
     }
 

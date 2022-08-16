@@ -122,4 +122,14 @@ class BaseClass: XCTestCase {
         XCTAssertEqual(op.params.count, argumentCount)
         XCTAssertEqual(op.returnType, returnType)
     }
+
+    func runTest<I>(name: String, input: [I], action: (I) throws -> ()) throws {
+        print("Run test: \(name)")
+
+        for (i, t) in input.enumerated() {
+            print("Start \(i): \(t)")
+
+            try action(t)
+        }
+    }
 }

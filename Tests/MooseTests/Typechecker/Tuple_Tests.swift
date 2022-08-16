@@ -9,8 +9,6 @@ import Foundation
 
 extension TypecheckerTests {
     func test_Tuples_throwsErrors() throws {
-        print("-- \(#function)")
-
         let tests = [
             "(a,b) = 1",
             """
@@ -48,13 +46,10 @@ extension TypecheckerTests {
             //            """,
         ]
 
-        try runInvalidTests(tests)
+        try runInvalidTests(name: #function, tests)
     }
 
-    func test_Tuples_doesRunThrough() throws {
-        print("-- \(#function)")
-
-        let tests = [
+q        let tests = [
             //            "(a,b) = (1,2)",
             """
             mut a = 3
@@ -126,6 +121,6 @@ extension TypecheckerTests {
 //            """,
         ]
 
-        try runValidTests(tests)
+        try runValidTests(name: #function, tests)
     }
 }

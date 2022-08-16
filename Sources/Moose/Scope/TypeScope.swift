@@ -203,6 +203,14 @@ extension TypeScope {
         return classes[clas] ?? enclosing?.getScope(clas: clas)
     }
 
+    /// returns next enclosing class type scope and nil if there is no class type scope
+    func nearestClassScope() -> ClassTypeScope? {
+        guard let scope = self as? ClassTypeScope else {
+            return enclosing?.nearestClassScope()
+        }
+        return scope
+    }
+
     var variableCount: Int {
         return variables.count
     }

@@ -15,9 +15,10 @@ class TypecheckerBaseClass: XCTestCase {
         return try p.parse()
     }
 
-    func runInvalidTests(_ tests: [String]) throws {
+    func runInvalidTests(name: String, _ tests: [String]) throws {
+        print("--- \(name)")
         for (i, t) in tests.enumerated() {
-            print("Start \(i): \(t)")
+            print("------\nStart \(i): \n\(t)")
 
             do {
                 let prog = try parseProgram(t)
@@ -37,9 +38,10 @@ class TypecheckerBaseClass: XCTestCase {
         }
     }
 
-    func runValidTests(_ tests: [String]) throws {
+    func runValidTests(name: String, _ tests: [String]) throws {
+        print("--- \(name)")
         for (i, t) in tests.enumerated() {
-            print("Start Valid \(i): \(t)")
+            print("------\nStart Valid \(i): \n\(t)")
 
             do {
                 let prog = try parseProgram(t)
@@ -50,6 +52,21 @@ class TypecheckerBaseClass: XCTestCase {
             } catch let error as CompileErrorMessage {
                 XCTFail(error.getFullReport(sourcecode: t))
             }
+        }
+    }
+
+    func runValidTests(name: String, @StringArrayBuilder _ tests: () -> [String]) throws {
+        try runValidTests(name: name, tests())
+    }
+
+    func runInvalidTests(name: String, @StringArrayBuilder _ tests: () -> [String]) throws {
+        try runInvalidTests(name: name, tests())
+    }
+
+    @resultBuilder
+    enum StringArrayBuilder {
+        static func buildBlock(_ strs: String...) -> [String] {
+            strs
         }
     }
 }

@@ -75,6 +75,16 @@ class Identifier: Assignable, Referible {
     }
 }
 
+/// Represents the `me` keyword (same as `this` in java or `self` in swift)
+class Me: Referible {
+    let token: Token
+    var mooseType: MooseType?
+
+    init(token: Token) {
+        self.token = token
+    }
+}
+
 class ReturnStatement {
     init(token: Token, returnValue: Expression?) {
         self.token = token
@@ -394,6 +404,14 @@ extension Identifier: Expression {
     }
 
     var description: String { value }
+}
+
+extension Me: Expression {
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+
+    var description: String { "me" }
 }
 
 extension ReturnStatement: Statement {

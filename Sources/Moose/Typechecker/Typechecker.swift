@@ -159,6 +159,15 @@ class Typechecker: Visitor {
         node.mooseType = .Nil
     }
 
+    /// Check if me keyword is used inside a class function an set node name to .Class(className)
+    func visit(_ node: Me) throws {
+        guard let scope = scope.nearestClassScope() else {
+            throw error(message: "`me` keyword is only available in class functions.", node: node)
+        }
+
+        node.mooseType = .Class(scope.astNode.name.value)
+    }
+
     func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
         var retType: MooseType = .Void
@@ -176,7 +185,11 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: Identifier) throws {
-        node.mooseType = try scope.typeOf(variable: node.value)
+        do {
+            node.mooseType = try scope.typeOf(variable: node.value)
+        } catch let err as ScopeError {
+            throw error(message: "Could not find `\(node.value)`: \(err.message)", node: node)
+        }
     }
 
     func visit(_ node: IntegerLiteral) throws {
