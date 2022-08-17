@@ -55,5 +55,6 @@ extension Typechecker {
         }
 
         node.mooseType = .Class(classScope.className)
+        node.isConstructorCall = true
     }
 }

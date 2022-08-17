@@ -162,7 +162,7 @@ class Interpreter: Visitor {
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
-                _ = environment.update(variable: name, value: value)
+                _ = environment.updateInCurrentEnv(variable: name, value: value)
             }
 
             var result: MooseObject = VoidObj()
@@ -181,7 +181,7 @@ class Interpreter: Visitor {
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
-                _ = environment.update(variable: name, value: value)
+                _ = environment.updateInCurrentEnv(variable: name, value: value)
             }
 
             var result: MooseObject = VoidObj()
@@ -237,10 +237,28 @@ class Interpreter: Visitor {
 
     func visit(_ node: CallExpression) throws -> MooseObject {
         let args = try node.arguments.map { try $0.accept(self) }
-        let argTypes = args.map { $0.type }
 
+        if node.isConstructorCall {
+            let classDefinition = try environment.get(clas: node.function.value)
+            // create new object from definition
+            let classObject = ClassEnvironment(copy: classDefinition)
+            return try callConstructor(clas: classObject, args: args)
+        }
+
+        let argTypes = args.map { $0.type }
         let callee = try environment.get(function: node.function.value, params: argTypes)
         return try callFunctionOrOperator(callee: callee, args: args)
+    }
+
+    private func callConstructor(clas: ClassEnvironment, args: [MooseObject]) throws -> MooseObject {
+        guard clas.propertyNames.count == args.count else {
+            throw EnvironmentError(message: "Args and property names have not same number of elements")
+        }
+
+        for (name, arg) in zip(clas.propertyNames, args) {
+            _ = clas.updateInCurrentEnv(variable: name, value: arg)
+        }
+        return ClassObject(env: clas)
     }
 
     func visit(_: OperationStatement) throws -> MooseObject {
@@ -252,8 +270,18 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    func visit(_: Dereferer) throws -> MooseObject {
-        fatalError("Not implemented Dereferer")
+    func visit(_ node: Dereferer) throws -> MooseObject {
+        let obj = try node.obj.accept(self)
+        guard let obj = obj as? ClassObject else {
+            throw EnvironmentError(message: "Obj cannot be converted to ClassObject")
+        }
+
+        let prevEnv = environment
+        environment = obj.env
+
+        let val = try node.referer.accept(self)
+        environment = prevEnv
+        return val
     }
 
     func visit(_: List) throws -> MooseObject {
@@ -265,7 +293,8 @@ class Interpreter: Visitor {
     }
 
     func visit(_: Me) throws -> MooseObject {
-        fatalError("Not implemented Me")
+        let env = try environment.nearestClass()
+        return ClassObject(env: env)
     }
 
     func visit(_: ForEachStatement) throws -> MooseObject {

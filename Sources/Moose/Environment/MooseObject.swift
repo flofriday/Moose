@@ -67,6 +67,20 @@ class StringObj: MooseObject {
     }
 }
 
+class ClassObject: MooseObject {
+    let env: ClassEnvironment
+    let type: MooseType
+
+    init(env: ClassEnvironment) {
+        self.env = env
+        type = .Class(env.className)
+    }
+
+    var description: String {
+        "<class object \(env.className): \(type)>"
+    }
+}
+
 class FunctionObj: MooseObject {
     let name: String
     let type: MooseType
