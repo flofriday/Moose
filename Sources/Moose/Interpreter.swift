@@ -267,4 +267,16 @@ class Interpreter: Visitor {
     func visit(_: Me) throws -> MooseObject {
         fatalError("Not implemented Me")
     }
+
+    func visit(_: ForEachStatement) throws -> MooseObject {
+//        let arr = loop.list.accept(self)
+
+//        guard case let  = arr
+//        environment.update(variable: loop.variable.value, value: )
+        fatalError("Not implemented ForEach")
+    }
+
+    func visit(_: ForCStyleStatement) throws -> MooseObject {
+        fatalError("Not implemented ForC-Style")
+    }
 }

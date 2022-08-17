@@ -116,8 +116,6 @@ class Parser {
     }
 
     func parseStatement() throws -> Statement {
-        // TODO: the assign doesn't work for arrays
-
         if check(type: .Ret) {
             // pase ReturnStatement
             return try parseReturnStatement()
@@ -131,6 +129,8 @@ class Parser {
             return try parseIfStatement()
         } else if check(type: .Class) {
             return try parseClassDefinition()
+        } else if check(type: .For) {
+            return try parseForLoop()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -627,6 +627,7 @@ extension Parser {
         if
             !isAtEnd(),
             !check(type: .RBrace), // for function body such as f() {x}
+            !check(type: .LBrace), // for loop in c-style `for smt; cond; stmt {}`
             !match(types: .SemiColon, .NLine)
         {
             throw error(message: "I expected, the statement to end here (with a newline or semicolon), but it kept going with '\(peek().lexeme)'.\nTipp: Maybe you forgot an (infix) operator here?", token: peek())
@@ -637,7 +638,7 @@ extension Parser {
         isAtEnd() || check(oneOf: .SemiColon, .NLine)
     }
 
-    private func match(types: TokenType...) -> Bool {
+    internal func match(types: TokenType...) -> Bool {
         for type in types {
             if check(type: type) {
                 _ = advance()
@@ -658,7 +659,7 @@ extension Parser {
         return advance()
     }
 
-    private func check(type: TokenType) -> Bool {
+    internal func check(type: TokenType) -> Bool {
         return check(oneOf: type)
     }
 
@@ -690,7 +691,7 @@ extension Parser {
         return previous()
     }
 
-    private func peek2() -> Token {
+    internal func peek2() -> Token {
         guard (current + 1) < tokens.count else {
             return tokens[tokens.count - 1]
         }
@@ -794,7 +795,7 @@ extension Parser {
     }
 
     /// Skips all tokenTypes until something else was found.
-    private func skip(all toSkip: TokenType...) {
+    internal func skip(all toSkip: TokenType...) {
         while check(oneOf: toSkip) {
             current += 1
         }

@@ -241,10 +241,12 @@ extension TypeScope {
 /// Class Scope specific methods
 /// Also holds the corresponding ast class node
 class ClassTypeScope: TypeScope {
-    let astNode: ClassStatement
+    let className: String
+    let classProperties: [(name: String, type: MooseType)] // propertyName, propertyType
 
     init(enclosing: TypeScope? = nil, astNode: ClassStatement) {
-        self.astNode = astNode
+        self.className = astNode.name.value
+        self.classProperties = astNode.properties.map { (name: $0.name.value, $0.declaredType) }
         super.init(enclosing: enclosing)
     }
 

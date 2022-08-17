@@ -214,4 +214,14 @@ class AstLocator: Visitor {
         try node.indexable.accept(self)
         try node.index.accept(self)
     }
+
+    func visit(_ node: ForEachStatement) throws {
+        update(node)
+        try node.body.accept(self)
+    }
+
+    func visit(_ node: ForCStyleStatement) throws {
+        update(node)
+        try node.body.accept(self)
+    }
 }

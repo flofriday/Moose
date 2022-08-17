@@ -44,18 +44,16 @@ extension Typechecker {
             throw ScopeError(message: "Couldn't find class \(node.function.value)")
         }
 
-        let astClass = classScope.astNode
-
-        guard classScope.propertyCount == node.arguments.count, node.arguments.count == astClass.properties.count else {
-            throw error(message: "Constructor needs \(astClass.properties.count) arguments (\(astClass.properties.map { $0.declaredType.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
+        guard classScope.propertyCount == node.arguments.count, node.arguments.count == classScope.classProperties.count else {
+            throw error(message: "Constructor needs \(classScope.classProperties.count) arguments (\(classScope.classProperties.map { $0.type.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
         }
 
-        for (arg, prop) in zip(node.arguments, astClass.properties) {
-            guard arg.mooseType == prop.declaredType else {
-                throw error(message: "Property `\(prop.name.value)` is of type `\(prop.declaredType)`, but got `\(arg.mooseType?.description ?? "Unknown")` instead.", node: arg)
+        for (arg, prop) in zip(node.arguments, classScope.classProperties) {
+            guard arg.mooseType == prop.type else {
+                throw error(message: "Property `\(prop.name)` is of type `\(prop.type)`, but got `\(arg.mooseType?.description ?? "Unknown")` instead.", node: arg)
             }
         }
 
-        node.mooseType = .Class(astClass.name.value)
+        node.mooseType = .Class(classScope.className)
     }
 }

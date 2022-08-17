@@ -36,6 +36,8 @@ protocol Visitor {
     func visit(_ node: Dereferer) throws -> VisitorResult
     func visit(_ node: List) throws -> VisitorResult
     func visit(_ node: IndexExpression) throws -> VisitorResult
+    func visit(_ node: ForEachStatement) throws -> VisitorResult
+    func visit(_ node: ForCStyleStatement) throws -> VisitorResult
 }
 
 class BaseVisitor: Visitor {
@@ -142,6 +144,14 @@ class BaseVisitor: Visitor {
     }
 
     func visit(_: IndexExpression) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: ForEachStatement) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: ForCStyleStatement) throws {
         fatalError(errorMessage)
     }
 }

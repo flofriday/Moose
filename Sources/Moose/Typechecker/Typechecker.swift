@@ -165,7 +165,7 @@ class Typechecker: Visitor {
             throw error(message: "`me` keyword is only available in class functions.", node: node)
         }
 
-        node.mooseType = .Class(scope.astNode.name.value)
+        node.mooseType = .Class(scope.className)
     }
 
     func visit(_ node: ReturnStatement) throws {
