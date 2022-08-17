@@ -267,4 +267,12 @@ class Interpreter: Visitor {
     func visit(_: Me) throws -> MooseObject {
         fatalError("Not implemented Me")
     }
+
+    func visit(_: ForEachStatement) throws -> MooseObject {
+        fatalError("Not implemented Me")
+    }
+
+    func visit(_: ForCStyleStatement) throws -> MooseObject {
+        fatalError("Not implemented Me")
+    }
 }

@@ -51,7 +51,7 @@ extension TypecheckerTests {
 
     func test_Tuples_doesRunThrough() throws {
         let tests = [
-            //            "(a,b) = (1,2)",
+            "(a,b) = (1,2)",
             """
             mut a = 3
             (a,b) = (1,3)
@@ -113,11 +113,11 @@ extension TypecheckerTests {
             a = Test((true, 3), 3)
             ((bol, str), b) = a
             """,
-            """
-            (a, b) = (((true,"Hello"), 3), 2)
-            mut x = false
-            ((x,y),d): ((Bool, String), Int) = a
-            """,
+//            """
+//            (a, b) = (((true,"Hello"), 3), 2)
+//            mut x = false
+//            ((x,y),d): ((Bool, String), Int) = a
+//            """,
 //            """
 //            """,
         ]
