@@ -276,7 +276,36 @@ class Interpreter: Visitor {
         fatalError("Not implemented ForEach")
     }
 
-    func visit(_: ForCStyleStatement) throws -> MooseObject {
-        fatalError("Not implemented ForC-Style")
+    func visit(_ node: ForCStyleStatement) throws -> MooseObject {
+        // First push a new Environment since the variable definitions only
+        // apply here
+        environment = Environment(enclosing: environment)
+
+        if let preStmt = node.preStmt {
+            _ = try preStmt.accept(self)
+        }
+
+        while true {
+            // Check condition
+            let condition: Bool? = (try node.condition.accept(self) as! BoolObj).value
+            guard condition != nil else {
+                throw NilUsagePanic()
+            }
+            if condition == false {
+                break
+            }
+
+            // Execute body
+            _ = try node.body.accept(self)
+
+            // Post statement
+            if let postEachStmt = node.postEachStmt {
+                _ = try postEachStmt.accept(self)
+            }
+        }
+
+        // Pop the loop environment
+        environment = environment.enclosing!
+        return VoidObj()
     }
 }
