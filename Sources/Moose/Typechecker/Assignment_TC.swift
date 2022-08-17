@@ -131,7 +131,7 @@ extension Typechecker {
             }
 
             guard try scope.isMut(variable: variable.value) else {
-                throw error(message: "Variable `\(variable.value)` is unmutable.\nTip: Make `\(variable.value)` mutable by adding the keyworkd `mut` at its declaration.", node: node)
+                throw error(message: "Variable `\(variable.value)` is inmutable.\nTip: Make `\(variable.value)` mutable by adding the keyworkd `mut` at its declaration.", node: node)
             }
 
             guard !node.mutable else {
