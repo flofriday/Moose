@@ -159,7 +159,7 @@ extension Typechecker {
                 throw error(message: "Class `\(className)` does not exist.", node: debugNode)
             }
 
-            let propTypes = classScope.astNode.properties.map { $0.declaredType }
+            let propTypes = classScope.classProperties.map { $0.type }
 
             guard propTypes.count >= size else {
                 throw error(message: "Class `\(className)` has \(propTypes.count) properties, while at least \(size) are required to unwrap to tuple. ", node: debugNode)
