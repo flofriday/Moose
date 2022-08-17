@@ -1,5 +1,4 @@
+// A simple example using a c-style for loop
 for mut i = 0; i < 10; i=i+1 {
     print("hey " + String(i))
-    environment()
 }
-environment()
