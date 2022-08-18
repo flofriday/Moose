@@ -78,8 +78,8 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "||", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolOrBuiltIn),
 
         // String comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: stringEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: stringNotEqualBuiltIn),
 
         // String calculations
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringConcatBuiltIn),

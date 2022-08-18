@@ -85,18 +85,18 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: BlockStatement) throws -> MooseObject {
-        environment = Environment(enclosing: environment)
+        pushEnvironment()
         do {
             for statement in node.statements {
                 _ = try statement.accept(self)
             }
         } catch {
             // Always leave the environment in peace
-            environment = environment.enclosing!
+            popEnvironment()
             throw error
         }
 
-        environment = environment.enclosing!
+        popEnvironment()
         return VoidObj()
     }
 
@@ -158,7 +158,7 @@ class Interpreter: Visitor {
         if let callee = callee as? BuiltInFunctionObj {
             return try callee.function(args)
         } else if let callee = callee as? FunctionObj {
-            environment = Environment(enclosing: environment)
+            pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
@@ -172,12 +172,12 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            environment = environment.enclosing!
+            popEnvironment()
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
             return try callee.function(args)
         } else if let callee = callee as? OperatorObj {
-            environment = Environment(enclosing: environment)
+            pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
@@ -191,7 +191,7 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            environment = environment.enclosing!
+            popEnvironment()
             return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
@@ -223,12 +223,17 @@ class Interpreter: Visitor {
     }
 
     func visit(_: VariableDefinition) throws -> MooseObject {
-        return VoidObj()
+        fatalError("Unreachable VariableDefinition in Interpreter")
     }
 
     func visit(_ node: Tuple) throws -> MooseObject {
         let args = try node.expressions.map { try $0.accept(self) }
         return TupleObj(type: node.mooseType!, value: args)
+    }
+
+    func visit(_ node: List) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return ListObj(type: node.mooseType!, value: args)
     }
 
     func visit(_: Nil) throws -> MooseObject {
@@ -284,10 +289,6 @@ class Interpreter: Visitor {
         return val
     }
 
-    func visit(_: List) throws -> MooseObject {
-        fatalError("Not implemented List")
-    }
-
     func visit(_: IndexExpression) throws -> MooseObject {
         fatalError("Not implemented IndexExpression")
     }
@@ -297,18 +298,22 @@ class Interpreter: Visitor {
         return ClassObject(env: env)
     }
 
-    func visit(_: ForEachStatement) throws -> MooseObject {
-//        let arr = loop.list.accept(self)
+    func visit(_ node: ForEachStatement) throws -> MooseObject {
+        let indexable = try node.list.accept(self) as! IndexableObject
 
-//        guard case let  = arr
-//        environment.update(variable: loop.variable.value, value: )
-        fatalError("Not implemented ForEach")
+        pushEnvironment()
+        for i in 0 ... indexable.length() - 1 {
+            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i))
+            _ = try node.body.accept(self)
+        }
+        popEnvironment()
+        return VoidObj()
     }
 
     func visit(_ node: ForCStyleStatement) throws -> MooseObject {
         // First push a new Environment since the variable definitions only
         // apply here
-        environment = Environment(enclosing: environment)
+        pushEnvironment()
 
         if let preStmt = node.preStmt {
             _ = try preStmt.accept(self)
@@ -334,7 +339,7 @@ class Interpreter: Visitor {
         }
 
         // Pop the loop environment
-        environment = environment.enclosing!
+        popEnvironment()
         return VoidObj()
     }
 }

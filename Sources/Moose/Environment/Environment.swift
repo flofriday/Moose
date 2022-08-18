@@ -23,11 +23,11 @@ class Environment {
     }
 
     init(copy: Environment) {
-        self.variables = copy.variables
-        self.funcs = copy.funcs
-        self.ops = copy.ops
-        self.classDefinitions = copy.classDefinitions
-        self.enclosing = copy.enclosing
+        variables = copy.variables
+        funcs = copy.funcs
+        ops = copy.ops
+        classDefinitions = copy.classDefinitions
+        enclosing = copy.enclosing
     }
 }
 
@@ -46,7 +46,9 @@ extension Environment {
         // Scan in enclosing envs
         if let enclosing = enclosing {
             let found = enclosing.update(variable: variable, value: value, allowDefine: false)
-            return found
+            if found {
+                return true
+            }
         }
 
         // Update if we are allowed to define new variables
@@ -252,8 +254,8 @@ class ClassEnvironment: Environment {
     }
 
     init(copy: ClassEnvironment) {
-        self.propertyNames = copy.propertyNames
-        self.className = copy.className
+        propertyNames = copy.propertyNames
+        className = copy.className
         super.init(copy: copy)
     }
 }
