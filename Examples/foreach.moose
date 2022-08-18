@@ -1,0 +1,10 @@
+// A for each loop example
+names = ["Flo", "Johannes", "Paul", "Carl", "Luis"]
+for name in names {
+    //environment()
+    if name != "Carl" {
+        print("Hi " + name + " nice to see you!")
+    } else {
+        print("Caaaaaarl, that kills people!")
+    }
+} 

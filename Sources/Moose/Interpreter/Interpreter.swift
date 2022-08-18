@@ -25,6 +25,14 @@ class Interpreter: Visitor {
         }
     }
 
+    func pushEnvironment() {
+        environment = Environment(enclosing: environment)
+    }
+
+    func popEnvironment() {
+        environment = environment.enclosing!
+    }
+
     func run(program: Program) throws {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
@@ -85,18 +93,18 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: BlockStatement) throws -> MooseObject {
-        environment = Environment(enclosing: environment)
+        pushEnvironment()
         do {
             for statement in node.statements {
                 _ = try statement.accept(self)
             }
         } catch {
             // Always leave the environment in peace
-            environment = environment.enclosing!
+            popEnvironment()
             throw error
         }
 
-        environment = environment.enclosing!
+        popEnvironment()
         return VoidObj()
     }
 
@@ -158,7 +166,7 @@ class Interpreter: Visitor {
         if let callee = callee as? BuiltInFunctionObj {
             return try callee.function(args)
         } else if let callee = callee as? FunctionObj {
-            environment = Environment(enclosing: environment)
+            pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
@@ -172,12 +180,12 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            environment = environment.enclosing!
+            popEnvironment()
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
             return try callee.function(args)
         } else if let callee = callee as? OperatorObj {
-            environment = Environment(enclosing: environment)
+            pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
@@ -191,7 +199,7 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            environment = environment.enclosing!
+            popEnvironment()
             return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
@@ -223,12 +231,17 @@ class Interpreter: Visitor {
     }
 
     func visit(_: VariableDefinition) throws -> MooseObject {
-        return VoidObj()
+        fatalError("Unreachable VariableDefinition in Interpreter")
     }
 
     func visit(_ node: Tuple) throws -> MooseObject {
         let args = try node.expressions.map { try $0.accept(self) }
         return TupleObj(type: node.mooseType!, value: args)
+    }
+
+    func visit(_ node: List) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return ListObj(type: node.mooseType!, value: args)
     }
 
     func visit(_: Nil) throws -> MooseObject {
@@ -284,10 +297,6 @@ class Interpreter: Visitor {
         return val
     }
 
-    func visit(_: List) throws -> MooseObject {
-        fatalError("Not implemented List")
-    }
-
     func visit(_: IndexExpression) throws -> MooseObject {
         fatalError("Not implemented IndexExpression")
     }
@@ -297,15 +306,48 @@ class Interpreter: Visitor {
         return ClassObject(env: env)
     }
 
-    func visit(_: ForEachStatement) throws -> MooseObject {
-//        let arr = loop.list.accept(self)
+    func visit(_ node: ForEachStatement) throws -> MooseObject {
+        let indexable = try node.list.accept(self) as! IndexableObject
 
-//        guard case let  = arr
-//        environment.update(variable: loop.variable.value, value: )
-        fatalError("Not implemented ForEach")
+        pushEnvironment()
+        for i in 0 ... indexable.length() - 1 {
+            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i))
+            _ = try node.body.accept(self)
+        }
+        popEnvironment()
+        return VoidObj()
     }
 
-    func visit(_: ForCStyleStatement) throws -> MooseObject {
-        fatalError("Not implemented ForC-Style")
+    func visit(_ node: ForCStyleStatement) throws -> MooseObject {
+        // First push a new Environment since the variable definitions only
+        // apply here
+        pushEnvironment()
+
+        if let preStmt = node.preStmt {
+            _ = try preStmt.accept(self)
+        }
+
+        while true {
+            // Check condition
+            let condition: Bool? = (try node.condition.accept(self) as! BoolObj).value
+            guard condition != nil else {
+                throw NilUsagePanic()
+            }
+            if condition == false {
+                break
+            }
+
+            // Execute body
+            _ = try node.body.accept(self)
+
+            // Post statement
+            if let postEachStmt = node.postEachStmt {
+                _ = try postEachStmt.accept(self)
+            }
+        }
+
+        // Pop the loop environment
+        popEnvironment()
+        return VoidObj()
     }
 }

@@ -12,6 +12,11 @@ protocol MooseObject: CustomStringConvertible {
     var description: String { get }
 }
 
+protocol IndexableObject {
+    func getAt(index: Int) -> MooseObject
+    func length() -> Int
+}
+
 class IntegerObj: MooseObject {
     let type: MooseType = .Int
     let value: Int64?
@@ -64,20 +69,6 @@ class StringObj: MooseObject {
             return "\"\(description)\""
         }
         return "nil"
-    }
-}
-
-class ClassObject: MooseObject {
-    let env: ClassEnvironment
-    let type: MooseType
-
-    init(env: ClassEnvironment) {
-        self.env = env
-        type = .Class(env.className)
-    }
-
-    var description: String {
-        "<class object \(env.className): \(type)>"
     }
 }
 
@@ -149,13 +140,21 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-class TupleObj: MooseObject {
+class TupleObj: MooseObject, IndexableObject {
     let type: MooseType
     let value: [MooseObject]?
 
     init(type: MooseType, value: [MooseObject]?) {
         self.type = type
         self.value = value
+    }
+
+    func getAt(index: Int) -> MooseObject {
+        return value![index]
+    }
+
+    func length() -> Int {
+        return value?.count ?? 0
     }
 
     var description: String {
@@ -166,7 +165,45 @@ class TupleObj: MooseObject {
     }
 }
 
-// TODO: implement for complex type like: classes, tuples and lists
+class ListObj: MooseObject, IndexableObject {
+    let type: MooseType
+    let value: [MooseObject]?
+
+    init(type: MooseType, value: [MooseObject]?) {
+        self.type = type
+        self.value = value
+    }
+
+    func getAt(index: Int) -> MooseObject {
+        return value![index]
+    }
+
+    func length() -> Int {
+        return value?.count ?? 0
+    }
+
+    var description: String {
+        var out = "["
+        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += "]"
+        return out
+    }
+}
+
+// TODO: make classes indexable
+class ClassObject: MooseObject {
+    let env: ClassEnvironment
+    let type: MooseType
+
+    init(env: ClassEnvironment) {
+        self.env = env
+        type = .Class(env.className)
+    }
+
+    var description: String {
+        "<class object \(env.className): \(type)>"
+    }
+}
 
 // Void is an Object because we *need* to return some MooseObject in our
 // visitor. Therefore this is a placeholder.
