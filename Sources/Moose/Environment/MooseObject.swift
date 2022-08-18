@@ -13,8 +13,8 @@ protocol MooseObject: CustomStringConvertible {
 }
 
 protocol IndexableObject {
-    func getAt(index: Int) -> MooseObject
-    func length() -> Int
+    func getAt(index: Int64) -> MooseObject
+    func length() -> Int64
 }
 
 class IntegerObj: MooseObject {
@@ -149,12 +149,12 @@ class TupleObj: MooseObject, IndexableObject {
         self.value = value
     }
 
-    func getAt(index: Int) -> MooseObject {
-        return value![index]
+    func getAt(index: Int64) -> MooseObject {
+        return value![Int(index)]
     }
 
-    func length() -> Int {
-        return value?.count ?? 0
+    func length() -> Int64 {
+        return Int64(value?.count ?? 0)
     }
 
     var description: String {
@@ -174,12 +174,12 @@ class ListObj: MooseObject, IndexableObject {
         self.value = value
     }
 
-    func getAt(index: Int) -> MooseObject {
-        return value![index]
+    func getAt(index: Int64) -> MooseObject {
+        return value![Int(index)]
     }
 
-    func length() -> Int {
-        return value?.count ?? 0
+    func length() -> Int64 {
+        return Int64(value?.count ?? 0)
     }
 
     var description: String {

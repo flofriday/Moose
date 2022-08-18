@@ -67,6 +67,10 @@ class Interpreter: Visitor {
             default:
                 throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
             }
+
+        case let dereferer as Dereferer:
+            throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
+
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
         }
@@ -162,6 +166,16 @@ class Interpreter: Visitor {
         return StringObj(value: node.value)
     }
 
+    func visit(_ node: Tuple) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return TupleObj(type: node.mooseType!, value: args)
+    }
+
+    func visit(_ node: List) throws -> MooseObject {
+        let args = try node.expressions.map { try $0.accept(self) }
+        return ListObj(type: node.mooseType!, value: args)
+    }
+
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
             return try callee.function(args)
@@ -231,17 +245,9 @@ class Interpreter: Visitor {
     }
 
     func visit(_: VariableDefinition) throws -> MooseObject {
+        // The interpreter doesn't ever need to read this so it is ok to just
+        // crash here.
         fatalError("Unreachable VariableDefinition in Interpreter")
-    }
-
-    func visit(_ node: Tuple) throws -> MooseObject {
-        let args = try node.expressions.map { try $0.accept(self) }
-        return TupleObj(type: node.mooseType!, value: args)
-    }
-
-    func visit(_ node: List) throws -> MooseObject {
-        let args = try node.expressions.map { try $0.accept(self) }
-        return ListObj(type: node.mooseType!, value: args)
     }
 
     func visit(_: Nil) throws -> MooseObject {
@@ -297,8 +303,17 @@ class Interpreter: Visitor {
         return val
     }
 
-    func visit(_: IndexExpression) throws -> MooseObject {
-        fatalError("Not implemented IndexExpression")
+    func visit(_ node: IndexExpression) throws -> MooseObject {
+        let index = (try node.index.accept(self) as! IntegerObj).value
+        guard let index = index else {
+            throw NilUsagePanic()
+        }
+
+        let indexable = (try node.indexable.accept(self)) as! IndexableObject
+        guard index < indexable.length() else {
+            throw OutOfBoundsPanic()
+        }
+        return indexable.getAt(index: index)
     }
 
     func visit(_: Me) throws -> MooseObject {
