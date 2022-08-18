@@ -1,6 +1,7 @@
 
 b = Test(3)
-c: Bool = b.testFunc()
+c: String = b.testFunc()
+print(c)
 
 
 class Test {

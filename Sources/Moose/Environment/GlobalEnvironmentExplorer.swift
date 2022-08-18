@@ -8,7 +8,7 @@
 import Foundation
 
 class GlobalEnvironmentExplorer: BaseVisitor {
-    let environment: Environment
+    var environment: Environment
     let program: Program
 
     init(program: Program, environment: Environment) {
@@ -29,6 +29,8 @@ class GlobalEnvironmentExplorer: BaseVisitor {
                 fallthrough
             case is FunctionStatement:
                 try stmt.accept(self)
+            case is ClassStatement:
+                try stmt.accept(self)
             default:
                 break
             }
@@ -44,5 +46,14 @@ class GlobalEnvironmentExplorer: BaseVisitor {
 
     override func visit(_: OperationStatement) throws {}
 
-    override func visit(_: ClassStatement) throws {}
+    override func visit(_ node: ClassStatement) throws {
+        let classEnv = ClassEnvironment(enclosing: environment, className: node.name.value, propertyNames: node.properties.map { $0.name.value })
+        let preEnv = environment
+        environment = classEnv
+        for meth in node.methods {
+            try meth.accept(self)
+        }
+        environment = preEnv
+        environment.set(clas: node.name.value, env: classEnv)
+    }
 }

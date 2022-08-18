@@ -522,7 +522,7 @@ class Parser {
             return try parseVoidTypeDefinition()
         case .Identifier:
             let ident = try parseIdentifier()
-            return MooseType.toClass(ident.value)
+            return MooseType.toType(ident.value)
         case .LParen:
             return try parseTupleGroupFunction_TypeDefinition()
         case .LBracket:

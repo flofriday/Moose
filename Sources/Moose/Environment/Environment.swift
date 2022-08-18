@@ -16,8 +16,18 @@ class Environment {
     private var funcs: [String: [MooseObject]] = [:]
     private var ops: [String: [MooseObject]] = [:]
 
+    private var classDefinitions: [String: ClassEnvironment] = [:]
+
     init(enclosing: Environment?) {
         self.enclosing = enclosing
+    }
+
+    init(copy: Environment) {
+        self.variables = copy.variables
+        self.funcs = copy.funcs
+        self.ops = copy.ops
+        self.classDefinitions = copy.classDefinitions
+        self.enclosing = copy.enclosing
     }
 }
 
@@ -36,11 +46,23 @@ extension Environment {
         // Scan in enclosing envs
         if let enclosing = enclosing {
             let found = enclosing.update(variable: variable, value: value, allowDefine: false)
-            if found {
-                return true
-            }
+            return found
         }
 
+        // Update if we are allowed to define new variables
+        guard allowDefine else {
+            return false
+        }
+        variables.updateValue(value, forKey: variable)
+        return true
+    }
+
+    func updateInCurrentEnv(variable: String, value: MooseObject, allowDefine: Bool = true) -> Bool {
+        // Update if in current env
+        if variables[variable] != nil {
+            variables.updateValue(value, forKey: variable)
+            return true
+        }
         // Update if we are allowed to define new variables
         guard allowDefine else {
             return false
@@ -139,6 +161,31 @@ extension Environment {
     }
 }
 
+// Define all function for classes
+extension Environment {
+    func set(clas: String, env: ClassEnvironment) {
+        classDefinitions[clas] = env
+    }
+
+    func get(clas: String) throws -> ClassEnvironment {
+        guard let env = classDefinitions[clas] else {
+            throw EnvironmentError(message: "Class `\(clas)` not found.")
+        }
+
+        return env
+    }
+
+    func nearestClass() throws -> ClassEnvironment {
+        guard let env = self as? ClassEnvironment else {
+            guard let enclosing = enclosing else {
+                throw EnvironmentError(message: "Not inside a class object.")
+            }
+            return try enclosing.nearestClass()
+        }
+        return env
+    }
+}
+
 // Some helper functions
 extension Environment {
     func isGlobal() -> Bool {
@@ -191,5 +238,22 @@ extension Environment {
             print("\t<empty>")
         }
         print()
+    }
+}
+
+class ClassEnvironment: Environment {
+    let propertyNames: [String]
+    let className: String
+
+    init(enclosing: Environment?, className: String, propertyNames: [String]) {
+        self.propertyNames = propertyNames
+        self.className = className
+        super.init(enclosing: enclosing)
+    }
+
+    init(copy: ClassEnvironment) {
+        self.propertyNames = copy.propertyNames
+        self.className = copy.className
+        super.init(copy: copy)
     }
 }

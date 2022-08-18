@@ -279,6 +279,9 @@ class CallExpression {
     let function: Identifier
     let arguments: [Expression]
     var mooseType: MooseType?
+
+    /// Is changed by typechecker if it is constructor call
+    var isConstructorCall: Bool = false
 }
 
 class IfStatement {

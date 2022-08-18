@@ -18,7 +18,7 @@ indirect enum MooseType: Equatable {
 }
 
 extension MooseType {
-    static func toClass(_ name: String) -> MooseType {
+    static func toType(_ name: String) -> MooseType {
         switch name {
         case "String":
             return .String
@@ -34,6 +34,27 @@ extension MooseType {
             return .Nil // should not happen since this is already a token after lexer
         default:
             return .Class(name)
+        }
+    }
+}
+
+extension MooseType {
+    var asClass: MooseType {
+        switch self {
+        case .Class:
+            return self
+        case .Int:
+            return .Class("Int")
+        case .Float:
+            return .Class("Float")
+        case .Bool:
+            return .Class("Bool")
+        case .Tuple:
+            return .Class("Tuple")
+        case .List:
+            return .Class("List")
+        default:
+            return self
         }
     }
 }
