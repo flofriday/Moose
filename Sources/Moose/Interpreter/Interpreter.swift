@@ -25,6 +25,14 @@ class Interpreter: Visitor {
         }
     }
 
+    func pushEnvironment() {
+        environment = Environment(enclosing: environment)
+    }
+
+    func popEnvironment() {
+        environment = environment.enclosing!
+    }
+
     func run(program: Program) throws {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
