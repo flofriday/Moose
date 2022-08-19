@@ -244,9 +244,9 @@ class ClassTypeScope: TypeScope {
     let className: String
     let classProperties: [(name: String, type: MooseType)] // propertyName, propertyType
 
-    init(enclosing: TypeScope? = nil, astNode: ClassStatement) {
-        self.className = astNode.name.value
-        self.classProperties = astNode.properties.map { (name: $0.name.value, $0.declaredType) }
+    init(enclosing: TypeScope? = nil, name: String, properties: [(name: String, type: MooseType)]) {
+        self.className = name
+        self.classProperties = properties
         super.init(enclosing: enclosing)
     }
 

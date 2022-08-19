@@ -39,7 +39,7 @@ extension MooseType {
 }
 
 extension MooseType {
-    var asClass: MooseType {
+    var asClass: MooseType? {
         switch self {
         case .Class:
             return self
@@ -54,7 +54,7 @@ extension MooseType {
         case .List:
             return .Class("List")
         default:
-            return self
+            return nil
         }
     }
 }

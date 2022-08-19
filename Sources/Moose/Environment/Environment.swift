@@ -2,6 +2,36 @@
 //  Created by flofriday on 08.08.2022
 //
 
+protocol Environment {
+    func update(variable: String, value: MooseObject, allowDefine: Bool) -> Bool
+    func updateInCurrentEnv(variable: String, value: MooseObject, allowDefine: Bool) -> Bool
+    func get(variable: String) throws -> MooseObject
+
+    func set(function: String, value: MooseObject)
+    func get(function: String, params: [MooseType]) throws -> MooseObject
+
+    func set(op: String, value: MooseObject)
+    func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject
+
+    func set(clas: String, env: ClassEnvironment)
+    func get(clas: String) throws -> ClassEnvironment
+    func nearestClass() throws -> ClassEnvironment
+
+    func isGlobal() -> Bool
+    var enclosing: Environment? { get }
+
+    func printDebug(header: Bool)
+}
+
+extension Environment {
+    func cast<T: Environment>(to type: T.Type) throws -> T {
+        guard let env = self as? T else {
+            throw EnvironmentError(message: "Could not cast environment to \(type).")
+        }
+        return env
+    }
+}
+
 // This is the implementation of the environments that manage the life of
 // variables, functions, classes etc.
 //
@@ -10,7 +40,7 @@
 // We can do this because the typechecker will always be run before this so we
 // can assume here that the programs we see are well typed. And even if they
 // weren't it wouldn't be our concern but a bug in the typechecker.
-class Environment {
+class BaseEnvironment: Environment {
     let enclosing: Environment?
     private var variables: [String: MooseObject] = [:]
     private var funcs: [String: [MooseObject]] = [:]
@@ -22,7 +52,7 @@ class Environment {
         self.enclosing = enclosing
     }
 
-    init(copy: Environment) {
+    init(copy: BaseEnvironment) {
         variables = copy.variables
         funcs = copy.funcs
         ops = copy.ops
@@ -32,7 +62,7 @@ class Environment {
 }
 
 // The variable handling
-extension Environment {
+extension BaseEnvironment {
     /// Update a variable, if it is not found in this Evironment or any
     /// enclosing one, a new variable will be created.
     /// Returns true if the variable was found or defined.
@@ -88,7 +118,7 @@ extension Environment {
 }
 
 // Define all function operations
-extension Environment {
+extension BaseEnvironment {
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
             case let .Function(paras, _) = other,
@@ -133,7 +163,7 @@ extension Environment {
 }
 
 // Define all function operations
-extension Environment {
+extension BaseEnvironment {
     private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
         if let obj = other as? BuiltInOperatorObj {
             return obj.opPos == pos && obj.params == params
@@ -164,7 +194,7 @@ extension Environment {
 }
 
 // Define all function for classes
-extension Environment {
+extension BaseEnvironment {
     func set(clas: String, env: ClassEnvironment) {
         classDefinitions[clas] = env
     }
@@ -189,15 +219,35 @@ extension Environment {
 }
 
 // Some helper functions
-extension Environment {
+extension BaseEnvironment {
     func isGlobal() -> Bool {
         return enclosing == nil
+    }
+
+    /// Defines the type of builtin class scope
+    ///
+    /// Note that it will not transfer any operators (of course)
+    func asClassTypeScope(_ name: String, props: [(name: String, type: MooseType)] = []) throws -> ClassTypeScope {
+        let scope = ClassTypeScope(enclosing: nil, name: name, properties: props)
+
+        let funcs = try funcs.flatMap { try $0.value.map { fn -> BuiltInFunctionObj in
+            guard let builtInFn = fn as? BuiltInFunctionObj else {
+                throw EnvironmentError(message: "Try to map non builtIn function. Only builtIn Functions are allowed here.")
+            }
+            return builtInFn
+        }
+        }
+
+        for fn in funcs {
+            try scope.add(function: fn.name, params: fn.params, returnType: fn.returnType)
+        }
+        return scope
     }
 }
 
 // Debug functions to get a better look into what the current environment is
 // doing
-extension Environment {
+extension BaseEnvironment {
     func printDebug(header: Bool = true) {
         if header {
             print("=== Environment Debug Output (most inner scope last) ===")
@@ -243,7 +293,7 @@ extension Environment {
     }
 }
 
-class ClassEnvironment: Environment {
+class ClassEnvironment: BaseEnvironment {
     let propertyNames: [String]
     let className: String
 
