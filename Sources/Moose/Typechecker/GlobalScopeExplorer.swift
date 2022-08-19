@@ -73,7 +73,11 @@ class GlobalScopeExplorer: BaseVisitor {
             throw error(message: "Classes can only be defined in global scope.", node: node)
         }
 
-        let classScope = ClassTypeScope(enclosing: scope, astNode: node)
+        let classScope = ClassTypeScope(
+            enclosing: scope,
+            name: node.name.value,
+            properties: node.properties.map { (name: $0.name.value, $0.declaredType) }
+        )
 
         for prop in node.properties {
             try classScope.add(variable: prop.name.value, type: prop.declaredType, mutable: prop.mutable)

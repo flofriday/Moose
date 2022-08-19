@@ -26,6 +26,27 @@ class Typechecker: Visitor {
         for fn in BuiltIns.builtInFunctions {
             try scope.add(function: fn.name, params: fn.params, returnType: fn.returnType)
         }
+
+        try scope.add(
+            clas: "Int",
+            scope: BuiltIns.builtIn_Integer_Env.asClassTypeScope("Int")
+        )
+        try scope.add(
+            clas: "Float",
+            scope: BuiltIns.builtIn_Float_Env.asClassTypeScope("Float")
+        )
+        try scope.add(
+            clas: "Bool",
+            scope: BuiltIns.builtIn_Bool_Env.asClassTypeScope("Bool")
+        )
+        try scope.add(
+            clas: "Tuple",
+            scope: BuiltIns.builtIn_Tuple_Env.asClassTypeScope("Tuple")
+        )
+        try scope.add(
+            clas: "List",
+            scope: BuiltIns.builtIn_List_Env.asClassTypeScope("List")
+        )
     }
 
     func check(program: Program) throws {

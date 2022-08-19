@@ -11,14 +11,14 @@ class Interpreter: Visitor {
     var environment: Environment
 
     private init() {
-        environment = Environment(enclosing: nil)
+        environment = BaseEnvironment(enclosing: nil)
         addBuiltIns()
     }
 
     /// Reset the internal state of the interpreter.
     func reset() {
         errors = []
-        environment = Environment(enclosing: nil)
+        environment = BaseEnvironment(enclosing: nil)
         addBuiltIns()
     }
 
@@ -39,7 +39,7 @@ class Interpreter: Visitor {
     }
 
     func pushEnvironment() {
-        environment = Environment(enclosing: environment)
+        environment = BaseEnvironment(enclosing: environment)
     }
 
     func popEnvironment() {
@@ -60,7 +60,7 @@ class Interpreter: Visitor {
             if let nilObj = value as? NilObj {
                 newValue = try nilObj.toObject(type: valueType)
             }
-            _ = environment.update(variable: id.value, value: newValue)
+            _ = environment.update(variable: id.value, value: newValue, allowDefine: true)
 
         case let tuple as Tuple:
             // TODO: many things can be unwrapped into tuples, like classes
@@ -185,13 +185,13 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return try callee.function(args)
+            return try callee.function(args, environment)
         } else if let callee = callee as? FunctionObj {
             pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
-                _ = environment.updateInCurrentEnv(variable: name, value: value)
+                _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
             var result: MooseObject = VoidObj()
@@ -204,13 +204,13 @@ class Interpreter: Visitor {
             popEnvironment()
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
-            return try callee.function(args)
+            return try callee.function(args, environment)
         } else if let callee = callee as? OperatorObj {
             pushEnvironment()
 
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
-                _ = environment.updateInCurrentEnv(variable: name, value: value)
+                _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
             var result: MooseObject = VoidObj()
@@ -298,9 +298,9 @@ class Interpreter: Visitor {
 
     func visit(_ node: Dereferer) throws -> MooseObject {
         let obj = try node.obj.accept(self)
-        guard let obj = obj as? ClassObject else {
-            throw EnvironmentError(message: "Obj cannot be converted to ClassObject")
-        }
+//        guard let obj = obj as? ClassObject else {
+//            throw EnvironmentError(message: "Obj cannot be converted to ClassObject")
+//        }
 
         let prevEnv = environment
         environment = obj.env
@@ -333,7 +333,7 @@ class Interpreter: Visitor {
 
         pushEnvironment()
         for i in 0 ... indexable.length() - 1 {
-            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i))
+            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i), allowDefine: true)
             _ = try node.body.accept(self)
         }
         popEnvironment()

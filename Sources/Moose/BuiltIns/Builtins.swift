@@ -99,13 +99,13 @@ extension BuiltIns {
 // the return and document which argument types you accept with an commentar.
 extension BuiltIns {
     /// A generic cast function that can convert Integer, Float and Bool to String.
-    static func castToStringBuiltIn(params: [MooseObject]) -> StringObj {
+    static func castToStringBuiltIn(params: [MooseObject], env _: Environment) -> StringObj {
         let input = params[0]
         return StringObj(value: input.description)
     }
 
     /// A generic cast function that can convert Float and Bool to Integer.
-    static func castToIntBuiltIn(params: [MooseObject]) -> IntegerObj {
+    static func castToIntBuiltIn(params: [MooseObject], env _: Environment) -> IntegerObj {
         let input = params[0]
         switch input {
         case let bool as BoolObj:
@@ -125,7 +125,7 @@ extension BuiltIns {
     }
 
     /// A cast function that can convert Integer to Float.
-    static func castToFloatBuiltIn(params: [MooseObject]) -> FloatObj {
+    static func castToFloatBuiltIn(params: [MooseObject], _ env: Environment) -> FloatObj {
         let input = params[0] as! IntegerObj
         guard let value = input.value else {
             return FloatObj(value: nil)
@@ -134,7 +134,7 @@ extension BuiltIns {
     }
 
     /// A cast function that can convert Integer to Bool.
-    static func castToBoolBuiltIn(params: [MooseObject]) -> BoolObj {
+    static func castToBoolBuiltIn(params: [MooseObject], _ env: Environment) -> BoolObj {
         let input = params[0] as! IntegerObj
         guard let value = input.value else {
             return BoolObj(value: nil)
@@ -144,7 +144,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseIntBuiltIn(params: [MooseObject]) -> TupleObj {
+    static func parseIntBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = MooseType.Tuple([.Int, .String])
@@ -164,7 +164,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseFloatBuiltIn(params: [MooseObject]) -> TupleObj {
+    static func parseFloatBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = MooseType.Tuple([.Float, .String])
@@ -184,7 +184,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseBoolBuiltIn(params: [MooseObject]) -> TupleObj {
+    static func parseBoolBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = MooseType.Tuple([.Int, .String])
@@ -212,7 +212,7 @@ extension BuiltIns {
     }
 
     /// A generic print function that can print any MooseObject
-    static func printBuiltIn(params: [MooseObject]) -> VoidObj {
+    static func printBuiltIn(params: [MooseObject], _ env: Environment) -> VoidObj {
         if let str = params[0] as? StringObj {
             print(str.value ?? "nil")
             return VoidObj()
@@ -224,7 +224,7 @@ extension BuiltIns {
 
     /// A function to read a single line from stdin.
     /// The functions always succeed and never returns nil.
-    static func inputBuiltIn(_: [MooseObject]) -> StringObj {
+    static func inputBuiltIn(_: [MooseObject], _ env: Environment) -> StringObj {
         return StringObj(value: readLine())
     }
 
@@ -232,8 +232,8 @@ extension BuiltIns {
     /// The functions returns a String tuple. The first one is the string of the
     /// file content if the function succeeds, the second one is nil if it
     /// succeeds and otherwise a error message of what went wrong.
-    static func openBuiltIn(_ params: [MooseObject]) throws -> TupleObj {
-        try assertNoNil(params)
+    static func openBuiltIn(_ params: [MooseObject], _ env: Environment) throws -> TupleObj {
+        try assertNoNil(params, env)
         let path = (params[0] as! StringObj).value!
 
         var value: String?
@@ -248,7 +248,7 @@ extension BuiltIns {
     }
 
     /// A generic exit function that may take an argument
-    static func exitBuiltIn(params: [MooseObject]) -> MooseObject {
+    static func exitBuiltIn(params: [MooseObject], _ env: Environment) -> MooseObject {
         var exitCode: Int32 = 0
 
         if params.count == 1 {
@@ -266,9 +266,9 @@ extension BuiltIns {
 
     /// Print the current environment to see what the interpreter thinks is
     /// going on. This in mostly for interpreter development and debugging.
-    static func environmentBuiltIn(params _: [MooseObject]) -> VoidObj {
+    static func environmentBuiltIn(params: [MooseObject], _ env: Environment) -> VoidObj {
         let interpreter = Interpreter.shared
-        interpreter.environment.printDebug()
+        interpreter.environment.printDebug(header: true)
         return VoidObj()
     }
 }
@@ -276,7 +276,7 @@ extension BuiltIns {
 // Buit-in OperatorFunction
 extension BuiltIns {
     // Asserts that either Int, Float, Bool or String inputs are not nil
-    private static func assertNoNil(_ args: [MooseObject]) throws {
+    private static func assertNoNil(_ args: [MooseObject], _ env: Environment) throws {
         try args.forEach {
             switch $0 {
             case let int as IntegerObj:
@@ -303,8 +303,8 @@ extension BuiltIns {
     }
 
     /// Add two integer together with an infix operation
-    static func integerAddBuiltIn(_ args: [MooseObject]) throws -> IntegerObj {
-        try assertNoNil(args)
+    static func integerAddBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> IntegerObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
@@ -312,8 +312,8 @@ extension BuiltIns {
     }
 
     /// Subtract two integer together with an infix operation
-    static func integerSubBuiltIn(_ args: [MooseObject]) throws -> IntegerObj {
-        try assertNoNil(args)
+    static func integerSubBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> IntegerObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
@@ -321,8 +321,8 @@ extension BuiltIns {
     }
 
     /// Multiply two integer together with an infix operation
-    static func integerMulBuiltIn(_ args: [MooseObject]) throws -> IntegerObj {
-        try assertNoNil(args)
+    static func integerMulBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> IntegerObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
@@ -330,8 +330,8 @@ extension BuiltIns {
     }
 
     /// Divide two integers with an infix operation
-    static func integerDivBuiltIn(_ args: [MooseObject]) throws -> IntegerObj {
-        try assertNoNil(args)
+    static func integerDivBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> IntegerObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
@@ -339,14 +339,14 @@ extension BuiltIns {
     }
 
     /// Check if two integers are equal
-    static func integerEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func integerEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! IntegerObj).value
         let b = (args[1] as! IntegerObj).value
         return BoolObj(value: a == b)
     }
 
     /// Check if two integers aren't equal
-    static func integerNotEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func integerNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! IntegerObj).value
         let b = (args[1] as! IntegerObj).value
         return BoolObj(value: a != b)
@@ -354,8 +354,8 @@ extension BuiltIns {
 
     /// A helper to make comparing functions (requiring arguments to be not nil)
     /// a lot easier to write.
-    private static func integerComparison(args: [MooseObject], operation: (Int64, Int64) -> Bool) throws -> BoolObj {
-        try assertNoNil(args)
+    private static func integerComparison(args: [MooseObject], _ env: Environment, operation: (Int64, Int64) -> Bool) throws -> BoolObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
@@ -363,28 +363,28 @@ extension BuiltIns {
     }
 
     /// Check if two integers are greater than each other
-    static func integerGreaterBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try integerComparison(args: args, operation: >)
+    static func integerGreaterBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try integerComparison(args: args, env, operation: >)
     }
 
     /// Check if two integers are greater or equal than each other
-    static func integerGreaterEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try integerComparison(args: args, operation: >=)
+    static func integerGreaterEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try integerComparison(args: args, env, operation: >=)
     }
 
     /// Check if two integers are less than each other
-    static func integerLessBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try integerComparison(args: args, operation: <)
+    static func integerLessBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try integerComparison(args: args, env, operation: <)
     }
 
     /// Check if two integers are less or equal than each other
-    static func integerLessEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try integerComparison(args: args, operation: <=)
+    static func integerLessEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try integerComparison(args: args, env, operation: <=)
     }
 
     /// Add two integer floats with an infix operation
-    static func floatAddBuiltIn(_ args: [MooseObject]) throws -> FloatObj {
-        try assertNoNil(args)
+    static func floatAddBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> FloatObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! FloatObj).value!
         let b = (args[1] as! FloatObj).value!
@@ -392,8 +392,8 @@ extension BuiltIns {
     }
 
     /// Sub two integer floats with an infix operation
-    static func floatSubBuiltIn(_ args: [MooseObject]) throws -> FloatObj {
-        try assertNoNil(args)
+    static func floatSubBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> FloatObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! FloatObj).value!
         let b = (args[1] as! FloatObj).value!
@@ -401,8 +401,8 @@ extension BuiltIns {
     }
 
     /// Multiply two floats together with an infix operation
-    static func floatMulBuiltIn(_ args: [MooseObject]) throws -> FloatObj {
-        try assertNoNil(args)
+    static func floatMulBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> FloatObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! FloatObj).value!
         let b = (args[1] as! FloatObj).value!
@@ -410,8 +410,8 @@ extension BuiltIns {
     }
 
     /// Divide two floats together with an infix operation
-    static func floatDivBuiltIn(_ args: [MooseObject]) throws -> FloatObj {
-        try assertNoNil(args)
+    static func floatDivBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> FloatObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! FloatObj).value!
         let b = (args[1] as! FloatObj).value!
@@ -419,14 +419,14 @@ extension BuiltIns {
     }
 
     /// Check if two integers are equal
-    static func floatEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func floatEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! IntegerObj).value
         let b = (args[1] as! IntegerObj).value
         return BoolObj(value: a == b)
     }
 
     /// Check if two integers are equal
-    static func floatNotEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func floatNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! IntegerObj).value
         let b = (args[1] as! IntegerObj).value
         return BoolObj(value: a != b)
@@ -434,8 +434,8 @@ extension BuiltIns {
 
     /// A helper to make comparing functions (requiring arguments to be not nil)
     /// a lot easier to write.
-    private static func floatComparison(args: [MooseObject], operation: (Float64, Float64) -> Bool) throws -> BoolObj {
-        try assertNoNil(args)
+    private static func floatComparison(args: [MooseObject], _ env: Environment, operation: (Float64, Float64) -> Bool) throws -> BoolObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! FloatObj).value!
         let b = (args[1] as! FloatObj).value!
@@ -443,28 +443,28 @@ extension BuiltIns {
     }
 
     /// Check if two integers are greater than each other
-    static func floatGreaterBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try floatComparison(args: args, operation: >)
+    static func floatGreaterBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try floatComparison(args: args, env, operation: >)
     }
 
     /// Check if two integers are greater or equal than each other
-    static func floatGreaterEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try floatComparison(args: args, operation: >=)
+    static func floatGreaterEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try floatComparison(args: args, env, operation: >=)
     }
 
     /// Check if two integers are less than each other
-    static func floatLessBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try floatComparison(args: args, operation: <)
+    static func floatLessBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try floatComparison(args: args, env, operation: <)
     }
 
     /// Check if two integers are less or equal than each other
-    static func floatLessEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try floatComparison(args: args, operation: <=)
+    static func floatLessEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try floatComparison(args: args, env, operation: <=)
     }
 
     // Logical and for bools
-    static func boolAndBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try assertNoNil(args)
+    static func boolAndBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! BoolObj).value!
         let b = (args[1] as! BoolObj).value!
@@ -472,8 +472,8 @@ extension BuiltIns {
     }
 
     // Logical or for bools
-    static func boolOrBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
-        try assertNoNil(args)
+    static func boolOrBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! BoolObj).value!
         let b = (args[1] as! BoolObj).value!
@@ -481,22 +481,22 @@ extension BuiltIns {
     }
 
     // Compare two strings for equality
-    static func stringEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func stringEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! StringObj).value
         let b = (args[1] as! StringObj).value
         return BoolObj(value: a == b)
     }
 
     // Compare two strings for not equality
-    static func stringNotEqualBuiltIn(_ args: [MooseObject]) throws -> BoolObj {
+    static func stringNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         let a = (args[0] as! StringObj).value
         let b = (args[1] as! StringObj).value
         return BoolObj(value: a != b)
     }
 
     // Concatenation for strings
-    static func stringConcatBuiltIn(_ args: [MooseObject]) throws -> StringObj {
-        try assertNoNil(args)
+    static func stringConcatBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> StringObj {
+        try assertNoNil(args, env)
 
         let a = (args[0] as! StringObj).value!
         let b = (args[1] as! StringObj).value!

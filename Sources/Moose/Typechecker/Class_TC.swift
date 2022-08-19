@@ -32,7 +32,7 @@ extension Typechecker {
         // search for scope and check on this scope
         try node.obj.accept(self)
 
-        guard case let .Class(className) = node.obj.mooseType else {
+        guard case let .Class(className) = node.obj.mooseType?.asClass else {
             throw error(message: "Expected object of class. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
         }
 
