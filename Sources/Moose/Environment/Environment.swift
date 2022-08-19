@@ -85,6 +85,11 @@ extension Environment {
             throw EnvironmentError(message: "Variable '\(variable)' not found.")
         }
     }
+
+    // Return all variables.
+    func getAllVariables() -> [String: MooseObject] {
+        return variables
+    }
 }
 
 // Define all function operations

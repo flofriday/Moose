@@ -15,6 +15,19 @@ class Interpreter: Visitor {
         addBuiltIns()
     }
 
+    /// Reset the internal state of the interpreter.
+    func reset() {
+        errors = []
+        environment = Environment(enclosing: nil)
+        addBuiltIns()
+    }
+
+    func run(program: Program) throws {
+        let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
+        environment = try explorer.populate()
+        _ = try visit(program)
+    }
+
     private func addBuiltIns() {
         for op in BuiltIns.builtInOperators {
             environment.set(op: op.name, value: op)
@@ -31,12 +44,6 @@ class Interpreter: Visitor {
 
     func popEnvironment() {
         environment = environment.enclosing!
-    }
-
-    func run(program: Program) throws {
-        let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
-        environment = try explorer.populate()
-        _ = try visit(program)
     }
 
     func visit(_ node: Program) throws -> MooseObject {
