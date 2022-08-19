@@ -79,4 +79,118 @@ class InterpreterTests: InterpreterBaseClass {
 
         try runValidTests(name: #function, tests)
     }
+
+    func test_functions() throws {
+        let tests: [(String, [(String, MooseObject)])] = [
+            (
+                """
+                // Simple function
+                func one() > Int {
+                    return 1
+                }
+
+                a = one()
+                """,
+                [("a", IntegerObj(value: 1))]
+            ),
+            (
+                """
+                // Function with arguments
+                func add(n: Int, m: Int) > Int {
+                    return n + m
+                }
+
+                a = add(42, 90)
+                """,
+                [("a", IntegerObj(value: 132))]
+            ),
+            (
+                """
+                // Side effect function
+                mut ugly = 777
+                func effect() {
+                    ugly = 42
+                }
+
+                effect()
+                """,
+                [("ugly", IntegerObj(value: 42))]
+            ),
+            (
+                """
+                // Useless function (never called)
+                mut perfect = 13
+                func useless() {
+                    perfect = 666
+                }
+                """,
+                [("perfect", IntegerObj(value: 13))]
+            ),
+            (
+                """
+                // Recursive power function
+                func pow(base: Int, power: Int) > Int {
+                    if power <= 1 {
+                        return base
+                    }
+                    return base * pow(base, power - 1)
+                }
+
+                a = pow(2, 2)
+                b = pow(2, 3)
+                c = pow(3, 3)
+                d = pow(2, 32)
+                """,
+                [
+                    ("a", IntegerObj(value: 4)),
+                    ("b", IntegerObj(value: 8)),
+                    ("c", IntegerObj(value: 27)),
+                    ("d", IntegerObj(value: 4_294_967_296)),
+                ]
+            ),
+            (
+                """
+                // Nested calling
+                func zero() > Int {
+                    return 0
+                }
+
+                func addOne(n: Int) > Int {
+                    return n + 1
+                }
+
+                a = addOne(addOne(addOne(addOne(zero()))))
+                """,
+                [
+                    ("a", IntegerObj(value: 4)),
+                ]
+            ),
+            // TODO: This should work but doesn't
+            // https://github.com/flofriday/Moose/issues/12
+            /*
+                (
+                    """
+                    // Variable name collision
+
+                    func inner() {
+                        x = 8000
+                    }
+
+                    func outer() > Int {
+                        x = 3
+                        inner()
+                        return x
+                    }
+
+                    a = outer()
+                    """,
+                    [
+                        ("a", IntegerObj(value: 3)),
+                    ]
+                ),
+                */
+        ]
+
+        try runValidTests(name: #function, tests)
+    }
 }
