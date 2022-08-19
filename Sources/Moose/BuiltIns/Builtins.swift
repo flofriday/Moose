@@ -419,16 +419,16 @@ extension BuiltIns {
     }
 
     /// Check if two integers are equal
-    static func floatEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
+    static func floatEqualBuiltIn(_ args: [MooseObject], _: Environment) throws -> BoolObj {
+        let a = (args[0] as! FloatObj).value
+        let b = (args[1] as! FloatObj).value
         return BoolObj(value: a == b)
     }
 
     /// Check if two integers are equal
-    static func floatNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
+    static func floatNotEqualBuiltIn(_ args: [MooseObject], _: Environment) throws -> BoolObj {
+        let a = (args[0] as! FloatObj).value
+        let b = (args[1] as! FloatObj).value
         return BoolObj(value: a != b)
     }
 
