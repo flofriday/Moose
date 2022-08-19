@@ -48,7 +48,20 @@ class InterpreterBaseClass: XCTestCase {
                 i.reset()
                 try i.run(program: prog)
                 try validatePromises(env: i.environment, promises: promises)
+            } catch let error as CompileError {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as CompileErrorMessage {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as EnvironmentError {
+                // So it might be that we want to access a variable but a
+                // bug in the environment already deleted it.
+                XCTFail(error.message)
             } catch let error as InterpreterTestError {
+                // This are the errors we are interested in.
                 XCTFail(error.message + "\n\nCode:\n" + source)
             }
         }
