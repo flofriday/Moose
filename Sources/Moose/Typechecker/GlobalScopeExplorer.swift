@@ -76,7 +76,7 @@ class GlobalScopeExplorer: BaseVisitor {
         let classScope = ClassTypeScope(
             enclosing: scope,
             name: node.name.value,
-            properties: node.properties.map { (name: $0.name.value, $0.declaredType) }
+            properties: node.properties.map { (name: $0.name.value, $0.declaredType, $0.mutable) }
         )
 
         for prop in node.properties {

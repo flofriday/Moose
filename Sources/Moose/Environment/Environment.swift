@@ -227,7 +227,7 @@ extension BaseEnvironment {
     /// Defines the type of builtin class scope
     ///
     /// Note that it will not transfer any operators (of course)
-    func asClassTypeScope(_ name: String, props: [(name: String, type: MooseType)] = []) throws -> ClassTypeScope {
+    func asClassTypeScope(_ name: String, props: [(name: String, type: MooseType, mutable: Bool)] = []) throws -> ClassTypeScope {
         let scope = ClassTypeScope(enclosing: nil, name: name, properties: props)
 
         let funcs = try funcs.flatMap { try $0.value.map { fn -> BuiltInFunctionObj in
@@ -296,6 +296,7 @@ extension BaseEnvironment {
 class ClassEnvironment: BaseEnvironment {
     let propertyNames: [String]
     let className: String
+    var superClass: ClassEnvironment?
 
     init(enclosing: Environment?, className: String, propertyNames: [String]) {
         self.propertyNames = propertyNames

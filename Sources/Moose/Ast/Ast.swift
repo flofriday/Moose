@@ -330,12 +330,14 @@ class ClassStatement {
     let name: Identifier
     let properties: [VariableDefinition]
     let methods: [FunctionStatement]
+    let extends: Identifier?
 
-    init(token: Token, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement]) {
+    init(token: Token, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement], extends: Identifier? = nil) {
         self.token = token
         self.name = name
         self.properties = properties
         self.methods = methods
+        self.extends = extends
     }
 
     var returnDeclarations: (MooseType, Bool)?
@@ -563,7 +565,8 @@ extension ClassStatement: Statement {
     var description: String {
         let props = properties.map { "\n \($0.description)" }.joined()
         let methods = self.methods.map { "\n \($0.description)" }.joined()
-        return "class \(name.value) { \(props)\n \(methods)}"
+        let ext = extends != nil ? " < \(extends!.value)" : ""
+        return "class \(name.value)\(ext) { \(props)\n \(methods)}"
     }
 
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
