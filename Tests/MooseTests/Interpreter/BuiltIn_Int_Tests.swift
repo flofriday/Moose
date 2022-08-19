@@ -71,8 +71,8 @@ extension InterpreterTests {
             (
                 """
                 // Float arithmetic
-                // Note: it might be that these are flaky, because floating point can be
-                // difficult
+                // Note: it might be that these are flaky, because floating 
+                //point can be difficult
                 a = 1.23 + 78.9
                 b = 1.23 - 78.9
                 c = 1.23 * 78.9
