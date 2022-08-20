@@ -75,6 +75,19 @@ class Interpreter: Visitor {
                 throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
             }
 
+        case let indexExpr as IndexExpression:
+            let index = (try indexExpr.index.accept(self) as! IntegerObj).value
+            guard let index = index else {
+                throw NilUsagePanic()
+            }
+
+            let target = try indexExpr.indexable.accept(self) as! IndexWriteableObject
+            guard index < target.length() else {
+                throw OutOfBoundsPanic()
+            }
+
+            target.setAt(index: index, value: value)
+
         case let dereferer as Dereferer:
             throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
 

@@ -78,8 +78,8 @@ extension Typechecker {
         // processs own mooseType and check if everything is valid
         try indexing.accept(self)
 
-        guard valueType == indexing.mooseType else {
-            throw error(message: "`\(indexing.indexable.description)` is of type `\(indexing.mooseType!)`, but you want to assign a value of type `\(valueType)`. ", node: node)
+        guard valueType == indexing.mooseType || valueType == .Nil else {
+            throw error(message: "`\(indexing.description)` is of type `\(indexing.mooseType!)`, but you want to assign a value of type `\(valueType)`. ", node: node)
         }
     }
 
@@ -126,7 +126,7 @@ extension Typechecker {
             }
 
             // check that tuple to assign has same type as stored variable
-            guard valueType == varType else {
+            guard valueType == varType || valueType == .Nil else {
                 throw error(message: "Variable `\(variable.value)` has type `\(varType.description)` but you try to assign type `\(valueType.description)`.", node: node)
             }
 

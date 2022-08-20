@@ -40,6 +40,10 @@ protocol IndexableObject {
     func length() -> Int64
 }
 
+protocol IndexWriteableObject: IndexableObject {
+    func setAt(index: Int64, value: MooseObject)
+}
+
 class IntegerObj: MooseObject {
     let type: MooseType = .Int
     let value: Int64?
@@ -218,9 +222,9 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-class TupleObj: MooseObject, IndexableObject {
+class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
     let type: MooseType
-    let value: [MooseObject]?
+    var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Tuple_Env)
 
     init(type: MooseType, value: [MooseObject]?) {
@@ -233,6 +237,10 @@ class TupleObj: MooseObject, IndexableObject {
         return value![Int(index)]
     }
 
+    func setAt(index: Int64, value: MooseObject) {
+        self.value![Int(index)] = value
+    }
+
     func length() -> Int64 {
         return Int64(value?.count ?? 0)
     }
@@ -266,16 +274,19 @@ class TupleObj: MooseObject, IndexableObject {
     }
 
     var description: String {
+        guard let value = value else {
+            return "nil"
+        }
         var out = "("
-        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += value.map { $0.description }.joined(separator: ", ")
         out += ")"
         return out
     }
 }
 
-class ListObj: MooseObject, IndexableObject {
+class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
     let type: MooseType
-    let value: [MooseObject]?
+    var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_List_Env)
 
     init(type: MooseType, value: [MooseObject]?) {
@@ -288,6 +299,10 @@ class ListObj: MooseObject, IndexableObject {
         return value![Int(index)]
     }
 
+    func setAt(index: Int64, value: MooseObject) {
+        self.value![Int(index)] = value
+    }
+
     func length() -> Int64 {
         return Int64(value?.count ?? 0)
     }
@@ -321,8 +336,12 @@ class ListObj: MooseObject, IndexableObject {
     }
 
     var description: String {
+        guard let value = value else {
+            return "nil"
+        }
+
         var out = "["
-        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += value.map { $0.description }.joined(separator: ", ")
         out += "]"
         return out
     }
@@ -446,7 +465,7 @@ class NilObj: MooseObject {
         case .Tuple:
             return TupleObj(type: type, value: nil)
         case .List:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to list")
+            return ListObj(type: type, value: nil)
         case .Function:
             throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
         }

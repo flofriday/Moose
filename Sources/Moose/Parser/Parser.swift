@@ -172,9 +172,9 @@ class Parser {
         } else if check(type: .Assign) {
             token = try consume(oneOf: [.Assign], message: "I expected a '=' after a variable decleration.")
             expr = try parseExpression(.Lowest)
-            guard !(expr is Nil) || type != nil else {
-                throw error(message: "Nil assignment only possible for typed assignments", token: token)
-            }
+            // guard !(expr is Nil) || type != nil || assignable is IndexExpression else {
+            //     throw error(message: "Nil assignment only possible for typed assignments", token: token)
+            // }
         } else {
             // if no assignment, nil by default
             // but end of statement expected
