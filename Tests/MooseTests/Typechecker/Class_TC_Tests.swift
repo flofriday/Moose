@@ -90,6 +90,22 @@ extension TypecheckerTests {
             """
             class A { b:Int; func a(b: String) > String { return me.b } }
             """
+
+            """
+            b = "Test"
+            class A { func a() > String { return me.b } }
+            """
+
+            """
+            class A { }
+            func f() { }
+            A().f()
+            """
+
+            """
+            class A { func a() { me.f() } }
+            func f() { }
+            """
         }
     }
 

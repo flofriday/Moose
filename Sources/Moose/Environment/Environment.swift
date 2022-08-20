@@ -19,6 +19,7 @@ protocol Environment {
     func nearestClass() throws -> ClassEnvironment
 
     func isGlobal() -> Bool
+    func global() -> Environment
     var enclosing: Environment? { get }
 
     func printDebug(header: Bool)
@@ -43,9 +44,9 @@ extension Environment {
 // weren't it wouldn't be our concern but a bug in the typechecker.
 class BaseEnvironment: Environment {
     let enclosing: Environment?
-    private var variables: [String: MooseObject] = [:]
-    private var funcs: [String: [MooseObject]] = [:]
-    private var ops: [String: [MooseObject]] = [:]
+    var variables: [String: MooseObject] = [:]
+    var funcs: [String: [MooseObject]] = [:]
+    var ops: [String: [MooseObject]] = [:]
 
     private var classDefinitions: [String: ClassEnvironment] = [:]
 
@@ -225,6 +226,15 @@ extension BaseEnvironment {
         return enclosing == nil
     }
 
+    // Return the global environment
+    func global() -> Environment {
+        guard let enclosing = enclosing else {
+            return self
+        }
+
+        return enclosing.global()
+    }
+
     /// Defines the type of builtin class scope
     ///
     /// Note that it will not transfer any operators (of course)
@@ -309,5 +319,16 @@ class ClassEnvironment: BaseEnvironment {
         propertyNames = copy.propertyNames
         className = copy.className
         super.init(copy: copy)
+    }
+
+    /// So the methods need to work in this environment, which is bound to a
+    /// specific object and not to a class. So here, we need to inject ourself
+    /// into each method.
+    func bindMethods() {
+        for meths in funcs {
+            for meth in meths.value {
+                (meth as! FunctionObj).closure = self
+            }
+        }
     }
 }

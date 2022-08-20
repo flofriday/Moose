@@ -193,6 +193,10 @@ struct BuiltInClassEnvironment: Environment {
         env.isGlobal()
     }
 
+    func global() -> Environment {
+        env.global()
+    }
+
     var enclosing: Environment? {
         return env.enclosing
     }

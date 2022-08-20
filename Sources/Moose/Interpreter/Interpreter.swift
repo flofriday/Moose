@@ -89,8 +89,17 @@ class Interpreter: Visitor {
 
             target.setAt(index: index, value: value)
 
-        case _ as Dereferer:
-            throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
+        case let dereferExpr as Dereferer:
+            let obj = try dereferExpr.obj.accept(self)
+
+            let prevEnv = environment
+            environment = obj.env
+
+            let val = try dereferExpr.referer.accept(self)
+            // TODO: ist the force cast assignabel here ok?
+            try assign(valueType: val.type, dst: dereferExpr.referer as! Assignable, value: value)
+
+            environment = prevEnv
 
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
@@ -141,7 +150,7 @@ class Interpreter: Visitor {
 
         let paramNames = node.params.map { $0.name.value }
         let type = FunctionType(params: node.params.map { $0.declaredType }, returnType: node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
         return VoidObj()
     }
@@ -199,15 +208,20 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return try callee.function(args, environment)
+            return try callee.function(args, environment.global())
         } else if let callee = callee as? FunctionObj {
+            // Activate the  environment in which the function was defined
+            let oldEnv = environment
+            environment = callee.closure
             pushEnvironment()
 
+            // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
                 _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
+            // Execute the body
             var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
@@ -215,18 +229,24 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
+            // Reactivate the original environment
             popEnvironment()
+            environment = oldEnv
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
-            return try callee.function(args, environment)
+            return try callee.function(args, environment.global())
         } else if let callee = callee as? OperatorObj {
-            pushEnvironment()
+            // Activate the  environment in which the function was defined
+            let oldEnv = environment
+            environment = callee.closure
 
+            // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
                 _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
+            // Execute the body
             var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
@@ -234,7 +254,8 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            popEnvironment()
+            // Reactivate the original environment
+            environment = oldEnv
             return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
@@ -298,6 +319,10 @@ class Interpreter: Visitor {
         for (name, arg) in zip(clas.propertyNames, args) {
             _ = clas.updateInCurrentEnv(variable: name, value: arg)
         }
+
+        // Bind all methods to this excat object
+        clas.bindMethods()
+
         return ClassObject(env: clas)
     }
 

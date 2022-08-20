@@ -41,7 +41,7 @@ class GlobalEnvironmentExplorer: BaseVisitor {
         let paramNames = node.params.map { $0.name.value }
         let params = node.params.map { $0.declaredType }
         let type = FunctionType(params: params, returnType: node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
     }
 

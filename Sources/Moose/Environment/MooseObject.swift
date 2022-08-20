@@ -141,12 +141,14 @@ class FunctionObj: MooseObject {
     let paramNames: [String]
     let value: BlockStatement
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Function_Env)
+    var closure: Environment
 
-    init(name: String, type: MooseType, paramNames: [String], value: BlockStatement) {
+    init(name: String, type: MooseType, paramNames: [String], value: BlockStatement, closure: Environment) {
         self.name = name
         self.type = type
         self.paramNames = paramNames
         self.value = value
+        self.closure = closure
         env.value = self
     }
 
@@ -193,12 +195,10 @@ class BuiltInFunctionObj: MooseObject {
 
 class OperatorObj: FunctionObj {
     let opPos: OpPos
-//    let env: BuiltInClassEnvironment = .init(env: Buil)
 
-    init(name: String, opPos: OpPos, type: MooseType, paramNames: [String], value: BlockStatement) {
+    init(name: String, opPos: OpPos, type: MooseType, paramNames: [String], value: BlockStatement, closure: Environment) {
         self.opPos = opPos
-        super.init(name: name, type: type, paramNames: paramNames, value: value)
-//        env = .init(BuiltIns.builtIn_Operator_Env)
+        super.init(name: name, type: type, paramNames: paramNames, value: value, closure: closure)
         env.value = self
     }
 

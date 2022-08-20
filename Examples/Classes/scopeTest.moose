@@ -1,0 +1,8 @@
+b = "Test"
+class A { func a() > String { return me.b }}
+
+print(A().a())
+
+func f() { print("Test") }
+A().f() 
+
