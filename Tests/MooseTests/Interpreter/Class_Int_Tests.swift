@@ -111,9 +111,34 @@ extension InterpreterTests {
                     ("a", IntegerObj(value: 24)),
                 ]
             ),
-            // TODO: Nested classes
+            (
+                """
+                // Nested classes
+                class Door {
+                    mut open: Bool
+                }
+
+                class House {
+                    mut door: Door
+                }
+
+                // Create a closed house
+                h = House(Door(false))
+                a = h.door.open
+
+                // Open the door
+                h.door.open = true
+                b = h.door.open
+                """,
+                [
+                    ("a", BoolObj(value: false)),
+                    ("b", BoolObj(value: true)),
+                ]
+            ),
         ]
 
         try runValidTests(name: #function, tests)
     }
+
+    // TODO: add inheritance tests
 }
