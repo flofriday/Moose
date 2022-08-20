@@ -322,12 +322,21 @@ class Parser {
         skip(all: .NLine)
         let name = try parseIdentifier()
         skip(all: .NLine)
+
+        var extends: Identifier?
+        if case .Operator(pos: _, assign: false) = peek().type,
+           peek().lexeme == "<"
+        {
+            _ = advance()
+            extends = try parseIdentifier()
+        }
+
         _ = try consume(type: .LBrace, message: "Expected '{' as start of class body, got '\(peek().lexeme)' instead.")
         skip(all: .NLine)
         let properties = try parseAllVariableDefinitions()
         let methods = try parseAllMethodDefinitions()
         _ = try consume(type: .RBrace, message: "Expected '}' as end of class body, got '\(peek().lexeme)' instead.")
-        return ClassStatement(token: token, name: name, properties: properties, methods: methods)
+        return ClassStatement(token: token, name: name, properties: properties, methods: methods, extends: extends)
     }
 
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")

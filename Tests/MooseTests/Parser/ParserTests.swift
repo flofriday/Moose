@@ -353,8 +353,6 @@ class ParserTests: BaseClass {
     func test_assertThrows() throws {
         let tests = [
             "(a+1) = 1",
-            // "a = nil", // NOTE: I think this is ok in the parser because a could have been already defined, which the parser cannot know.
-            // "a = (nil)",
             "prefix += (a: Int, b: Int) > String {}",
             "infix += (a: Int b: Int) > String {}",
         ]
@@ -422,6 +420,7 @@ class ParserTests: BaseClass {
             ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", .String), ("b", .Int)]),
             ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", .String), ("b", .Int)]),
             ("class test { func a() {}; func b () {} }", "test", []),
+            ("class test < easy { func a() {}; func b () {} }", "test", [])
         ]
 
         for (i, t) in tests.enumerated() {

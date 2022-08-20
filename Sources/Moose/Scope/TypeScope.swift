@@ -8,8 +8,8 @@
 import Foundation
 
 class TypeScope: Scope {
-    private var variables: [String: (type: MooseType, mut: Bool)] = [:]
-    private var funcs: [String: [MooseType]] = [:]
+    internal var variables: [String: (type: MooseType, mut: Bool)] = [:]
+    internal var funcs: [String: [MooseType]] = [:]
     private var ops: [String: [(MooseType, OpPos)]] = [:]
 
     private var classes: [String: ClassTypeScope] = [:]
@@ -241,13 +241,53 @@ extension TypeScope {
 /// Class Scope specific methods
 /// Also holds the corresponding ast class node
 class ClassTypeScope: TypeScope {
-    let className: String
-    let classProperties: [(name: String, type: MooseType)] // propertyName, propertyType
+    typealias propType = (name: String, type: MooseType, mutable: Bool)
 
-    init(enclosing: TypeScope? = nil, name: String, properties: [(name: String, type: MooseType)]) {
+    let className: String
+    var classProperties: [propType]
+    var superClass: ClassTypeScope?
+    var visited = false
+
+    init(enclosing: TypeScope? = nil, name: String, properties: [propType]) {
         self.className = name
         self.classProperties = properties
         super.init(enclosing: enclosing)
+    }
+
+    /// Here we are flatting the class, so we are creating one class that is build-up from all
+    /// respecting all inherited properties
+    ///
+    /// This function is called by the typechecker, so after all classes are checked, they all have nil as superclass and all have their respective functions and variables
+    func flat() throws {
+        guard let superClass = superClass else { return }
+        try superClass.flat()
+
+        // Check if class holds property that is also defined in super class
+        try classProperties.forEach { name, _, _ in
+            guard !superClass.classProperties.contains(where: { name == $0.name }) else {
+                throw ScopeError(message: "Property `\(name)` cannot be overwritten by `\(className)`.")
+            }
+        }
+        classProperties += superClass.classProperties
+        var vars = superClass.variables
+        variables.forEach { vars[$0.key] = $0.value }
+        variables = vars
+
+        var fns = superClass.funcs
+        for (name, fns) in funcs {
+            for fn in fns {
+                if case let .Function(params, returnType) = fn {
+                    if superClass.has(function: name, params: params, includeEnclosing: false) {
+                        let superRettype = try superClass.returnType(function: name, params: params)
+                        guard returnType == superRettype else {
+                            throw ScopeError(message: "Function `\(name)(\(params.map { $0.description }.joined(separator: ","))) > \(returnType)` of class \(className) does not match return type \(returnType) of superclass.")
+                        }
+                    }
+                }
+            }
+        }
+        fns.forEach { fns[$0.key] = $0.value }
+        funcs = fns
     }
 
     var propertyCount: Int {

@@ -17,6 +17,22 @@ extension Typechecker {
             throw error(message: "Scope of class `\(node.name.value)` was not found in global scope!", node: node)
         }
 
+        if let extends = node.extends {
+            guard let extendClass = scope.getScope(clas: extends.value) else {
+                throw error(message: "Class `\(extends.value)` was not found, so `\(node.name.value)` can not extend it.", node: extends)
+            }
+
+            clasScope.superClass = extendClass
+            // TODO: We need to check for cycles... so if there are dependency cycles
+            try checkCycle(for: extends, in: extendClass)
+        }
+
+        do {
+            try clasScope.flat()
+        } catch let err as ScopeError {
+            throw error(message: err.message, node: node)
+        }
+
         let prevScope = scope
         scope = clasScope
 
@@ -26,6 +42,17 @@ extension Typechecker {
         }
 
         scope = prevScope
+    }
+
+    /// check if class inhertiance has dependecy circle
+    private func checkCycle(for name: Identifier, in clas: ClassTypeScope) throws {
+        guard name.value != clas.superClass?.className else {
+            throw error(message: "Class `\(name.value)` results in a dependency circle, since `\(clas.className)` extends it, but is also a dependecy of `\(name.value)`", node: name)
+        }
+
+        if let superClass = clas.superClass {
+            try checkCycle(for: name, in: superClass)
+        }
     }
 
     func visit(_ node: Dereferer) throws {

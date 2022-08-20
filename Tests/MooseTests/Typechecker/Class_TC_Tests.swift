@@ -10,38 +10,38 @@ import Foundation
 extension TypecheckerTests {
     func test_derefering_ok() throws {
         try runValidTests(name: #function) {
-//            """
-//            class A { a:Int }
-//            b: Int = A(1).a
-//            """
-//            """
-//            class A { a:[Int] }
-//            b: Int = A([2]).a[0]
-//            """
-//            """
-//            class A { a:[B] }
-//            class B { b:String }
-//            b: B = A([B("Hello")]).a[0]
-//            """
-//            """
-//            class A { a:[B] }
-//            class B { mut b:String }
-//            b = B("Hello")
-//            a = A([b])
-//            a.a[0].b = "World"
-//            """
-//            """
-//            class A { a:[B] }
-//            class B { mut b:String }
-//            b = B("Hello")
-//            a = A([b])
-//            (a.a[0].b, c) = ("World", 3)
-//            """
-//            """
-//            class A { b:Int; func a() > Int { return me.b } }
-//            a = A(2)
-//            b: Int = a.a()
-//            """
+            """
+            class A { a:Int }
+            b: Int = A(1).a
+            """
+            """
+            class A { a:[Int] }
+            b: Int = A([2]).a[0]
+            """
+            """
+            class A { a:[B] }
+            class B { b:String }
+            b: B = A([B("Hello")]).a[0]
+            """
+            """
+            class A { a:[B] }
+            class B { mut b:String }
+            b = B("Hello")
+            a = A([b])
+            a.a[0].b = "World"
+            """
+            """
+            class A { a:[B] }
+            class B { mut b:String }
+            b = B("Hello")
+            a = A([b])
+            (a.a[0].b, c) = ("World", 3)
+            """
+            """
+            class A { b:Int; func a() > Int { return me.b } }
+            a = A(2)
+            b: Int = a.a()
+            """
 
             """
             class A {
@@ -105,6 +105,76 @@ extension TypecheckerTests {
             """
             class A { func a() { me.f() } }
             func f() { }
+            """
+        }
+    }
+
+    func test_classDependency_fails() throws {
+        try runInvalidTests(name: #function) {
+            """
+            class A < B {}
+            class B < A {}
+            """
+
+            """
+            class A < B {}
+            class B < C {}
+            """
+
+            """
+            class A < B {}
+            class B < C {}
+            class C < A {}
+            """
+
+            """
+            class A < B {}
+            class B { a: Int }
+            a = A()
+            """
+
+            """
+            class A < B { a: Int }
+            class B { a: Int }
+            """
+
+            """
+            class A < B { a: String }
+            class B < C { }
+            class C { a: Int }
+            """
+
+            """
+            class A < B { func a() > String { return "String" } }
+            class B { func a() > Int {return 2} }
+            """
+
+            """
+            class A < B { func a() > String { return "String" } }
+            class B < C { }
+            class C { func a() > Int {return 2} }
+            """
+        }
+    }
+
+    func test_classDependency_ok() throws {
+        try runValidTests(name: #function) {
+            """
+            class A < B {}
+            class B {}
+            """
+
+            """
+            class A < B {}
+            class B < C {}
+            class C {}
+            """
+
+            """
+            class A < B {}
+            class B { a: Int }
+            a = A(2)
+            print(a.a)
             """
         }
     }
