@@ -88,7 +88,7 @@ class Interpreter: Visitor {
 
             target.setAt(index: index, value: value)
 
-        case let dereferer as Dereferer:
+        case is Dereferer:
             throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
 
         default:
@@ -307,6 +307,10 @@ class Interpreter: Visitor {
         for (name, arg) in zip(clas.propertyNames, args) {
             _ = clas.updateInCurrentEnv(variable: name, value: arg)
         }
+
+        // Bind all methods to this excat object
+        clas.bindMethods()
+
         return ClassObject(env: clas)
     }
 
