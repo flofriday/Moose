@@ -73,10 +73,9 @@ extension TypeScope {
     private func isOpBy(pos: OpPos, params: [MooseType], other: (MooseType, OpPos)) -> Bool {
         let storedParams = (other.0 as? FunctionType)?.params
         guard let storedParams = storedParams else { return false }
-        let sameParams = zip(storedParams, params).reduce(true) { acc, p in
-            acc && p.1 == p.0
-        }
-        return sameParams && pos == other.1
+
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
+            && pos == other.1
     }
 
     private func currentContains(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
@@ -136,18 +135,12 @@ extension TypeScope {
     ///  @other Function to check aganst
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
-            let paras = (other as? FunctionType)?.params,
-            paras.count == params.count
+            let storedParams = (other as? FunctionType)?.params
         else {
             return false
         }
 
-        return zip(params, paras)
-            .reduce(true) { acc, zip in
-                let (param, para) = zip
-                guard param is NilType || param == para else { return false }
-                return acc
-            }
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
     }
 
     private func currentContains(function: String, params: [MooseType]) -> Bool {
@@ -237,6 +230,19 @@ extension TypeScope {
 
     var variableCount: Int {
         return variables.count
+    }
+
+    /// Determines if left types are all super types of right types
+    ///
+    /// This is used e.g. to find functions with generic params
+    static func leftSuperOfRight(supers: [MooseType], subtypes: [MooseType]) -> Bool {
+        return subtypes.count == supers.count &&
+            zip(subtypes, supers)
+            .reduce(true) { acc, zip in
+                let (subtype, supr) = zip
+                guard subtype is NilType || supr.superOf(type: subtype) else { return false }
+                return acc
+            }
     }
 }
 

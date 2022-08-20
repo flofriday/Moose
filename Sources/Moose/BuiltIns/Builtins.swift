@@ -40,6 +40,8 @@ class BuiltIns {
         BuiltInFunctionObj(name: "exit", params: [IntType()], returnType: VoidType(), function: exitBuiltIn),
 
         BuiltInFunctionObj(name: "environment", params: [], returnType: VoidType(), function: environmentBuiltIn),
+
+        BuiltInFunctionObj(name: "testGeneric", params: [ParamType()], returnType: VoidType(), function: testGenericFunction),
     ]
 }
 
@@ -102,6 +104,11 @@ extension BuiltIns {
 // type, therefore I would encourage you to select the most specific type for
 // the return and document which argument types you accept with an commentar.
 extension BuiltIns {
+    static func testGenericFunction(params: [MooseObject], env _: Environment) -> VoidObj {
+        print(params[0].description)
+        return VoidObj()
+    }
+
     /// A generic cast function that can convert Integer, Float and Bool to String.
     static func castToStringBuiltIn(params: [MooseObject], env _: Environment) -> StringObj {
         let input = params[0]

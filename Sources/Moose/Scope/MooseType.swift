@@ -20,15 +20,16 @@ import Foundation
 class MooseType: Equatable, CustomStringConvertible {
     var description: String { "Not a Type" }
 
-    func eq(to other: MooseType) -> Bool { true }
+    func superOf(type other: MooseType) -> Bool { true }
 
-    static func == (lhs: MooseType, rhs: MooseType) -> Bool { lhs.eq(to: rhs) }
+    static func == (lhs: MooseType, rhs: MooseType) -> Bool { lhs.superOf(type: rhs) }
 }
 
 class AnyType: MooseType {
     var asClass: ClassType? { nil }
 
     override var description: String { "Any" }
+    override func superOf(type other: MooseType) -> Bool { other is AnyType }
 }
 
 /// This type is allowed as type in parameters
@@ -36,33 +37,35 @@ class ParamType: AnyType {
     override var asClass: ClassType? { nil }
 
     override var description: String { "ParamType" }
+
+    override func superOf(type other: MooseType) -> Bool { other is ParamType }
 }
 
 class IntType: ParamType {
     override var asClass: ClassType? { ClassType("Int") }
     override var description: String { "Int" }
 
-    override func eq(to other: MooseType) -> Bool { other is IntType }
+    override func superOf(type other: MooseType) -> Bool { other is IntType }
 }
 
 class StringType: ParamType {
     override var asClass: ClassType? { ClassType("String") }
     override var description: String { "String" }
 
-    override func eq(to other: MooseType) -> Bool { other is StringType }
+    override func superOf(type other: MooseType) -> Bool { other is StringType }
 }
 
 class FloatType: ParamType {
     override var asClass: ClassType? { ClassType("Float") }
     override var description: String { "Float" }
 
-    override func eq(to other: MooseType) -> Bool { other is FloatType }
+    override func superOf(type other: MooseType) -> Bool { other is FloatType }
 }
 
 class BoolType: ParamType {
     override var asClass: ClassType? { ClassType("Bool") }
     override var description: String { "Bool" }
-    override func eq(to other: MooseType) -> Bool { other is BoolType }
+    override func superOf(type other: MooseType) -> Bool { other is BoolType }
 }
 
 class ClassType: ParamType {
@@ -74,7 +77,7 @@ class ClassType: ParamType {
         self.name = name
     }
 
-    override func eq(to other: MooseType) -> Bool {
+    override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? ClassType else { return false }
         return other.name == other.name
     }
@@ -87,10 +90,10 @@ class TupleType: ParamType {
         self.entries = entries
     }
 
-    override func eq(to other: MooseType) -> Bool {
+    override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? TupleType else { return false }
         return entries.count == other.entries.count &&
-            zip(entries, other.entries).reduce(true) { acc, t in acc && t.0.eq(to: t.1) }
+            zip(entries, other.entries).reduce(true) { acc, t in acc && t.0.superOf(type: t.1) }
     }
 
     override var asClass: ClassType? { ClassType("Tuple") }
@@ -104,9 +107,9 @@ class ListType: ParamType {
         self.type = type
     }
 
-    override func eq(to other: MooseType) -> Bool {
+    override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? ListType else { return false }
-        return type.eq(to: other.type)
+        return type.superOf(type: other.type)
     }
 
     override var asClass: ClassType? { ClassType("List") }
@@ -122,11 +125,11 @@ class FunctionType: ParamType {
         self.returnType = returnType
     }
 
-    override func eq(to other: MooseType) -> Bool {
+    override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? FunctionType else { return false }
         return params.count == other.params.count &&
-            zip(params, other.params).reduce(true) { acc, t in acc && t.0.eq(to: t.1) } &&
-            returnType.eq(to: other.returnType)
+            zip(params, other.params).reduce(true) { acc, t in acc && t.0.superOf(type: t.1) } &&
+            returnType.superOf(type: other.returnType)
     }
 
     override var asClass: ClassType? { nil }
@@ -135,12 +138,12 @@ class FunctionType: ParamType {
 
 class NilType: AnyType {
     override var description: String { "Nil" }
-    override func eq(to other: MooseType) -> Bool { other is NilType }
+    override func superOf(type other: MooseType) -> Bool { other is NilType }
 }
 
 class VoidType: MooseType {
     override var description: String { "Void" }
-    override func eq(to other: MooseType) -> Bool { other is VoidType }
+    override func superOf(type other: MooseType) -> Bool { other is VoidType }
 }
 
 extension MooseType {
