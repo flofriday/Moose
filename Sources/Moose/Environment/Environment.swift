@@ -19,6 +19,7 @@ protocol Environment {
     func nearestClass() throws -> ClassEnvironment
 
     func isGlobal() -> Bool
+    func global() -> Environment
     var enclosing: Environment? { get }
 
     func printDebug(header: Bool)
@@ -228,6 +229,15 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     func isGlobal() -> Bool {
         return enclosing == nil
+    }
+
+    // Return the global environment
+    func global() -> Environment {
+        guard let enclosing = enclosing else {
+            return self
+        }
+
+        return enclosing.global()
     }
 
     /// Defines the type of builtin class scope

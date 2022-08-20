@@ -40,7 +40,7 @@ class GlobalEnvironmentExplorer: BaseVisitor {
     override func visit(_ node: FunctionStatement) throws {
         let paramNames = node.params.map { $0.name.value }
         let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
     }
 

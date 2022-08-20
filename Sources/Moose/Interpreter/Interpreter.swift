@@ -140,7 +140,7 @@ class Interpreter: Visitor {
 
         let paramNames = node.params.map { $0.name.value }
         let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
         return VoidObj()
     }
@@ -198,15 +198,19 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return try callee.function(args, environment)
+            return try callee.function(args, environment.global())
         } else if let callee = callee as? FunctionObj {
-            pushEnvironment()
+            // Activate the  environment in which the function was defined
+            let oldEnv = environment
+            environment = callee.closure
 
+            // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
                 _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
+            // Execute the body
             var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
@@ -214,18 +218,23 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            popEnvironment()
+            // Reactivate the original environment
+            environment = oldEnv
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
-            return try callee.function(args, environment)
+            return try callee.function(args, environment.global())
         } else if let callee = callee as? OperatorObj {
-            pushEnvironment()
+            // Activate the  environment in which the function was defined
+            let oldEnv = environment
+            environment = callee.closure
 
+            // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
                 _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
+            // Execute the body
             var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
@@ -233,7 +242,8 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
-            popEnvironment()
+            // Reactivate the original environment
+            environment = oldEnv
             return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
