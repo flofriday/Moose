@@ -52,8 +52,8 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerDivBuiltIn),
 
         // Integer comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: genericNotEqualBuiltIn),
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerLessBuiltIn),
         BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerLessEqualBuiltIn),
         BuiltInOperatorObj(name: ">", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerGreaterBuiltIn),
@@ -66,8 +66,8 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatDivBuiltIn),
 
         // Float comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: genericNotEqualBuiltIn),
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatLessBuiltIn),
         BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatLessEqualBuiltIn),
         BuiltInOperatorObj(name: ">", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatGreaterBuiltIn),
@@ -77,9 +77,13 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "&&", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolAndBuiltIn),
         BuiltInOperatorObj(name: "||", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolOrBuiltIn),
 
+        // Bool comparison
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: genericNotEqualBuiltIn),
+
         // String comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: stringEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: stringNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: genericNotEqualBuiltIn),
 
         // String calculations
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringConcatBuiltIn),
@@ -302,6 +306,18 @@ extension BuiltIns {
         }
     }
 
+    // A generic builtin equal operator function that can compare any two
+    // MooseObjects even, if they are not of the same type
+    static func genericEqualBuiltIn(_ args: [MooseObject], _: Environment) throws -> BoolObj {
+        return BoolObj(value: args[0].equals(other: args[1]))
+    }
+
+    // A generic builtin not equal operator function that can compare any two
+    // MooseObjects even, if they are not of the same type
+    static func genericNotEqualBuiltIn(_ args: [MooseObject], _: Environment) throws -> BoolObj {
+        return BoolObj(value: !args[0].equals(other: args[1]))
+    }
+
     /// Add two integer together with an infix operation
     static func integerAddBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> IntegerObj {
         try assertNoNil(args, env)
@@ -336,20 +352,6 @@ extension BuiltIns {
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
         return IntegerObj(value: a / b)
-    }
-
-    /// Check if two integers are equal
-    static func integerEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
-        return BoolObj(value: a == b)
-    }
-
-    /// Check if two integers aren't equal
-    static func integerNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
-        return BoolObj(value: a != b)
     }
 
     /// A helper to make comparing functions (requiring arguments to be not nil)
@@ -418,20 +420,6 @@ extension BuiltIns {
         return FloatObj(value: a / b)
     }
 
-    /// Check if two integers are equal
-    static func floatEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
-        return BoolObj(value: a == b)
-    }
-
-    /// Check if two integers are equal
-    static func floatNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! IntegerObj).value
-        let b = (args[1] as! IntegerObj).value
-        return BoolObj(value: a != b)
-    }
-
     /// A helper to make comparing functions (requiring arguments to be not nil)
     /// a lot easier to write.
     private static func floatComparison(args: [MooseObject], _ env: Environment, operation: (Float64, Float64) -> Bool) throws -> BoolObj {
@@ -478,20 +466,6 @@ extension BuiltIns {
         let a = (args[0] as! BoolObj).value!
         let b = (args[1] as! BoolObj).value!
         return BoolObj(value: a || b)
-    }
-
-    // Compare two strings for equality
-    static func stringEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! StringObj).value
-        let b = (args[1] as! StringObj).value
-        return BoolObj(value: a == b)
-    }
-
-    // Compare two strings for not equality
-    static func stringNotEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
-        let a = (args[0] as! StringObj).value
-        let b = (args[1] as! StringObj).value
-        return BoolObj(value: a != b)
     }
 
     // Concatenation for strings

@@ -11,6 +11,8 @@ protocol MooseObject: CustomStringConvertible {
     var type: MooseType { get }
     var description: String { get }
     var env: BuiltInClassEnvironment { get }
+
+    func equals(other: MooseObject) -> Bool
 }
 
 extension MooseObject {
@@ -29,9 +31,17 @@ extension MooseObject {
     }
 }
 
+func == <T: MooseObject>(lhs: T, rhs: T) -> Bool {
+    return lhs.equals(other: rhs)
+}
+
 protocol IndexableObject {
-    func getAt(index: Int) -> MooseObject
-    func length() -> Int
+    func getAt(index: Int64) -> MooseObject
+    func length() -> Int64
+}
+
+protocol IndexWriteableObject: IndexableObject {
+    func setAt(index: Int64, value: MooseObject)
 }
 
 class IntegerObj: MooseObject {
@@ -42,6 +52,13 @@ class IntegerObj: MooseObject {
     init(value: Int64?) {
         self.value = value
         env.value = self
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+        return value == other.value
     }
 
     var description: String {
@@ -59,6 +76,13 @@ class FloatObj: MooseObject {
         env.value = self
     }
 
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+        return value == other.value
+    }
+
     var description: String {
         "\(value?.description ?? "nil")"
     }
@@ -74,6 +98,13 @@ class BoolObj: MooseObject {
         env.value = self
     }
 
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+        return value == other.value
+    }
+
     var description: String {
         "\(value?.description ?? "nil")"
     }
@@ -87,6 +118,13 @@ class StringObj: MooseObject {
     init(value: String?) {
         self.value = value
         env.value = self
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+        return value == other.value
     }
 
     var description: String {
@@ -110,6 +148,11 @@ class FunctionObj: MooseObject {
         self.paramNames = paramNames
         self.value = value
         env.value = self
+    }
+
+    func equals(other _: MooseObject) -> Bool {
+        // Functions can never be equal
+        return false
     }
 
     var description: String {
@@ -136,6 +179,11 @@ class BuiltInFunctionObj: MooseObject {
         type = MooseType.Function(params, returnType)
         self.function = function
         env.value = self
+    }
+
+    func equals(other _: MooseObject) -> Bool {
+        // Functions can never be equal
+        return false
     }
 
     var description: String {
@@ -174,9 +222,9 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-class TupleObj: MooseObject, IndexableObject {
+class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
     let type: MooseType
-    let value: [MooseObject]?
+    var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Tuple_Env)
 
     init(type: MooseType, value: [MooseObject]?) {
@@ -185,25 +233,60 @@ class TupleObj: MooseObject, IndexableObject {
         env.value = self
     }
 
-    func getAt(index: Int) -> MooseObject {
-        return value![index]
+    func getAt(index: Int64) -> MooseObject {
+        return value![Int(index)]
     }
 
-    func length() -> Int {
-        return value?.count ?? 0
+    func setAt(index: Int64, value: MooseObject) {
+        self.value![Int(index)] = value
+    }
+
+    func length() -> Int64 {
+        return Int64(value?.count ?? 0)
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+
+        // If both values are nil they are equal
+        if value == nil, other.value == nil {
+            return true
+        }
+
+        // Check if only one of them is nil
+        guard let value = value, let otherValue = other.value else {
+            return false
+        }
+
+        guard value.count == otherValue.count else {
+            return false
+        }
+
+        for (o1, o2) in zip(value, otherValue) {
+            guard o1.equals(other: o2) else {
+                return false
+            }
+        }
+
+        return true
     }
 
     var description: String {
+        guard let value = value else {
+            return "nil"
+        }
         var out = "("
-        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += value.map { $0.description }.joined(separator: ", ")
         out += ")"
         return out
     }
 }
 
-class ListObj: MooseObject, IndexableObject {
+class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
     let type: MooseType
-    let value: [MooseObject]?
+    var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_List_Env)
 
     init(type: MooseType, value: [MooseObject]?) {
@@ -212,17 +295,53 @@ class ListObj: MooseObject, IndexableObject {
         env.value = self
     }
 
-    func getAt(index: Int) -> MooseObject {
-        return value![index]
+    func getAt(index: Int64) -> MooseObject {
+        return value![Int(index)]
     }
 
-    func length() -> Int {
-        return value?.count ?? 0
+    func setAt(index: Int64, value: MooseObject) {
+        self.value![Int(index)] = value
+    }
+
+    func length() -> Int64 {
+        return Int64(value?.count ?? 0)
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? Self else {
+            return false
+        }
+
+        // If both values are nil they are equal
+        if value == nil, other.value == nil {
+            return true
+        }
+
+        // Check if only one of them is nil
+        guard let value = value, let otherValue = other.value else {
+            return false
+        }
+
+        guard value.count == otherValue.count else {
+            return false
+        }
+
+        for (o1, o2) in zip(value, otherValue) {
+            guard o1.equals(other: o2) else {
+                return false
+            }
+        }
+
+        return true
     }
 
     var description: String {
+        guard let value = value else {
+            return "nil"
+        }
+
         var out = "["
-        out += (value?.map { $0.description } ?? []).joined(separator: ", ")
+        out += value.map { $0.description }.joined(separator: ", ")
         out += "]"
         return out
     }
@@ -242,6 +361,40 @@ class ClassObject: MooseObject {
         type = .Class(env.className)
     }
 
+    func equals(other: MooseObject) -> Bool {
+        // Check they have the same type
+        guard type == other.type else {
+            return false
+        }
+
+        guard let other = other as? Self else {
+            return false
+        }
+
+        // At this point we already know that both are from the same class but
+        // we don't know if they have the same values. Therefore we need to get
+        // all variables form both classes.
+        let variables = env.getAllVariables()
+        let otherVariables = other.env.getAllVariables()
+
+        guard variables.count == otherVariables.count else {
+            return false
+        }
+
+        for (key, value) in variables {
+            guard let otherValue = otherVariables[key] else {
+                // TODO: I guess this can never happen 🤷‍♂️
+                return false
+            }
+
+            guard value.equals(other: otherValue) else {
+                return false
+            }
+        }
+
+        return true
+    }
+
     var description: String {
         "<class object \(classEnv.className): \(type)>"
     }
@@ -256,6 +409,10 @@ class VoidObj: MooseObject {
 
     init() {
         env.value = self
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        return type == other.type
     }
 
     var description: String {
@@ -281,6 +438,10 @@ class NilObj: MooseObject {
         env.value = self
     }
 
+    func equals(other: MooseObject) -> Bool {
+        return type == other.type
+    }
+
     var description: String {
         type.description
     }
@@ -304,7 +465,7 @@ class NilObj: MooseObject {
         case .Tuple:
             return TupleObj(type: type, value: nil)
         case .List:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to list")
+            return ListObj(type: type, value: nil)
         case .Function:
             throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
         }

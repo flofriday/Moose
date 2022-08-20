@@ -107,7 +107,7 @@ extension BuiltIns {
         return env
     }
 
-    private static func listLengthImpl(params: [MooseObject], _ env: Environment) throws -> MooseObject {
+    private static func listLengthImpl(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
         let list: ListObj = try env
             .cast(to: BuiltInClassEnvironment.self)
             .value.cast()
@@ -157,6 +157,10 @@ struct BuiltInClassEnvironment: Environment {
         try env.get(variable: variable)
     }
 
+    func getAllVariables() -> [String: MooseObject] {
+        env.getAllVariables()
+    }
+
     func set(function: String, value: MooseObject) {
         env.set(function: function, value: value)
     }
@@ -193,7 +197,7 @@ struct BuiltInClassEnvironment: Environment {
         return env.enclosing
     }
 
-    func printDebug(header: Bool) {
+    func printDebug(header _: Bool) {
         env.printDebug()
     }
 }

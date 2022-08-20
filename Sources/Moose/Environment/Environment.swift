@@ -6,6 +6,7 @@ protocol Environment {
     func update(variable: String, value: MooseObject, allowDefine: Bool) -> Bool
     func updateInCurrentEnv(variable: String, value: MooseObject, allowDefine: Bool) -> Bool
     func get(variable: String) throws -> MooseObject
+    func getAllVariables() -> [String: MooseObject]
 
     func set(function: String, value: MooseObject)
     func get(function: String, params: [MooseType]) throws -> MooseObject
@@ -114,6 +115,11 @@ extension BaseEnvironment {
         } else {
             throw EnvironmentError(message: "Variable '\(variable)' not found.")
         }
+    }
+
+    // Return all variables.
+    func getAllVariables() -> [String: MooseObject] {
+        return variables
     }
 }
 

@@ -1,0 +1,1 @@
+class OutOfBoundsPanic: Error {}
