@@ -202,7 +202,7 @@ class PostfixExpression {
 }
 
 class VariableDefinition {
-    init(token: Token, mutable: Bool, name: Identifier, type: MooseType) {
+    init(token: Token, mutable: Bool, name: Identifier, type: ParamType) {
         self.token = token
         self.mutable = mutable
         self.name = name
@@ -212,7 +212,7 @@ class VariableDefinition {
     let token: Token
     let mutable: Bool
     let name: Identifier
-    let declaredType: MooseType
+    let declaredType: ParamType
     var mooseType: MooseType?
     var returnDeclaration: (MooseType, Bool) {
         (self.declaredType, true)

@@ -354,7 +354,14 @@ class ParserTests: BaseClass {
         let tests = [
             "(a+1) = 1",
             "prefix += (a: Int, b: Int) > String {}",
-            "infix += (a: Int b: Int) > String {}"
+            "infix += (a: Int b: Int) > String {}",
+
+            """
+            func a(a: Void) {}
+            """,
+            """
+            func a(a: Nil) {}
+            """
         ]
 
         for (i, t) in tests.enumerated() {
@@ -394,11 +401,11 @@ class ParserTests: BaseClass {
     }
 
     func test_operatorDefintionParsing() throws {
-        let tests = [
-            ("infix += (a: Int, b: Int) > String {}", "+=", OpPos.Infix, 2, MooseType.String),
-            ("prefix +: (a: Int) {}", "+:", OpPos.Prefix, 1, MooseType.Void),
-            ("postfix++^ (a: Int) > CustomType {}", "++^", OpPos.Postfix, 1, MooseType.Class("CustomType")),
-            ("infix +=(a: Int, b: (Tuple, Tuple)) > (String) > (Int) { a = b; return g}", "+=", OpPos.Infix, 2, MooseType.Function([.String], .Int))
+        let tests: [(String, String, OpPos, Int, MooseType)] = [
+            ("infix += (a: Int, b: Int) > String {}", "+=", OpPos.Infix, 2, StringType()),
+            ("prefix +: (a: Int) {}", "+:", OpPos.Prefix, 1, VoidType()),
+            ("postfix++^ (a: Int) > CustomType {}", "++^", OpPos.Postfix, 1, ClassType("CustomType")),
+            ("infix +=(a: Int, b: (Tuple, Tuple)) > (String) > (Int) { a = b; return g}", "+=", OpPos.Infix, 2, FunctionType(params: [StringType()], returnType: IntType()))
         ]
 
         for (i, t) in tests.enumerated() {
@@ -415,10 +422,10 @@ class ParserTests: BaseClass {
         typealias testtype = (String, String, [(String, MooseType)])
         let tests: [testtype] = [
             ("class test {}", "test", []),
-            ("class test { a: String }", "test", [("a", .String)]),
-            ("class test { a: String; mut b: Int }", "test", [("a", .String), ("b", .Int)]),
-            ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", .String), ("b", .Int)]),
-            ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", .String), ("b", .Int)]),
+            ("class test { a: String }", "test", [("a", StringType())]),
+            ("class test { a: String; mut b: Int }", "test", [("a", StringType()), ("b", IntType())]),
+            ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", StringType()), ("b", IntType())]),
+            ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", StringType()), ("b", IntType())]),
             ("class test { func a() {}; func b () {} }", "test", []),
             ("class test < easy { func a() {}; func b () {} }", "test", [])
         ]

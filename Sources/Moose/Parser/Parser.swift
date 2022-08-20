@@ -210,7 +210,7 @@ class Parser {
         let name = try parseIdentifier()
         let params = try parseFunctionParameters()
 
-        let returnType: MooseType = try parseReturnTypeDefinition() ?? .Void
+        let returnType: MooseType = try parseReturnTypeDefinition() ?? VoidType()
 
         let body = try parseBlockStatement()
         try consumeStatementEnd()
@@ -262,7 +262,7 @@ class Parser {
             throw error(message: "Expected \(pos.numArgs) parameter for \(pos) operation, but got \(params.count) parameters instead", token: paramStartToken)
         }
 
-        let retType: MooseType = try parseReturnTypeDefinition() ?? .Void
+        let retType: MooseType = try parseReturnTypeDefinition() ?? VoidType()
         let body = try parseBlockStatement()
         try consumeStatementEnd()
         return OperationStatement(token: posToken, name: opName, position: pos, body: body, params: params, returnType: retType)
@@ -543,14 +543,18 @@ class Parser {
 
     func parseVoidTypeDefinition() throws -> MooseType {
         let _ = try consume(type: .Void, message: "expected 'Void', but got \(peek().lexeme) instead")
-        return .Void
+        return VoidType()
     }
 
     func parseListTypeDefinition() throws -> MooseType {
         _ = try consume(type: .LBracket, message: "Expected a starting '[', but got \(peek().lexeme) instead.")
+        let typeToken = peek()
         let type = try parseValueTypeDefinition()
         _ = try consume(type: .RBracket, message: "Expected a closing ']', but got \(peek().lexeme) instead.")
-        return .List(type)
+        guard let type = type as? ParamType else {
+            throw error(message: "List of type `\(type)` is not allowed.", token: typeToken)
+        }
+        return ListType(type)
     }
 
     @available(*, deprecated, message: "This method is deprecated since parseTupleGroupFunction_TypeDefinition is used to parse Tuple")
@@ -563,24 +567,37 @@ class Parser {
         } while match(types: .Comma)
         _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
         guard types.count > 1 else {
-            throw error(message: "tuple have to contain at least 2 values", token: token)
+            throw error(message: "Tuple have to contain at least 2 values", token: token)
         }
-        return .Tuple(types)
+
+        let anyTypes = try types.map { (t: MooseType) -> ParamType in
+            guard let type = t as? ParamType else {
+                throw error(message: "Tuple of type `\(t)` is not allowed.", token: token)
+            }
+            return type
+        }
+        return TupleType(anyTypes)
     }
 
-    func parseFunctionTypeDefinition(params: [MooseType]) throws -> MooseType {
+    func parseFunctionTypeDefinition(params: [ParamType]) throws -> MooseType {
         guard case .Operator(pos: _, false) = peek().type, peek().lexeme == ">" else {
             throw error(message: "Expected a '>' for function defintion, but got \(peek().lexeme) instead.", token: peek())
         }
         _ = advance()
 
         let resultType = try parseValueTypeDefinition()
-        return .Function(params, resultType)
+        return FunctionType(params: params, returnType: resultType)
     }
 
     func parseTupleGroupFunction_TypeDefinition() throws -> MooseType {
-        _ = try consume(type: .LParen, message: "Expected a starting '(', but got \(peek().lexeme) instead.")
+        let token = try consume(type: .LParen, message: "Expected a starting '(', but got \(peek().lexeme) instead.")
         let types = try parseTypeDefinitionList(seperator: .Comma, end: .RParen)
+            .map { (t: MooseType) -> ParamType in
+                guard let type = t as? ParamType else {
+                    throw error(message: "Type `\(t)` is not allowed here. Value Types only.", token: token)
+                }
+                return type
+            }
 
         // if next token is '>', it is a function type, else its a void, tuple or group (Int) that is mapped to Int
         if case .Operator(pos: _, false) = peek2().type, peek2().lexeme == ">" {
@@ -588,13 +605,13 @@ class Parser {
             return try parseFunctionTypeDefinition(params: types)
         } else if types.isEmpty {
             _ = try consume(type: .RParen, message: "expected closing ) at end of Void definition, got \(peek().lexeme)")
-            return .Void
+            return VoidType()
         } else if types.count == 1 {
             _ = try consume(type: .RParen, message: "expected closing ) at end of group defintion, got \(peek().lexeme)")
             return types[0]
         } else {
             _ = try consume(type: .RParen, message: "expected closing ) at end of tuple, got \(peek().lexeme)")
-            return .Tuple(types)
+            return TupleType(types)
         }
     }
 
@@ -616,8 +633,12 @@ class Parser {
     func parseVariableDefinition() throws -> VariableDefinition {
         let mut = match(types: .Mut)
         let ident = try parseIdentifier()
-        _ = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
+        let token = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
         let type = try parseValueTypeDefinition()
+        guard let type = type as? ParamType else {
+            throw error(message: "Variable cannot be of type \(type).", token: token)
+        }
+
         return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
     }
 

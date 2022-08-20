@@ -103,7 +103,7 @@ extension BuiltIns {
 
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: .Int, function: listLengthImpl))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         return env
     }
 

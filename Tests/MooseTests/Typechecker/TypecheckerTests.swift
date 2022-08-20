@@ -106,6 +106,9 @@ class TypecheckerTests: TypecheckerBaseClass {
             a: Int = 2
             a +: 1
             """, // a is not mutable
+            """
+            func a(a: ABC) {}
+            """,
         ]
 
         try runInvalidTests(name: #function, tests)

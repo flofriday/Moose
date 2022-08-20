@@ -53,11 +53,11 @@ class InterpreterTests: InterpreterBaseClass {
                     ("b", BoolObj(value: false)),
                     ("s", StringObj(value: "hey there")),
                     ("t", TupleObj(
-                        type: .Tuple([.Bool, .String]),
+                        type: TupleType([BoolType(), StringType()]),
                         value: [BoolObj(value: true), StringObj(value: "no")]
                     )),
                     ("l", ListObj(
-                        type: .List(.Int),
+                        type: ListType(IntType()),
                         value: [9, 8, 12].map { IntegerObj(value: $0) }
                     )),
                 ]

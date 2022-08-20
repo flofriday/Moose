@@ -11,7 +11,7 @@ extension Typechecker {
     func visit(_ node: ForEachStatement) throws {
         try node.list.accept(self)
 
-        guard case let .List(typ) = node.list.mooseType else {
+        guard let typ = (node.list.mooseType as? ListType)?.type else {
             throw error(message: "Expression `\(node.list)` in for each loop must be of type List, but is of type \(node.list.mooseType!)", node: node.list)
         }
 
@@ -32,7 +32,7 @@ extension Typechecker {
         try node.condition.accept(self)
         try node.postEachStmt?.accept(self)
 
-        guard node.condition.mooseType == .Bool else {
+        guard node.condition.mooseType is BoolType else {
             throw error(message: "Condition of loop must have type Bool, but `\(node.condition)` has type \(node.condition.mooseType!)", node: node.condition)
         }
 

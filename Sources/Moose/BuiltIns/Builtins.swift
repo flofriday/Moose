@@ -13,80 +13,80 @@ class BuiltIns {
         // However that can fail so we need to have a way to communicate failure.
         // The easiest would be to return a error tuple similar to golang.
 
-        BuiltInFunctionObj(name: "Int", params: [.Float], returnType: .Int, function: castToIntBuiltIn),
-        BuiltInFunctionObj(name: "Int", params: [.Bool], returnType: .Int, function: castToIntBuiltIn),
+        BuiltInFunctionObj(name: "Int", params: [FloatType()], returnType: IntType(), function: castToIntBuiltIn),
+        BuiltInFunctionObj(name: "Int", params: [BoolType()], returnType: IntType(), function: castToIntBuiltIn),
 
-        BuiltInFunctionObj(name: "Float", params: [.Int], returnType: .Float, function: castToFloatBuiltIn),
+        BuiltInFunctionObj(name: "Float", params: [IntType()], returnType: FloatType(), function: castToFloatBuiltIn),
 
-        BuiltInFunctionObj(name: "Bool", params: [.Int], returnType: .Bool, function: castToBoolBuiltIn),
+        BuiltInFunctionObj(name: "Bool", params: [IntType()], returnType: BoolType(), function: castToBoolBuiltIn),
 
-        BuiltInFunctionObj(name: "String", params: [.Int], returnType: .String, function: castToStringBuiltIn),
-        BuiltInFunctionObj(name: "String", params: [.Float], returnType: .String, function: castToStringBuiltIn),
-        BuiltInFunctionObj(name: "String", params: [.Bool], returnType: .String, function: castToStringBuiltIn),
+        BuiltInFunctionObj(name: "String", params: [IntType()], returnType: StringType(), function: castToStringBuiltIn),
+        BuiltInFunctionObj(name: "String", params: [FloatType()], returnType: StringType(), function: castToStringBuiltIn),
+        BuiltInFunctionObj(name: "String", params: [BoolType()], returnType: StringType(), function: castToStringBuiltIn),
 
-        BuiltInFunctionObj(name: "parseInt", params: [.String], returnType: .Tuple([.Int, .String]), function: parseIntBuiltIn),
-        BuiltInFunctionObj(name: "parseFloat", params: [.String], returnType: .Tuple([.Int, .Float]), function: parseFloatBuiltIn),
-        BuiltInFunctionObj(name: "parseBool", params: [.String], returnType: .Tuple([.Int, .Bool]), function: parseBoolBuiltIn),
+        BuiltInFunctionObj(name: "parseInt", params: [StringType()], returnType: TupleType([IntType(), StringType()]), function: parseIntBuiltIn),
+        BuiltInFunctionObj(name: "parseFloat", params: [StringType()], returnType: TupleType([IntType(), FloatType()]), function: parseFloatBuiltIn),
+        BuiltInFunctionObj(name: "parseBool", params: [StringType()], returnType: TupleType([IntType(), BoolType()]), function: parseBoolBuiltIn),
 
-        BuiltInFunctionObj(name: "print", params: [.Int], returnType: .Void, function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [.Float], returnType: .Void, function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [.Bool], returnType: .Void, function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [.String], returnType: .Void, function: printBuiltIn),
+        BuiltInFunctionObj(name: "print", params: [IntType()], returnType: VoidType(), function: printBuiltIn),
+        BuiltInFunctionObj(name: "print", params: [FloatType()], returnType: VoidType(), function: printBuiltIn),
+        BuiltInFunctionObj(name: "print", params: [BoolType()], returnType: VoidType(), function: printBuiltIn),
+        BuiltInFunctionObj(name: "print", params: [StringType()], returnType: VoidType(), function: printBuiltIn),
 
-        BuiltInFunctionObj(name: "input", params: [], returnType: .String, function: inputBuiltIn),
-        BuiltInFunctionObj(name: "open", params: [.String], returnType: .Tuple([.String, .String]), function: openBuiltIn),
+        BuiltInFunctionObj(name: "input", params: [], returnType: StringType(), function: inputBuiltIn),
+        BuiltInFunctionObj(name: "open", params: [StringType()], returnType: TupleType([StringType(), StringType()]), function: openBuiltIn),
 
-        BuiltInFunctionObj(name: "exit", params: [], returnType: .Void, function: exitBuiltIn),
-        BuiltInFunctionObj(name: "exit", params: [.Int], returnType: .Void, function: exitBuiltIn),
+        BuiltInFunctionObj(name: "exit", params: [], returnType: VoidType(), function: exitBuiltIn),
+        BuiltInFunctionObj(name: "exit", params: [IntType()], returnType: VoidType(), function: exitBuiltIn),
 
-        BuiltInFunctionObj(name: "environment", params: [], returnType: .Void, function: environmentBuiltIn),
+        BuiltInFunctionObj(name: "environment", params: [], returnType: VoidType(), function: environmentBuiltIn),
     ]
 }
 
 extension BuiltIns {
     static let builtInOperators = [
         // Integer calculations
-        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerAddBuiltIn),
-        BuiltInOperatorObj(name: "-", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerSubBuiltIn),
-        BuiltInOperatorObj(name: "*", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerMulBuiltIn),
-        BuiltInOperatorObj(name: "/", opPos: .Infix, params: [.Int, .Int], returnType: .Int, function: integerDivBuiltIn),
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerAddBuiltIn),
+        BuiltInOperatorObj(name: "-", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerSubBuiltIn),
+        BuiltInOperatorObj(name: "*", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerMulBuiltIn),
+        BuiltInOperatorObj(name: "/", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerDivBuiltIn),
 
         // Integer comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: genericNotEqualBuiltIn),
-        BuiltInOperatorObj(name: "<", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerLessBuiltIn),
-        BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerLessEqualBuiltIn),
-        BuiltInOperatorObj(name: ">", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerGreaterBuiltIn),
-        BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [.Int, .Int], returnType: .Bool, function: integerGreaterEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "<", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessBuiltIn),
+        BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessEqualBuiltIn),
+        BuiltInOperatorObj(name: ">", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerGreaterBuiltIn),
+        BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerGreaterEqualBuiltIn),
 
         // Float calculations
-        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatAddBuiltIn),
-        BuiltInOperatorObj(name: "-", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatSubBuiltIn),
-        BuiltInOperatorObj(name: "*", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatMulBuiltIn),
-        BuiltInOperatorObj(name: "/", opPos: .Infix, params: [.Float, .Float], returnType: .Float, function: floatDivBuiltIn),
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatAddBuiltIn),
+        BuiltInOperatorObj(name: "-", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatSubBuiltIn),
+        BuiltInOperatorObj(name: "*", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatMulBuiltIn),
+        BuiltInOperatorObj(name: "/", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatDivBuiltIn),
 
         // Float comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: genericNotEqualBuiltIn),
-        BuiltInOperatorObj(name: "<", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatLessBuiltIn),
-        BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatLessEqualBuiltIn),
-        BuiltInOperatorObj(name: ">", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatGreaterBuiltIn),
-        BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [.Float, .Float], returnType: .Bool, function: floatGreaterEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "<", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatLessBuiltIn),
+        BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatLessEqualBuiltIn),
+        BuiltInOperatorObj(name: ">", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatGreaterBuiltIn),
+        BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatGreaterEqualBuiltIn),
 
         // Bool calculations
-        BuiltInOperatorObj(name: "&&", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolAndBuiltIn),
-        BuiltInOperatorObj(name: "||", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: boolOrBuiltIn),
+        BuiltInOperatorObj(name: "&&", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: boolAndBuiltIn),
+        BuiltInOperatorObj(name: "||", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: boolOrBuiltIn),
 
         // Bool comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.Bool, .Bool], returnType: .Bool, function: genericNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
 
         // String comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [.String, .String], returnType: .Bool, function: genericNotEqualBuiltIn),
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [StringType(), StringType()], returnType: BoolType(), function: genericEqualBuiltIn),
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [StringType(), StringType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
 
         // String calculations
-        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [.String, .String], returnType: .String, function: stringConcatBuiltIn),
+        BuiltInOperatorObj(name: "+", opPos: .Infix, params: [StringType(), StringType()], returnType: StringType(), function: stringConcatBuiltIn),
     ]
 }
 
@@ -151,7 +151,7 @@ extension BuiltIns {
     static func parseIntBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
-        let tupleType = MooseType.Tuple([.Int, .String])
+        let tupleType = TupleType([IntType(), StringType()])
         guard let input = input else {
             // TODO: Should this be an error?
             // This is not an error but a nil string is just a nil integer
@@ -171,7 +171,7 @@ extension BuiltIns {
     static func parseFloatBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
-        let tupleType = MooseType.Tuple([.Float, .String])
+        let tupleType = TupleType([FloatType(), StringType()])
         guard let input = input else {
             // TODO: Should this be an error?
             // This is not an error but a nil string is just a nil integer
@@ -191,7 +191,7 @@ extension BuiltIns {
     static func parseBoolBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
-        let tupleType = MooseType.Tuple([.Int, .String])
+        let tupleType = TupleType([IntType(), StringType()])
         guard let input = input else {
             // TODO: Should this be an error?
             // This is not an error but a nil string is just a nil integer
@@ -248,7 +248,7 @@ extension BuiltIns {
             errMsg = error.localizedDescription
         }
 
-        return TupleObj(type: .Tuple([.String, .String]), value: [StringObj(value: value), StringObj(value: errMsg)])
+        return TupleObj(type: TupleType([StringType(), StringType()]), value: [StringObj(value: value), StringObj(value: errMsg)])
     }
 
     /// A generic exit function that may take an argument

@@ -11,7 +11,7 @@ extension Typechecker {
     func visit(_ node: List) throws {
         // if no expressions in list, type of list is Nil
         guard !node.expressions.isEmpty else {
-            node.mooseType = .List(.Nil)
+            node.mooseType = NilType()
             return
         }
 
@@ -26,18 +26,22 @@ extension Typechecker {
             return acc
         }
 
-        node.mooseType = .List(listType!)
+        guard let listType = listType as? ParamType else {
+            throw error(message: "Type of list `\(listType?.description ?? "list")` is not a valid type for Lists.", node: node)
+        }
+
+        node.mooseType = ListType(listType)
     }
 
     func visit(_ node: IndexExpression) throws {
         try node.indexable.accept(self)
 
-        guard case let .List(listtype) = node.indexable.mooseType else {
+        guard let listtype = (node.indexable.mooseType as? ListType)?.type else {
             throw error(message: "`\(node.indexable.description)` is of type `\(node.indexable.mooseType!)`, but index access requires a List.", node: node.indexable)
         }
 
         try node.index.accept(self)
-        guard case .Int = node.index.mooseType else {
+        guard node.index.mooseType is IntType else {
             throw error(message: "Index expression `\(node.index.description)` must be an `Int` but is of type `\(node.index.mooseType!)`", node: node.index)
         }
 

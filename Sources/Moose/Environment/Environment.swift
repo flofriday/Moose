@@ -127,7 +127,7 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
-            case let .Function(paras, _) = other,
+            let paras = (other as? FunctionType)?.params,
             paras.count == params.count
         else {
             return false
@@ -136,7 +136,7 @@ extension BaseEnvironment {
         return zip(params, paras)
             .reduce(true) { acc, zip in
                 let (param, para) = zip
-                guard param == .Nil || param == para else { return false }
+                guard param is NilType || param == para else { return false }
                 return acc
             }
     }
@@ -174,7 +174,7 @@ extension BaseEnvironment {
         if let obj = other as? BuiltInOperatorObj {
             return obj.opPos == pos && obj.params == params
         }
-        if let obj = other as? OperatorObj, obj.opPos == pos, case .Function(params, _) = other.type {
+        if let obj = other as? OperatorObj, obj.opPos == pos, params == (other.type as? FunctionType)?.params {
             return true
         }
         return false
