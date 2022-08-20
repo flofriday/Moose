@@ -88,8 +88,17 @@ class Interpreter: Visitor {
 
             target.setAt(index: index, value: value)
 
-        case is Dereferer:
-            throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
+        case let dereferExpr as Dereferer:
+            let obj = try dereferExpr.obj.accept(self)
+
+            let prevEnv = environment
+            environment = obj.env
+
+            let val = try dereferExpr.referer.accept(self)
+            // TODO: ist the force cast assignabel here ok?
+            try assign(valueType: val.type, dst: dereferExpr.referer as! Assignable, value: value)
+
+            environment = prevEnv
 
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
@@ -203,6 +212,7 @@ class Interpreter: Visitor {
             // Activate the  environment in which the function was defined
             let oldEnv = environment
             environment = callee.closure
+            pushEnvironment()
 
             // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
@@ -219,6 +229,7 @@ class Interpreter: Visitor {
             }
 
             // Reactivate the original environment
+            popEnvironment()
             environment = oldEnv
             return result
         } else if let callee = callee as? BuiltInOperatorObj {
