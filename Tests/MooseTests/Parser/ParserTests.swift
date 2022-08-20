@@ -353,8 +353,6 @@ class ParserTests: BaseClass {
     func test_assertThrows() throws {
         let tests = [
             "(a+1) = 1",
-            "a = nil",
-            "a = (nil)",
             "prefix += (a: Int, b: Int) > String {}",
             "infix += (a: Int b: Int) > String {}"
         ]
