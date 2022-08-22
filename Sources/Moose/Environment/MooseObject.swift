@@ -45,7 +45,7 @@ protocol IndexWriteableObject: IndexableObject {
 }
 
 class IntegerObj: MooseObject {
-    let type: MooseType = .Int
+    let type: MooseType = IntType()
     let value: Int64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_List_Env)
 
@@ -67,7 +67,7 @@ class IntegerObj: MooseObject {
 }
 
 class FloatObj: MooseObject {
-    let type: MooseType = .Float
+    let type: MooseType = FloatType()
     let value: Float64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Float_Env)
 
@@ -89,7 +89,7 @@ class FloatObj: MooseObject {
 }
 
 class BoolObj: MooseObject {
-    let type: MooseType = .Bool
+    let type: MooseType = BoolType()
     let value: Bool?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Bool_Env)
 
@@ -111,7 +111,7 @@ class BoolObj: MooseObject {
 }
 
 class StringObj: MooseObject {
-    let type: MooseType = .String
+    let type: MooseType = StringType()
     let value: String?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_String_Env)
 
@@ -167,18 +167,18 @@ class BuiltInFunctionObj: MooseObject {
     typealias fnType = ([MooseObject], Environment) throws -> MooseObject
 
     let name: String
-    let params: [MooseType]
+    let params: [ParamType]
     let returnType: MooseType
     let type: MooseType
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_BuiltInFunction_Env)
 
     let function: fnType
 
-    init(name: String, params: [MooseType], returnType: MooseType, function: @escaping fnType) {
+    init(name: String, params: [ParamType], returnType: MooseType, function: @escaping fnType) {
         self.name = name
         self.params = params
         self.returnType = returnType
-        type = MooseType.Function(params, returnType)
+        type = FunctionType(params: params, returnType: returnType)
         self.function = function
         env.value = self
     }
@@ -210,7 +210,7 @@ class OperatorObj: FunctionObj {
 class BuiltInOperatorObj: BuiltInFunctionObj {
     let opPos: OpPos
 
-    init(name: String, opPos: OpPos, params: [MooseType], returnType: MooseType, function: @escaping fnType) {
+    init(name: String, opPos: OpPos, params: [ParamType], returnType: MooseType, function: @escaping fnType) {
         self.opPos = opPos
         super.init(name: name, params: params, returnType: returnType, function: function)
 //        env = .init(BuiltIns.builtIn_BuiltInOperator_Env
@@ -358,7 +358,7 @@ class ClassObject: MooseObject {
 
     init(env: ClassEnvironment) {
         classEnv = env
-        type = .Class(env.className)
+        type = ClassType(env.className)
     }
 
     func equals(other: MooseObject) -> Bool {
@@ -404,7 +404,7 @@ class ClassObject: MooseObject {
 // visitor. Therefore this is a placeholder.
 // Users cannot actually access this type, its just there for internals.
 class VoidObj: MooseObject {
-    let type: MooseType = .Void
+    let type: MooseType = VoidType()
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Void_Env)
 
     init() {
@@ -431,7 +431,7 @@ class VoidObj: MooseObject {
 // you call `a(nil)` we don't actually know which function you meant,
 // so we require you to cast that explicitly.
 class NilObj: MooseObject {
-    let type: MooseType = .Nil
+    let type: MooseType = NilType()
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Nil_Env)
 
     init() {
@@ -448,26 +448,28 @@ class NilObj: MooseObject {
 
     func toObject(type: MooseType) throws -> MooseObject {
         switch type {
-        case .Int:
+        case is IntType:
             return IntegerObj(value: nil)
-        case .Float:
+        case is FloatType:
             return FloatObj(value: nil)
-        case .Bool:
+        case is BoolType:
             return BoolObj(value: nil)
-        case .String:
+        case is StringType:
             return StringObj(value: nil)
-        case .Nil:
+        case is NilType:
             return NilObj()
-        case .Void:
+        case is VoidType:
             return VoidObj()
-        case .Class:
+        case is ClassType:
             throw RuntimeError(message: "Internal Error: Cannot convert nil literal to class")
-        case .Tuple:
+        case is TupleType:
             return TupleObj(type: type, value: nil)
-        case .List:
+        case is ListType:
             return ListObj(type: type, value: nil)
-        case .Function:
+        case is FunctionType:
             throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
+        default:
+            throw RuntimeError(message: "Internal Error: Cannot convert nil to \(type.description)")
         }
     }
 }

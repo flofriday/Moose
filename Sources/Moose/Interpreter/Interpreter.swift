@@ -66,7 +66,8 @@ class Interpreter: Visitor {
             // TODO: many things can be unwrapped into tuples, like classes
             // and lists.
             switch valueType {
-            case let .Tuple(types):
+            case let t as TupleType:
+                let types = t.entries
                 let valueTuple = value as! TupleObj
                 for (n, assignable) in tuple.assignables.enumerated() {
                     try assign(valueType: types[n], dst: assignable, value: valueTuple.value![n])
@@ -148,7 +149,7 @@ class Interpreter: Visitor {
         }
 
         let paramNames = node.params.map { $0.name.value }
-        let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
+        let type = FunctionType(params: node.params.map { $0.declaredType }, returnType: node.returnType)
         let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
         return VoidObj()

@@ -51,7 +51,7 @@ extension Typechecker {
         // TODO: Doesn't work yet! Also if property is not mutable, it cannot get checked!
         try dereferer.accept(self)
 
-        guard case let .Class(className) = dereferer.obj.mooseType else {
+        guard let className = (dereferer.obj.mooseType as? ClassType)?.name else {
             throw error(message: "Expected object of class. Instead got object of type \(dereferer.obj.mooseType?.description ?? "Unknown").", node: dereferer.obj)
         }
 
@@ -78,7 +78,7 @@ extension Typechecker {
         // processs own mooseType and check if everything is valid
         try indexing.accept(self)
 
-        guard valueType == indexing.mooseType || valueType == .Nil else {
+        guard valueType == indexing.mooseType || valueType is NilType else {
             throw error(message: "`\(indexing.description)` is of type `\(indexing.mooseType!)`, but you want to assign a value of type `\(valueType)`. ", node: node)
         }
     }
@@ -91,7 +91,7 @@ extension Typechecker {
 
         var declaredTypes: [MooseType]?
         if let declaredType = declaredType {
-            guard case let .Tuple(types) = declaredType else {
+            guard let types = (declaredType as? TupleType)?.entries else {
                 throw error(message: "You declared type as \(declaredType) while it should be a Tuple.", node: node)
             }
             declaredTypes = types
@@ -108,7 +108,7 @@ extension Typechecker {
     private func assign(valueType: MooseType, to variable: Identifier, with declaredType: MooseType?, on node: AssignStatement) throws {
         // if assignment is declared with type, check if expression has same type as declared
         if let declaredType = declaredType {
-            guard valueType == declaredType || valueType == .Nil else {
+            guard valueType == declaredType || valueType is NilType else {
                 throw error(message: "Declared type for variable `\(variable.value)` is `\(declaredType.description)` but you want to assign value of type `\(valueType)`", node: node)
             }
         }
@@ -126,7 +126,7 @@ extension Typechecker {
             }
 
             // check that tuple to assign has same type as stored variable
-            guard valueType == varType || valueType == .Nil else {
+            guard valueType == varType || valueType is NilType else {
                 throw error(message: "Variable `\(variable.value)` has type `\(varType.description)` but you try to assign type `\(valueType.description)`.", node: node)
             }
 
@@ -146,15 +146,17 @@ extension Typechecker {
     /// Transform datastructure to tuple. Such as (a,b) -> (String, Int), obj -> (prop1, prop2, ...)
     private func toTupleType(type: MooseType, size: Int, debugNode: Node) throws -> [MooseType] {
         switch type {
-        case let .Tuple(types):
-            guard types.count >= size else {
-                throw error(message: "Tuple on right side has \(types.count) values, while at least \(size) are needed by left side of assignment.", node: debugNode)
+        case let tuple as TupleType:
+
+            guard tuple.entries.count >= size else {
+                throw error(message: "Tuple on right side has \(tuple.entries.count) values, while at least \(size) are needed by left side of assignment.", node: debugNode)
             }
 
-            return types
+            return tuple.entries
 
         // extract tuple assignments from class object
-        case let .Class(className):
+        case let clas as ClassType:
+            let className = clas.name
             guard let classScope = scope.getScope(clas: className) else {
                 throw error(message: "Class `\(className)` does not exist.", node: debugNode)
             }

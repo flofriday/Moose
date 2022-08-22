@@ -71,10 +71,11 @@ extension TypeScope {
 // Define all op specific function
 extension TypeScope {
     private func isOpBy(pos: OpPos, params: [MooseType], other: (MooseType, OpPos)) -> Bool {
-        if case .Function(params, _) = other.0, pos == other.1 {
-            return true
-        }
-        return false
+        let storedParams = (other.0 as? FunctionType)?.params
+        guard let storedParams = storedParams else { return false }
+
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
+            && pos == other.1
     }
 
     private func currentContains(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
@@ -99,7 +100,7 @@ extension TypeScope {
     }
 
     func returnType(op: String, opPos: OpPos, params: [MooseType]) throws -> MooseType {
-        guard case let .Function(_, retType) = try typeOf(op: op, opPos: opPos, params: params).0 else {
+        guard let retType = (try typeOf(op: op, opPos: opPos, params: params).0 as? FunctionType)?.returnType else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
         }
         return retType
@@ -115,14 +116,14 @@ extension TypeScope {
         return enclosing.has(op: op, opPos: opPos, params: params, includeEnclosing: includeEnclosing)
     }
 
-    func add(op: String, opPos: OpPos, params: [MooseType], returnType: MooseType) throws {
+    func add(op: String, opPos: OpPos, params: [ParamType], returnType: MooseType) throws {
         let inCurrent = currentContains(op: op, opPos: opPos, params: params)
         guard !inCurrent else {
             throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) is alraedy defined.")
         }
 
         var list = (ops[op] ?? [])
-        list.append((MooseType.Function(params, returnType), opPos))
+        list.append((FunctionType(params: params, returnType: returnType), opPos))
         ops.updateValue(list, forKey: op)
     }
 }
@@ -134,18 +135,12 @@ extension TypeScope {
     ///  @other Function to check aganst
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
-            case let .Function(paras, _) = other,
-            paras.count == params.count
+            let storedParams = (other as? FunctionType)?.params
         else {
             return false
         }
 
-        return zip(params, paras)
-            .reduce(true) { acc, zip in
-                let (param, para) = zip
-                guard param == .Nil || param == para else { return false }
-                return acc
-            }
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
     }
 
     private func currentContains(function: String, params: [MooseType]) -> Bool {
@@ -175,7 +170,7 @@ extension TypeScope {
     }
 
     func returnType(function: String, params: [MooseType]) throws -> MooseType {
-        guard case let .Function(_, retType) = try typeOf(function: function, params: params) else {
+        guard let retType = (try typeOf(function: function, params: params) as? FunctionType)?.returnType else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
         }
         return retType
@@ -191,13 +186,13 @@ extension TypeScope {
         return enclosing.has(function: function, params: params, includeEnclosing: includeEnclosing)
     }
 
-    func add(function: String, params: [MooseType], returnType: MooseType) throws {
+    func add(function: String, params: [ParamType], returnType: MooseType) throws {
         let inCurrent = currentContains(function: function, params: params)
         guard !inCurrent else {
             throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) is already defined.")
         }
         var list = (funcs[function] ?? [])
-        list.append(MooseType.Function(params, returnType))
+        list.append(FunctionType(params: params, returnType: returnType))
         funcs.updateValue(list, forKey: function)
     }
 }
@@ -235,6 +230,19 @@ extension TypeScope {
 
     var variableCount: Int {
         return variables.count
+    }
+
+    /// Determines if left types are all super types of right types
+    ///
+    /// This is used e.g. to find functions with generic params
+    static func leftSuperOfRight(supers: [MooseType], subtypes: [MooseType]) -> Bool {
+        return subtypes.count == supers.count &&
+            zip(subtypes, supers)
+            .reduce(true) { acc, zip in
+                let (subtype, supr) = zip
+                guard subtype is NilType || supr.superOf(type: subtype) else { return false }
+                return acc
+            }
     }
 }
 
@@ -276,11 +284,11 @@ class ClassTypeScope: TypeScope {
         var fns = superClass.funcs
         for (name, fns) in funcs {
             for fn in fns {
-                if case let .Function(params, returnType) = fn {
-                    if superClass.has(function: name, params: params, includeEnclosing: false) {
-                        let superRettype = try superClass.returnType(function: name, params: params)
-                        guard returnType == superRettype else {
-                            throw ScopeError(message: "Function `\(name)(\(params.map { $0.description }.joined(separator: ","))) > \(returnType)` of class \(className) does not match return type \(returnType) of superclass.")
+                if let fn = fn as? FunctionType {
+                    if superClass.has(function: name, params: fn.params, includeEnclosing: false) {
+                        let superRettype = try superClass.returnType(function: name, params: fn.params)
+                        guard fn.returnType == superRettype else {
+                            throw ScopeError(message: "Function `\(name)(\(fn.params.map { $0.description }.joined(separator: ","))) > \(fn.returnType)` of class \(className) does not match return type \(fn.returnType) of superclass.")
                         }
                     }
                 }

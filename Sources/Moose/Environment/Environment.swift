@@ -128,18 +128,12 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
-            case let .Function(paras, _) = other,
-            paras.count == params.count
+            let storedParams = (other as? FunctionType)?.params
         else {
             return false
         }
 
-        return zip(params, paras)
-            .reduce(true) { acc, zip in
-                let (param, para) = zip
-                guard param == .Nil || param == para else { return false }
-                return acc
-            }
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
     }
 
     func set(function: String, value: MooseObject) {
@@ -175,7 +169,8 @@ extension BaseEnvironment {
         if let obj = other as? BuiltInOperatorObj {
             return obj.opPos == pos && obj.params == params
         }
-        if let obj = other as? OperatorObj, obj.opPos == pos, case .Function(params, _) = other.type {
+
+        if let obj = other as? OperatorObj, obj.opPos == pos {
             return true
         }
         return false
