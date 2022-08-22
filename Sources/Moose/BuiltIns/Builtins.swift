@@ -9,10 +9,7 @@ import Foundation
 
 class BuiltIns {
     static let builtInFunctions = [
-        // TODO: It should be possible to cast/parse strings to ints and floats.
-        // However that can fail so we need to have a way to communicate failure.
-        // The easiest would be to return a error tuple similar to golang.
-
+        // TODO: all these casting functinos should be methods
         BuiltInFunctionObj(name: "Int", params: [FloatType()], returnType: IntType(), function: castToIntBuiltIn),
         BuiltInFunctionObj(name: "Int", params: [BoolType()], returnType: IntType(), function: castToIntBuiltIn),
 
@@ -28,10 +25,8 @@ class BuiltIns {
         BuiltInFunctionObj(name: "parseFloat", params: [StringType()], returnType: TupleType([IntType(), FloatType()]), function: parseFloatBuiltIn),
         BuiltInFunctionObj(name: "parseBool", params: [StringType()], returnType: TupleType([IntType(), BoolType()]), function: parseBoolBuiltIn),
 
-        BuiltInFunctionObj(name: "print", params: [IntType()], returnType: VoidType(), function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [FloatType()], returnType: VoidType(), function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [BoolType()], returnType: VoidType(), function: printBuiltIn),
-        BuiltInFunctionObj(name: "print", params: [StringType()], returnType: VoidType(), function: printBuiltIn),
+        // IO Functions
+        BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),
 
         BuiltInFunctionObj(name: "input", params: [], returnType: StringType(), function: inputBuiltIn),
         BuiltInFunctionObj(name: "open", params: [StringType()], returnType: TupleType([StringType(), StringType()]), function: openBuiltIn),
@@ -39,9 +34,8 @@ class BuiltIns {
         BuiltInFunctionObj(name: "exit", params: [], returnType: VoidType(), function: exitBuiltIn),
         BuiltInFunctionObj(name: "exit", params: [IntType()], returnType: VoidType(), function: exitBuiltIn),
 
-        BuiltInFunctionObj(name: "environment", params: [], returnType: VoidType(), function: environmentBuiltIn),
-
-        BuiltInFunctionObj(name: "testGeneric", params: [ParamType()], returnType: VoidType(), function: testGenericFunction),
+        // Debug functions
+        BuiltInFunctionObj(name: "dbgEnv", params: [], returnType: VoidType(), function: environmentBuiltIn),
     ]
 }
 
@@ -104,11 +98,6 @@ extension BuiltIns {
 // type, therefore I would encourage you to select the most specific type for
 // the return and document which argument types you accept with an commentar.
 extension BuiltIns {
-    static func testGenericFunction(params: [MooseObject], env _: Environment) -> VoidObj {
-        print(params[0].description)
-        return VoidObj()
-    }
-
     /// A generic cast function that can convert Integer, Float and Bool to String.
     static func castToStringBuiltIn(params: [MooseObject], env _: Environment) -> StringObj {
         let input = params[0]
@@ -136,7 +125,7 @@ extension BuiltIns {
     }
 
     /// A cast function that can convert Integer to Float.
-    static func castToFloatBuiltIn(params: [MooseObject], _ env: Environment) -> FloatObj {
+    static func castToFloatBuiltIn(params: [MooseObject], _: Environment) -> FloatObj {
         let input = params[0] as! IntegerObj
         guard let value = input.value else {
             return FloatObj(value: nil)
@@ -145,7 +134,7 @@ extension BuiltIns {
     }
 
     /// A cast function that can convert Integer to Bool.
-    static func castToBoolBuiltIn(params: [MooseObject], _ env: Environment) -> BoolObj {
+    static func castToBoolBuiltIn(params: [MooseObject], _: Environment) -> BoolObj {
         let input = params[0] as! IntegerObj
         guard let value = input.value else {
             return BoolObj(value: nil)
@@ -155,7 +144,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseIntBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
+    static func parseIntBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = TupleType([IntType(), StringType()])
@@ -175,7 +164,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseFloatBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
+    static func parseFloatBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = TupleType([FloatType(), StringType()])
@@ -195,7 +184,7 @@ extension BuiltIns {
 
     /// A cast function that can parse a String to an Integer.
     /// The function returns a value-error tuple.
-    static func parseBoolBuiltIn(params: [MooseObject], _ env: Environment) -> TupleObj {
+    static func parseBoolBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
         let input = (params[0] as! StringObj).value
 
         let tupleType = TupleType([IntType(), StringType()])
@@ -223,7 +212,7 @@ extension BuiltIns {
     }
 
     /// A generic print function that can print any MooseObject
-    static func printBuiltIn(params: [MooseObject], _ env: Environment) -> VoidObj {
+    static func printBuiltIn(params: [MooseObject], _: Environment) -> VoidObj {
         if let str = params[0] as? StringObj {
             print(str.value ?? "nil")
             return VoidObj()
@@ -235,7 +224,7 @@ extension BuiltIns {
 
     /// A function to read a single line from stdin.
     /// The functions always succeed and never returns nil.
-    static func inputBuiltIn(_: [MooseObject], _ env: Environment) -> StringObj {
+    static func inputBuiltIn(_: [MooseObject], _: Environment) -> StringObj {
         return StringObj(value: readLine())
     }
 
@@ -259,7 +248,7 @@ extension BuiltIns {
     }
 
     /// A generic exit function that may take an argument
-    static func exitBuiltIn(params: [MooseObject], _ env: Environment) -> MooseObject {
+    static func exitBuiltIn(params: [MooseObject], _: Environment) -> MooseObject {
         var exitCode: Int32 = 0
 
         if params.count == 1 {
@@ -277,7 +266,7 @@ extension BuiltIns {
 
     /// Print the current environment to see what the interpreter thinks is
     /// going on. This in mostly for interpreter development and debugging.
-    static func environmentBuiltIn(params: [MooseObject], _ env: Environment) -> VoidObj {
+    static func environmentBuiltIn(params _: [MooseObject], _: Environment) -> VoidObj {
         let interpreter = Interpreter.shared
         interpreter.environment.printDebug(header: true)
         return VoidObj()
@@ -287,7 +276,7 @@ extension BuiltIns {
 // Buit-in OperatorFunction
 extension BuiltIns {
     // Asserts that either Int, Float, Bool or String inputs are not nil
-    private static func assertNoNil(_ args: [MooseObject], _ env: Environment) throws {
+    private static func assertNoNil(_ args: [MooseObject], _: Environment) throws {
         try args.forEach {
             switch $0 {
             case let int as IntegerObj:
