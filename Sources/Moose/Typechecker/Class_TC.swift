@@ -63,16 +63,22 @@ extension Typechecker {
             throw error(message: "Expected object of class. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
         }
 
+        var wasClosed = scope.closed
+        scope.closed = false
         guard let classScope = scope.getScope(clas: className) else {
             throw error(message: "No class `\(className)` found in scope.", node: node)
         }
+        scope.closed = wasClosed
 
         let prevScope = scope
         scope = classScope
+        wasClosed = scope.closed
+        scope.closed = true
 
         try node.referer.accept(self)
         node.mooseType = node.referer.mooseType
 
+        scope.closed = wasClosed
         scope = prevScope
     }
 }

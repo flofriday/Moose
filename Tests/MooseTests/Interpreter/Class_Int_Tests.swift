@@ -56,7 +56,6 @@ extension InterpreterTests {
                     value: Int
 
                     func getValue() > Int {
-                        environment()
                         return value
                     }
                 }

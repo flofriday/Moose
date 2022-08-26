@@ -94,11 +94,13 @@ class Interpreter: Visitor {
 
             let prevEnv = environment
             environment = obj.env
+            let wasClosed = environment.closed
+            environment.closed = true
 
             let val = try dereferExpr.referer.accept(self)
-            // TODO: ist the force cast assignabel here ok?
             try assign(valueType: val.type, dst: dereferExpr.referer as! Assignable, value: value)
 
+            environment.closed = wasClosed
             environment = prevEnv
 
         default:
@@ -208,11 +210,35 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return try callee.function(args, environment.global())
+            // If the environment is already the class environment we do noting,
+            // however, if it is not we set the current environment to the
+            // global.
+            let oldEnv = environment
+            if !(environment is BuiltInClassEnvironment) {
+                environment = environment.global()
+            }
+
+            // If the environment was previously closed we need to reopen it,
+            // since functions can access variables in the enclosing scopes
+            let wasClosed = environment.closed
+            environment.closed = false
+
+            // Execute the function
+            let res = try callee.function(args, environment)
+
+            // Restore the environments
+            environment.closed = wasClosed
+            environment = oldEnv
+            return res
         } else if let callee = callee as? FunctionObj {
             // Activate the  environment in which the function was defined
             let oldEnv = environment
             environment = callee.closure
+
+            // Open the environment, because it needs to access variables in the
+            // enclosing scopes
+            let wasClosed = environment.closed
+            environment.closed = false
             pushEnvironment()
 
             // Set all arguments
@@ -231,30 +257,7 @@ class Interpreter: Visitor {
 
             // Reactivate the original environment
             popEnvironment()
-            environment = oldEnv
-            return result
-        } else if let callee = callee as? BuiltInOperatorObj {
-            return try callee.function(args, environment.global())
-        } else if let callee = callee as? OperatorObj {
-            // Activate the  environment in which the function was defined
-            let oldEnv = environment
-            environment = callee.closure
-
-            // Set all arguments
-            let argPairs = Array(zip(callee.paramNames, args))
-            for (name, value) in argPairs {
-                _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
-            }
-
-            // Execute the body
-            var result: MooseObject = VoidObj()
-            do {
-                _ = try callee.value.accept(self)
-            } catch let error as ReturnSignal {
-                result = error.value
-            }
-
-            // Reactivate the original environment
+            environment.closed = wasClosed
             environment = oldEnv
             return result
         } else {
@@ -337,14 +340,14 @@ class Interpreter: Visitor {
 
     func visit(_ node: Dereferer) throws -> MooseObject {
         let obj = try node.obj.accept(self)
-//        guard let obj = obj as? ClassObject else {
-//            throw EnvironmentError(message: "Obj cannot be converted to ClassObject")
-//        }
 
         let prevEnv = environment
         environment = obj.env
+        let wasClosed = environment.closed
+        environment.closed = true
 
         let val = try node.referer.accept(self)
+        environment.closed = wasClosed
         environment = prevEnv
         return val
     }

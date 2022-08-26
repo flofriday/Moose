@@ -376,17 +376,12 @@ class Parser {
     }
 
     func parseDereferer(_ lhs: Expression) throws -> Dereferer {
-        guard let obj = lhs as? Referible else {
-            throw error(message: "Left side of dot-reference must be a Referible such as `ident`, `arr[0]` and `func()`.", node: lhs)
-        }
+        let obj = lhs
         let token = try consume(type: .Dot, message: ". was expected, got '\(peek().lexeme)' instead.")
         guard check(type: .Identifier) else {
             throw error(message: "Identifier was expected for reference, got `\(peek().lexeme)` instead.", token: peek())
         }
         let ref = try parseExpression(curPrecedence)
-        guard let ref = ref as? Referible else {
-            throw error(message: "Right side of dot-reference must be a Referible such as `ident`, `arr[0]` and `func()`.", node: lhs)
-        }
         return Dereferer(token: token, obj: obj, referer: ref)
     }
 

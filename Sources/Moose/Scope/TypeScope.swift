@@ -15,6 +15,7 @@ class TypeScope: Scope {
     private var classes: [String: ClassTypeScope] = [:]
 
     let enclosing: TypeScope?
+    var closed: Bool = false
 
     init(enclosing: TypeScope? = nil) {
         self.enclosing = enclosing
@@ -27,7 +28,7 @@ extension TypeScope {
         if let type = variables[variable] {
             return type.0
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             // TODO: We could find similarly named variables here and suggest
             // them
             throw ScopeError(message: "Couldn't find variable '\(variable)' in the current scope.")
@@ -39,7 +40,7 @@ extension TypeScope {
         if variables.keys.contains(variable) {
             return true
         }
-        guard includeEnclosing, let enclosing = enclosing else {
+        guard includeEnclosing, let enclosing = enclosing, !closed else {
             return false
         }
         return enclosing.has(variable: variable, includeEnclosing: includeEnclosing)
@@ -49,7 +50,7 @@ extension TypeScope {
         if let type = variables[variable] {
             return type.1
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             // TODO: We could find similarly named variables here and suggest
             // them
             throw ScopeError(message: "Couldn't find variable '\(variable)' in the current scope.")
@@ -93,7 +94,7 @@ extension TypeScope {
         {
             return type
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")
         }
         return try enclosing.typeOf(op: op, opPos: opPos, params: params)
@@ -110,7 +111,7 @@ extension TypeScope {
         if currentContains(op: op, opPos: opPos, params: params) {
             return true
         }
-        guard includeEnclosing, let enclosing = enclosing else {
+        guard includeEnclosing, let enclosing = enclosing, !closed else {
             return false
         }
         return enclosing.has(op: op, opPos: opPos, params: params, includeEnclosing: includeEnclosing)
@@ -163,7 +164,7 @@ extension TypeScope {
                 return types.first!
             }
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")
         }
         return try enclosing.typeOf(function: function, params: params)
@@ -180,7 +181,7 @@ extension TypeScope {
         if currentContains(function: function, params: params) {
             return true
         }
-        guard includeEnclosing, let enclosing = enclosing else {
+        guard includeEnclosing, let enclosing = enclosing, !closed else {
             return false
         }
         return enclosing.has(function: function, params: params, includeEnclosing: includeEnclosing)
@@ -199,7 +200,7 @@ extension TypeScope {
 
 extension TypeScope {
     func isGlobal() -> Bool {
-        return enclosing == nil
+        return enclosing == nil && !closed
     }
 }
 
@@ -217,13 +218,17 @@ extension TypeScope {
     }
 
     func getScope(clas: String) -> ClassTypeScope? {
-        return classes[clas] ?? enclosing?.getScope(clas: clas)
+        if let clasScope = classes[clas] {
+            return clasScope
+        }
+
+        return closed ? nil : enclosing?.getScope(clas: clas)
     }
 
     /// returns next enclosing class type scope and nil if there is no class type scope
     func nearestClassScope() -> ClassTypeScope? {
         guard let scope = self as? ClassTypeScope else {
-            return enclosing?.nearestClassScope()
+            return closed ? nil : enclosing?.nearestClassScope()
         }
         return scope
     }
@@ -257,8 +262,8 @@ class ClassTypeScope: TypeScope {
     var visited = false
 
     init(enclosing: TypeScope? = nil, name: String, properties: [propType]) {
-        self.className = name
-        self.classProperties = properties
+        className = name
+        classProperties = properties
         super.init(enclosing: enclosing)
     }
 

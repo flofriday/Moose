@@ -65,10 +65,12 @@ class Typechecker: Visitor {
 
     func visit(_ node: Program) throws {
         for stmt in node.statements {
+            let oldScope = scope
             do {
                 try stmt.accept(self)
             } catch let error as CompileErrorMessage {
                 errors.append(error)
+                scope = oldScope
             }
         }
     }
@@ -78,11 +80,13 @@ class Typechecker: Visitor {
 
         var returnDec: ReturnDec = nil
         for stmt in node.statements {
+            let oldScope = scope
             do {
                 try stmt.accept(self)
                 returnDec = try newReturnDec(current: returnDec, incoming: stmt)
             } catch let error as CompileErrorMessage {
                 errors.append(error)
+                scope = oldScope
             }
         }
 

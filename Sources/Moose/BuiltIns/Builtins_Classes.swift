@@ -197,6 +197,15 @@ struct BuiltInClassEnvironment: Environment {
         env.global()
     }
 
+    var closed: Bool {
+        get {
+            return env.closed
+        }
+        set(newClosed) {
+            env.closed = newClosed
+        }
+    }
+
     var enclosing: Environment? {
         return env.enclosing
     }

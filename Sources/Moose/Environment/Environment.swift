@@ -22,6 +22,8 @@ protocol Environment {
     func global() -> Environment
     var enclosing: Environment? { get }
 
+    var closed: Bool { get set }
+
     func printDebug(header: Bool)
 }
 
@@ -43,12 +45,13 @@ extension Environment {
 // can assume here that the programs we see are well typed. And even if they
 // weren't it wouldn't be our concern but a bug in the typechecker.
 class BaseEnvironment: Environment {
-    let enclosing: Environment?
+    var enclosing: Environment?
+    var closed: Bool = false
     var variables: [String: MooseObject] = [:]
     var funcs: [String: [MooseObject]] = [:]
     var ops: [String: [MooseObject]] = [:]
 
-    private var classDefinitions: [String: ClassEnvironment] = [:]
+    var classDefinitions: [String: ClassEnvironment] = [:]
 
     init(enclosing: Environment?) {
         self.enclosing = enclosing
@@ -76,7 +79,7 @@ extension BaseEnvironment {
         }
 
         // Scan in enclosing envs
-        if let enclosing = enclosing {
+        if let enclosing = enclosing, !closed {
             let found = enclosing.update(variable: variable, value: value, allowDefine: false)
             if found {
                 return true
@@ -111,11 +114,19 @@ extension BaseEnvironment {
             return obj
         }
 
-        if let enclosing = enclosing {
+        if let enclosing = enclosing, !closed {
             return try enclosing.get(variable: variable)
         } else {
             throw EnvironmentError(message: "Variable '\(variable)' not found.")
         }
+    }
+
+    func getInCurrentEnv(variable: String) throws -> MooseObject {
+        if let obj = variables[variable] {
+            return obj
+        }
+
+        throw EnvironmentError(message: "Variable '\(variable)' not found.")
     }
 
     // Return all variables.
@@ -156,10 +167,24 @@ extension BaseEnvironment {
             }
         }
 
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw EnvironmentError(message: "Function '\(function)' not found.")
         }
         return try enclosing.get(function: function, params: params)
+    }
+
+    func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
+        if let objs = funcs[function]?
+            .filter({ isFuncBy(params: params, other: $0.type) })
+        {
+            if objs.count > 1 {
+                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+            }
+            if objs.count == 1 {
+                return objs.first!
+            }
+        }
+        throw EnvironmentError(message: "Function '\(function)' not found.")
     }
 }
 
@@ -188,7 +213,7 @@ extension BaseEnvironment {
         if let obj = ops[op]?.first(where: { isOpBy(pos: pos, params: params, other: $0) }) {
             return obj
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw EnvironmentError(message: "Operation '\(op)' not found.")
         }
         return try enclosing.get(op: op, pos: pos, params: params)
@@ -211,7 +236,7 @@ extension BaseEnvironment {
 
     func nearestClass() throws -> ClassEnvironment {
         guard let env = self as? ClassEnvironment else {
-            guard let enclosing = enclosing else {
+            guard let enclosing = enclosing, !closed else {
                 throw EnvironmentError(message: "Not inside a class object.")
             }
             return try enclosing.nearestClass()
@@ -223,12 +248,12 @@ extension BaseEnvironment {
 // Some helper functions
 extension BaseEnvironment {
     func isGlobal() -> Bool {
-        return enclosing == nil
+        return enclosing == nil && !closed
     }
 
     // Return the global environment
     func global() -> Environment {
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             return self
         }
 
@@ -273,6 +298,7 @@ extension BaseEnvironment {
         } else {
             print("--- Environment ---")
         }
+        print("closed: \(closed)")
         print("Variables: ")
         for (variable, value) in variables {
             print("\t\(variable): \(value.type.description) = \(value.description)")
@@ -298,6 +324,14 @@ extension BaseEnvironment {
             }
         }
         if ops.isEmpty {
+            print("\t<empty>")
+        }
+
+        print("Classes: ")
+        for (_, value) in classDefinitions {
+            print("\t\(value.className)")
+        }
+        if classDefinitions.isEmpty {
             print("\t<empty>")
         }
         print()

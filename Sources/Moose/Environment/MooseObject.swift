@@ -158,8 +158,7 @@ class FunctionObj: MooseObject {
     }
 
     var description: String {
-        // TODO: type information would be nice here
-        return "<func \(name)>"
+        return "<func \(name): \(type.description)>"
     }
 }
 
