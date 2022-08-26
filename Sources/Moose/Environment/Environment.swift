@@ -192,12 +192,14 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
         if let obj = other as? BuiltInOperatorObj {
-            return obj.opPos == pos && obj.params == params
+            return obj.opPos == pos && TypeScope.leftSuperOfRight(supers: params, subtypes: params)
         }
 
+        // TODO: Don't we also have to check the params here???
         if let obj = other as? OperatorObj, obj.opPos == pos {
             return true
         }
+
         return false
     }
 

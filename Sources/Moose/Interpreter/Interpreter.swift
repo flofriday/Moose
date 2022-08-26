@@ -265,25 +265,31 @@ class Interpreter: Visitor {
         }
     }
 
+    func evaluateArgs(exprs: [Expression]) throws -> ([MooseObject], [MooseType]) {
+        let wasClosed = environment.closed
+        environment.closed = false
+        let args = try exprs.map { try $0.accept(self) }
+        let argTypes = exprs.map { $0.mooseType! }
+        environment.closed = wasClosed
+        return (args, argTypes)
+    }
+
     func visit(_ node: PrefixExpression) throws -> MooseObject {
-        let args = try [node.right.accept(self)]
-        let argTypes = [node.right.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.right])
 
         let handler = try environment.get(op: node.op, pos: .Prefix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
     }
 
     func visit(_ node: InfixExpression) throws -> MooseObject {
-        let args = try [node.left, node.right].map { try $0.accept(self) }
-        let argTypes = [node.left.mooseType!, node.right.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.left, node.right])
 
         let handler = try environment.get(op: node.op, pos: .Infix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
     }
 
     func visit(_ node: PostfixExpression) throws -> MooseObject {
-        let args = try [node.left.accept(self)]
-        let argTypes = [node.left.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.left])
 
         let handler = try environment.get(op: node.op, pos: .Postfix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
@@ -300,7 +306,7 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: CallExpression) throws -> MooseObject {
-        let args = try node.arguments.map { try $0.accept(self) }
+        let (args, argTypes) = try evaluateArgs(exprs: node.arguments)
 
         if node.isConstructorCall {
             let classDefinition = try environment.get(clas: node.function.value)
@@ -309,7 +315,6 @@ class Interpreter: Visitor {
             return try callConstructor(clas: classObject, args: args)
         }
 
-        let argTypes = args.map { $0.type }
         let callee = try environment.get(function: node.function.value, params: argTypes)
         return try callFunctionOrOperator(callee: callee, args: args)
     }

@@ -40,6 +40,10 @@ class Typechecker: Visitor {
             scope: BuiltIns.builtIn_Bool_Env.asClassTypeScope("Bool")
         )
         try scope.add(
+            clas: "String",
+            scope: BuiltIns.builtIn_String_Env.asClassTypeScope("String")
+        )
+        try scope.add(
             clas: "Tuple",
             scope: BuiltIns.builtIn_Tuple_Env.asClassTypeScope("Tuple")
         )

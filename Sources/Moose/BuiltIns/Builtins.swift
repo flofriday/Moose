@@ -9,22 +9,6 @@ import Foundation
 
 class BuiltIns {
     static let builtInFunctions = [
-        // TODO: all these casting functinos should be methods
-        BuiltInFunctionObj(name: "Int", params: [FloatType()], returnType: IntType(), function: castToIntBuiltIn),
-        BuiltInFunctionObj(name: "Int", params: [BoolType()], returnType: IntType(), function: castToIntBuiltIn),
-
-        BuiltInFunctionObj(name: "Float", params: [IntType()], returnType: FloatType(), function: castToFloatBuiltIn),
-
-        BuiltInFunctionObj(name: "Bool", params: [IntType()], returnType: BoolType(), function: castToBoolBuiltIn),
-
-        BuiltInFunctionObj(name: "String", params: [IntType()], returnType: StringType(), function: castToStringBuiltIn),
-        BuiltInFunctionObj(name: "String", params: [FloatType()], returnType: StringType(), function: castToStringBuiltIn),
-        BuiltInFunctionObj(name: "String", params: [BoolType()], returnType: StringType(), function: castToStringBuiltIn),
-
-        BuiltInFunctionObj(name: "parseInt", params: [StringType()], returnType: TupleType([IntType(), StringType()]), function: parseIntBuiltIn),
-        BuiltInFunctionObj(name: "parseFloat", params: [StringType()], returnType: TupleType([IntType(), FloatType()]), function: parseFloatBuiltIn),
-        BuiltInFunctionObj(name: "parseBool", params: [StringType()], returnType: TupleType([IntType(), BoolType()]), function: parseBoolBuiltIn),
-
         // IO Functions
         BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),
 
@@ -102,113 +86,6 @@ extension BuiltIns {
     static func castToStringBuiltIn(params: [MooseObject], env _: Environment) -> StringObj {
         let input = params[0]
         return StringObj(value: input.description)
-    }
-
-    /// A generic cast function that can convert Float and Bool to Integer.
-    static func castToIntBuiltIn(params: [MooseObject], env _: Environment) -> IntegerObj {
-        let input = params[0]
-        switch input {
-        case let bool as BoolObj:
-            guard let value = bool.value else {
-                return IntegerObj(value: nil)
-            }
-            return IntegerObj(value: value ? 1 : 0)
-        case let float as FloatObj:
-            guard let value = float.value else {
-                return IntegerObj(value: nil)
-            }
-            return IntegerObj(value: Int64(value))
-        default:
-            // This cannot happen
-            return IntegerObj(value: nil)
-        }
-    }
-
-    /// A cast function that can convert Integer to Float.
-    static func castToFloatBuiltIn(params: [MooseObject], _: Environment) -> FloatObj {
-        let input = params[0] as! IntegerObj
-        guard let value = input.value else {
-            return FloatObj(value: nil)
-        }
-        return FloatObj(value: Float64(value))
-    }
-
-    /// A cast function that can convert Integer to Bool.
-    static func castToBoolBuiltIn(params: [MooseObject], _: Environment) -> BoolObj {
-        let input = params[0] as! IntegerObj
-        guard let value = input.value else {
-            return BoolObj(value: nil)
-        }
-        return BoolObj(value: value == 0 ? false : true)
-    }
-
-    /// A cast function that can parse a String to an Integer.
-    /// The function returns a value-error tuple.
-    static func parseIntBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
-        let input = (params[0] as! StringObj).value
-
-        let tupleType = TupleType([IntType(), StringType()])
-        guard let input = input else {
-            // TODO: Should this be an error?
-            // This is not an error but a nil string is just a nil integer
-            return TupleObj(type: tupleType, value: [IntegerObj(value: nil), StringObj(value: nil)])
-        }
-
-        var errMsg: String?
-        let value = Int64(input)
-        if value == nil {
-            errMsg = "Cannot parse '\(input)' to an Integer."
-        }
-        return TupleObj(type: tupleType, value: [IntegerObj(value: value), StringObj(value: errMsg)])
-    }
-
-    /// A cast function that can parse a String to an Integer.
-    /// The function returns a value-error tuple.
-    static func parseFloatBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
-        let input = (params[0] as! StringObj).value
-
-        let tupleType = TupleType([FloatType(), StringType()])
-        guard let input = input else {
-            // TODO: Should this be an error?
-            // This is not an error but a nil string is just a nil integer
-            return TupleObj(type: tupleType, value: [FloatObj(value: nil), StringObj(value: nil)])
-        }
-
-        var errMsg: String?
-        let value = Float64(input)
-        if value == nil {
-            errMsg = "Cannot parse '\(input)' to a Float."
-        }
-        return TupleObj(type: tupleType, value: [FloatObj(value: value), StringObj(value: errMsg)])
-    }
-
-    /// A cast function that can parse a String to an Integer.
-    /// The function returns a value-error tuple.
-    static func parseBoolBuiltIn(params: [MooseObject], _: Environment) -> TupleObj {
-        let input = (params[0] as! StringObj).value
-
-        let tupleType = TupleType([IntType(), StringType()])
-        guard let input = input else {
-            // TODO: Should this be an error?
-            // This is not an error but a nil string is just a nil integer
-            return TupleObj(type: tupleType, value: [IntegerObj(value: nil), StringObj(value: nil)])
-        }
-
-        var errMsg: String?
-        var value: Bool?
-        switch input {
-        case "true":
-            value = true
-        case "false":
-            value = false
-        default:
-            break
-        }
-
-        if value == nil {
-            errMsg = "Cannot parse '\(input)' to an Bool."
-        }
-        return TupleObj(type: tupleType, value: [BoolObj(value: value), StringObj(value: errMsg)])
     }
 
     /// A generic print function that can print any MooseObject
