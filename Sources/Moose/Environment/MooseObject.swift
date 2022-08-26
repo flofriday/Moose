@@ -47,7 +47,7 @@ protocol IndexWriteableObject: IndexableObject {
 class IntegerObj: MooseObject {
     let type: MooseType = IntType()
     let value: Int64?
-    var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_List_Env)
+    var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Integer_Env)
 
     init(value: Int64?) {
         self.value = value

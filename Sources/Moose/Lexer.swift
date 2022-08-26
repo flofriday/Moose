@@ -102,7 +102,7 @@ extension Lexer {
             } else if isDigit(char: unwrappedChar) {
                 var digit = readNumber()
 
-                if char == Character(".") {
+                if char == Character("."), peekChar()?.isNumber ?? false {
                     readChar()
                     digit += "."
                     digit += readNumber()
