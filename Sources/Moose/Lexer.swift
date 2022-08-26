@@ -133,7 +133,7 @@ extension Lexer {
 extension Lexer {
     private func readIdentifier() -> String {
         let pos = position
-        while let char = char, isLetter(char: char) {
+        while let char = char, isLetter(char: char) || isDigit(char: char) {
             readChar()
         }
         return input[pos ..< position]
