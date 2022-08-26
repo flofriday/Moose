@@ -221,7 +221,7 @@ extension Lexer {
         guard let char = char, char == "/", peekChar() == "/" else {
             return false
         }
-        skipUntil(ch: "\n")
+        skipUntil(ch: "\n", inclusively: false)
         return true
     }
 
