@@ -11,8 +11,22 @@ import XCTest
 
 extension InterpreterTests {
     func test_builtIn_function() throws {
-        // At the moment of writing we only have IO functions that are hard
-        // to test, so this test is empty for now.
+        let tests: [(String, [(String, MooseObject)])] = [
+            (
+                """
+                // Range function
+                l1 = range(1)
+                l2 = range(4)
+                l3 = range(0)
+                """, [
+                    ("l1", ListObj(type: ListType(IntType()), value: [0].map { IntegerObj(value: $0) })),
+                    ("l2", ListObj(type: ListType(IntType()), value: [0, 1, 2, 3].map { IntegerObj(value: $0) })),
+                    ("l3", ListObj(type: ListType(IntType()), value: [])),
+                ]
+            ),
+        ]
+
+        try runValidTests(name: #function, tests)
     }
 
     func test_builtIn_operators() throws {
@@ -25,6 +39,7 @@ extension InterpreterTests {
                 c = 3 * 2
                 d = 3 / 2
                 e = 9 / 3
+                f = -67
                 """,
                 [
                     ("a", IntegerObj(value: 5)),
@@ -32,6 +47,7 @@ extension InterpreterTests {
                     ("c", IntegerObj(value: 6)),
                     ("d", IntegerObj(value: 1)),
                     ("e", IntegerObj(value: 3)),
+                    ("f", IntegerObj(value: -67)),
                 ]
             ),
             (

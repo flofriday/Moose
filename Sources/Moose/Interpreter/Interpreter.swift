@@ -78,12 +78,19 @@ class Interpreter: Visitor {
 
         case let indexExpr as IndexExpression:
             let index = (try indexExpr.index.accept(self) as! IntegerObj).value
-            guard let index = index else {
+            guard var index = index else {
                 throw NilUsagePanic()
             }
 
             let target = try indexExpr.indexable.accept(self) as! IndexWriteableObject
-            guard index < target.length() else {
+
+            // Negative index start counting form the back, just like Python
+            if index < 0 {
+                // this really is a substraction cause the index is negative
+                index = target.length() + index
+            }
+
+            guard index >= 0, index < target.length() else {
                 throw OutOfBoundsPanic()
             }
 
@@ -359,12 +366,19 @@ class Interpreter: Visitor {
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let index = (try node.index.accept(self) as! IntegerObj).value
-        guard let index = index else {
+        guard var index = index else {
             throw NilUsagePanic()
         }
 
         let indexable = (try node.indexable.accept(self)) as! IndexableObject
-        guard index < indexable.length() else {
+
+        // Negative index start counting form the back, just like Python
+        if index < 0 {
+            // this really is a substraction cause the index is negative
+            index = indexable.length() + index
+        }
+
+        guard index >= 0, index < indexable.length() else {
             throw OutOfBoundsPanic()
         }
         return indexable.getAt(index: index)
