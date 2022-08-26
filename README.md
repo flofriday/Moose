@@ -13,21 +13,11 @@ You need to [install swift](https://www.swift.org/download/), after which you ca
 swift run Moose
 ```
 
-## Roadmap
+## Status
 
-- [x] Test infrastructure
-- [x] Token definition
-- [x] Lexer
-- [x] Parser (AST)
-- [x] AST Interpreter
-
-In several iterations:
-
-- [x] Expression evaluation
-- [x] Statements, control-flow and functions
-- [ ] Lists, dicts and tuples
-- [ ] Objects, classes and inheritance
-- [ ] Extending classes and indexing
+At the moment we have already implemented all features we wanted. However,
+please consider that this was mainly a learning experience. We might continue
+working on it and playing with things that are interesting to us.
 
 ## Types
 
@@ -44,7 +34,7 @@ Mutable variables are variables that can be reassigned over and over again. To d
 ```jsx
 mut a = 2
 a = 4
-a += 1
+a +: 1
 
 mut b: Int
 b = 2
@@ -94,7 +84,7 @@ print(breakfast != nil ? breakfast : "Melage and semmel");
 Lists are arrays that can grow and shrink dynamically. Moreover there is a special syntax to create them, with square brackets. Lists also only contain objects of a single type.
 
 ```tsx
-wishlist: [Str] = ["Computer", "Bicycle", "Teddybear"];
+wishlist: [String] = ["Computer", "Bicycle", "Teddybear"];
 
 print(wishlist[0]); // "Computer"
 print(wishlist[-1]); // "Teddybear"
@@ -135,10 +125,10 @@ if age > 18 {
   print("I am sorry come back in a year")
 }
 
-// Sometimes you need to discrimenate against pauls
+// Sometimes you need to discriminate against Pauls
 name = "Paul"
-if age > 12 and name != "Paul" {
-	print("Welcome to the waterparkl")
+if (age > 12) && (name != "Paul") {
+	print("Welcome to the waterpark")
 }
 
 ```
@@ -154,7 +144,7 @@ for i in range(10) {
 }
 
 // C-style loop
-for i = 0; i < 100; i + 3 {
+for i = 0; i < 100; i +: 3 {
 	print(i)
 }
 
@@ -176,7 +166,7 @@ a = 3; // this is a comment
 
 ### Classic Functions
 
-```python
+```jsx
 func myFunction(age: Int, name: String) > Person {
 	return Person(name, age)
 }
@@ -225,12 +215,12 @@ print(p.represent())
 ```tsx
 class Person {
 	name: Str
-  age: Int
+  	age: Int
 
-  func hello() {
-    // Instead of this, Moose uses me
-    print("Hey I am " + me.name)
-  }
+  	func hello() {
+		// Instead of this, Moose uses me
+    	print("Hey I am " + me.name)
+  	}
 }
 
 // Classes have a default constructor in which all all fields have to be filled out
@@ -247,19 +237,20 @@ class Employee < Person {
 	work: Str
 
 	func hello() {
-    super.hello()
-    print("And I work at" + me.work)
-  }
+    	super.hello()
+    	print("And I work at " + me.work)
+  	}
 }
 
 catrin = Employee("Catrin", 56, "Google")
 ```
 
+<!-- TODO: we don't implement this and even if the example doesn't work
 ## Extending Classes
 
 You extend existing classes by using the `extend` construct.
 
-```c
+```tsx
 extend Person {
 	friend: Person
 	func add(friend: Person) {
@@ -267,19 +258,21 @@ extend Person {
 	}
 }
 
-str = "Hello"
+a = "Hello"
 str.add(" World")
 
 print(str) // "Hello World"
 ```
+-->
 
+<!-- We dont to this anymore
 ## Copy by reference or value
 
 As described before, Moose only has class object types without primitive types. In addition, all assignments are made by reference.
 
 ```jsx
 infix func (&) (a: Person, b: Int) {
-	a.age += b
+	a.age +: b
 }
 
 p1 = Person("Alan Turing", 41)
@@ -299,6 +292,7 @@ p1 & 4
 print(p1.age) // 45
 print(p2.age) // 41
 ```
+-->
 
 ## Tuple
 
@@ -322,7 +316,7 @@ print(b) // [3,4]
 
 Destructuring is not only possible for tuples themselves, but also for objects, where the tuple contains the first n object fields.
 
-```c
+```jsx
 p = Person("Alan Turing", 41)
 (name, age) = p
 ```
@@ -331,7 +325,7 @@ p = Person("Alan Turing", 41)
 
 Accessing data of an object is not only possible for `List` s, but for all datatypes that implement the indexing method.
 
-```c
+```jsx
 class Person {
 	name: Str
 
