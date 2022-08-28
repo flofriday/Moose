@@ -164,6 +164,20 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
+    func visit(_ node: OperationStatement) throws -> MooseObject {
+        // The global scope was already added by GlobalEnvironmentExplorer
+        guard !environment.isGlobal() else {
+            return VoidObj()
+        }
+
+        let paramNames = node.params.map { $0.name.value }
+        let params = node.params.map { $0.declaredType }
+        let type = FunctionType(params: params, returnType: node.returnType)
+        let obj = OperatorObj(name: node.name, opPos: node.position, type: type, paramNames: paramNames, value: node.body, closure: environment)
+        environment.set(op: obj.name, value: obj)
+        return VoidObj()
+    }
+
     func visit(_: ClassStatement) throws -> MooseObject {
         // The global scope was already added by GlobalEnvironmentExplorer
         guard !environment.isGlobal() else {
@@ -339,15 +353,6 @@ class Interpreter: Visitor {
         clas.bindMethods()
 
         return ClassObject(env: clas)
-    }
-
-    func visit(_: OperationStatement) throws -> MooseObject {
-        // The global scope was already added by GlobalEnvironmentExplorer
-        guard !environment.isGlobal() else {
-            return VoidObj()
-        }
-
-        return VoidObj()
     }
 
     func visit(_ node: Dereferer) throws -> MooseObject {
