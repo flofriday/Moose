@@ -19,7 +19,10 @@ protocol Environment {
     func nearestClass() throws -> ClassEnvironment
 
     func isGlobal() -> Bool
+    func global() -> Environment
     var enclosing: Environment? { get }
+
+    var closed: Bool { get set }
 
     func printDebug(header: Bool)
 }
@@ -42,12 +45,13 @@ extension Environment {
 // can assume here that the programs we see are well typed. And even if they
 // weren't it wouldn't be our concern but a bug in the typechecker.
 class BaseEnvironment: Environment {
-    let enclosing: Environment?
-    private var variables: [String: MooseObject] = [:]
-    private var funcs: [String: [MooseObject]] = [:]
-    private var ops: [String: [MooseObject]] = [:]
+    var enclosing: Environment?
+    var closed: Bool = false
+    var variables: [String: MooseObject] = [:]
+    var funcs: [String: [MooseObject]] = [:]
+    var ops: [String: [MooseObject]] = [:]
 
-    private var classDefinitions: [String: ClassEnvironment] = [:]
+    var classDefinitions: [String: ClassEnvironment] = [:]
 
     init(enclosing: Environment?) {
         self.enclosing = enclosing
@@ -75,7 +79,7 @@ extension BaseEnvironment {
         }
 
         // Scan in enclosing envs
-        if let enclosing = enclosing {
+        if let enclosing = enclosing, !closed {
             let found = enclosing.update(variable: variable, value: value, allowDefine: false)
             if found {
                 return true
@@ -110,11 +114,19 @@ extension BaseEnvironment {
             return obj
         }
 
-        if let enclosing = enclosing {
+        if let enclosing = enclosing, !closed {
             return try enclosing.get(variable: variable)
         } else {
             throw EnvironmentError(message: "Variable '\(variable)' not found.")
         }
+    }
+
+    func getInCurrentEnv(variable: String) throws -> MooseObject {
+        if let obj = variables[variable] {
+            return obj
+        }
+
+        throw EnvironmentError(message: "Variable '\(variable)' not found.")
     }
 
     // Return all variables.
@@ -127,18 +139,12 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
         guard
-            case let .Function(paras, _) = other,
-            paras.count == params.count
+            let storedParams = (other as? FunctionType)?.params
         else {
             return false
         }
 
-        return zip(params, paras)
-            .reduce(true) { acc, zip in
-                let (param, para) = zip
-                guard param == .Nil || param == para else { return false }
-                return acc
-            }
+        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
     }
 
     func set(function: String, value: MooseObject) {
@@ -161,10 +167,24 @@ extension BaseEnvironment {
             }
         }
 
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw EnvironmentError(message: "Function '\(function)' not found.")
         }
         return try enclosing.get(function: function, params: params)
+    }
+
+    func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
+        if let objs = funcs[function]?
+            .filter({ isFuncBy(params: params, other: $0.type) })
+        {
+            if objs.count > 1 {
+                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+            }
+            if objs.count == 1 {
+                return objs.first!
+            }
+        }
+        throw EnvironmentError(message: "Function '\(function)' not found.")
     }
 }
 
@@ -172,11 +192,17 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
         if let obj = other as? BuiltInOperatorObj {
-            return obj.opPos == pos && obj.params == params
+            return obj.opPos == pos && TypeScope.leftSuperOfRight(supers: params, subtypes: obj.params)
         }
-        if let obj = other as? OperatorObj, obj.opPos == pos, case .Function(params, _) = other.type {
-            return true
+
+        if let obj = other as? OperatorObj {
+            let objParams = (obj.type as! FunctionType).params
+            if obj.opPos == pos, TypeScope.leftSuperOfRight(supers: params, subtypes: objParams) {
+                return true
+            }
+            return false
         }
+
         return false
     }
 
@@ -192,7 +218,7 @@ extension BaseEnvironment {
         if let obj = ops[op]?.first(where: { isOpBy(pos: pos, params: params, other: $0) }) {
             return obj
         }
-        guard let enclosing = enclosing else {
+        guard let enclosing = enclosing, !closed else {
             throw EnvironmentError(message: "Operation '\(op)' not found.")
         }
         return try enclosing.get(op: op, pos: pos, params: params)
@@ -215,7 +241,7 @@ extension BaseEnvironment {
 
     func nearestClass() throws -> ClassEnvironment {
         guard let env = self as? ClassEnvironment else {
-            guard let enclosing = enclosing else {
+            guard let enclosing = enclosing, !closed else {
                 throw EnvironmentError(message: "Not inside a class object.")
             }
             return try enclosing.nearestClass()
@@ -227,7 +253,16 @@ extension BaseEnvironment {
 // Some helper functions
 extension BaseEnvironment {
     func isGlobal() -> Bool {
-        return enclosing == nil
+        return enclosing == nil && !closed
+    }
+
+    // Return the global environment
+    func global() -> Environment {
+        guard let enclosing = enclosing, !closed else {
+            return self
+        }
+
+        return enclosing.global()
     }
 
     /// Defines the type of builtin class scope
@@ -268,6 +303,7 @@ extension BaseEnvironment {
         } else {
             print("--- Environment ---")
         }
+        print("closed: \(closed)")
         print("Variables: ")
         for (variable, value) in variables {
             print("\t\(variable): \(value.type.description) = \(value.description)")
@@ -295,6 +331,14 @@ extension BaseEnvironment {
         if ops.isEmpty {
             print("\t<empty>")
         }
+
+        print("Classes: ")
+        for (_, value) in classDefinitions {
+            print("\t\(value.className)")
+        }
+        if classDefinitions.isEmpty {
+            print("\t<empty>")
+        }
         print()
     }
 }
@@ -314,5 +358,16 @@ class ClassEnvironment: BaseEnvironment {
         propertyNames = copy.propertyNames
         className = copy.className
         super.init(copy: copy)
+    }
+
+    /// So the methods need to work in this environment, which is bound to a
+    /// specific object and not to a class. So here, we need to inject ourself
+    /// into each method.
+    func bindMethods() {
+        for meths in funcs {
+            for meth in meths.value {
+                (meth as! FunctionObj).closure = self
+            }
+        }
     }
 }

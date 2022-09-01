@@ -102,7 +102,7 @@ extension Lexer {
             } else if isDigit(char: unwrappedChar) {
                 var digit = readNumber()
 
-                if char == Character(".") {
+                if char == Character("."), peekChar()?.isNumber ?? false {
                     readChar()
                     digit += "."
                     digit += readNumber()
@@ -133,7 +133,7 @@ extension Lexer {
 extension Lexer {
     private func readIdentifier() -> String {
         let pos = position
-        while let char = char, isLetter(char: char) {
+        while let char = char, isLetter(char: char) || isDigit(char: char) {
             readChar()
         }
         return input[pos ..< position]
@@ -221,7 +221,7 @@ extension Lexer {
         guard let char = char, char == "/", peekChar() == "/" else {
             return false
         }
-        skipUntil(ch: "\n")
+        skipUntil(ch: "\n", inclusively: false)
         return true
     }
 

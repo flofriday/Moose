@@ -25,7 +25,7 @@ class ParserTests: BaseClass {
             ("var: ( String ,  Int) = ident", "var", "ident", false, "(String, Int)"),
             ("mut var: ( string, Int  ) = ident", "var", "ident", true, "(string, Int)"),
             ("var: ( (Val, Bool), (Int, String)  ) = true", "var", true, false, "((Val, Bool), (Int, String))"),
-            ("(var): Int = 2", "var", 2, false, "Int")
+            ("(var): Int = 2", "var", 2, false, "Int"),
         ]
 
         for (index, i) in inputs.enumerated() {
@@ -49,7 +49,7 @@ class ParserTests: BaseClass {
         let tests: [(String, String, ExpOp)] = [
             ("a +: 3\n", "a", ("a", "+", 3)),
             ("a ^&: true;", "a", ("a", "^&", true)),
-            ("a = b - c", "a", ("b", "-", "c"))
+            ("a = b - c", "a", ("b", "-", "c")),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -77,7 +77,7 @@ class ParserTests: BaseClass {
             ("return true", true),
             ("return x", "x"),
             ("return x\n", "x"),
-            ("return x;", "x")
+            ("return x;", "x"),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -101,7 +101,7 @@ class ParserTests: BaseClass {
             ("+&true", "+&", true, false),
             ("+:true", "+", true, true),
             ("=:12", "=", 12, true),
-            ("::12", ":", 12, true)
+            ("::12", ":", 12, true),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -137,7 +137,7 @@ class ParserTests: BaseClass {
             ("1231 ^^ 12;", 1231, "^^", 12),
             ("true#false", true, "#", false),
             ("1@2", 1, "@", 2),
-            ("1<<2", 1, "<<", 2)
+            ("1<<2", 1, "<<", 2),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -165,7 +165,7 @@ class ParserTests: BaseClass {
             ("true+&", "+&", true, false),
             ("true+:", "+", true, true),
             ("12=:", "=", 12, true),
-            ("12::", ":", 12, true)
+            ("12::", ":", 12, true),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -206,7 +206,7 @@ class ParserTests: BaseClass {
             ("-c+", "(-(c+))"),
             ("a+ =+ c", "((a+) =+ c)"),
             ("a+ :+ :$c%", "((a+) :+ (:$(c%)))"),
-            ("a +: :$c%", "a = (a + (:$(c%)))")
+            ("a +: :$c%", "a = (a + (:$(c%)))"),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -231,7 +231,7 @@ class ParserTests: BaseClass {
             ("a = asd(1)\n", "a = asd(1)"),
             ("mut a: String = asd((1, b(2)))\n", "mut a: String = asd((1, b(2)))"),
             ("mut a: String = asd()\n", "mut a: String = asd()"),
-            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")")
+            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")"),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -306,7 +306,7 @@ class ParserTests: BaseClass {
             ("a: (Int, () > (String)) > String = 1", "(Int, () > String) > String"),
             ("a: (Int) > (String, () > Error) > Bool = 1", "(Int) > (String, () > Error) > Bool"),
             ("a: () > ((Int) > String) = 1", "() > (Int) > String"),
-            ("a: (() > Int) > String = 1", "(() > Int) > String")
+            ("a: (() > Int) > String = 1", "(() > Int) > String"),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -329,7 +329,7 @@ class ParserTests: BaseClass {
             ("(a,a,a) = 1", true),
             ("(a,a,a) = nil", false),
             ("(a,a): Int = nil", false),
-            ("(a,a): Int = (nil)", false)
+            ("(a,a): Int = (nil)", false),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -354,7 +354,14 @@ class ParserTests: BaseClass {
         let tests = [
             "(a+1) = 1",
             "prefix += (a: Int, b: Int) > String {}",
-            "infix += (a: Int b: Int) > String {}"
+            "infix += (a: Int b: Int) > String {}",
+
+            """
+            func a(a: Void) {}
+            """,
+            """
+            func a(a: Nil) {}
+            """,
         ]
 
         for (i, t) in tests.enumerated() {
@@ -375,7 +382,7 @@ class ParserTests: BaseClass {
 
     func test_passTests() throws {
         let tests = [
-            "func a() > (String) > (String) > String {}"
+            "func a() > (String) > (String) > String {}",
         ]
 
         for (i, t) in tests.enumerated() {
@@ -394,11 +401,11 @@ class ParserTests: BaseClass {
     }
 
     func test_operatorDefintionParsing() throws {
-        let tests = [
-            ("infix += (a: Int, b: Int) > String {}", "+=", OpPos.Infix, 2, MooseType.String),
-            ("prefix +: (a: Int) {}", "+:", OpPos.Prefix, 1, MooseType.Void),
-            ("postfix++^ (a: Int) > CustomType {}", "++^", OpPos.Postfix, 1, MooseType.Class("CustomType")),
-            ("infix +=(a: Int, b: (Tuple, Tuple)) > (String) > (Int) { a = b; return g}", "+=", OpPos.Infix, 2, MooseType.Function([.String], .Int))
+        let tests: [(String, String, OpPos, Int, MooseType)] = [
+            ("infix += (a: Int, b: Int) > String {}", "+=", OpPos.Infix, 2, StringType()),
+            ("prefix +: (a: Int) {}", "+:", OpPos.Prefix, 1, VoidType()),
+            ("postfix++^ (a: Int) > CustomType {}", "++^", OpPos.Postfix, 1, ClassType("CustomType")),
+            ("infix +=(a: Int, b: (Tuple, Tuple)) > (String) > (Int) { a = b; return g}", "+=", OpPos.Infix, 2, FunctionType(params: [StringType()], returnType: IntType())),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -415,12 +422,12 @@ class ParserTests: BaseClass {
         typealias testtype = (String, String, [(String, MooseType)])
         let tests: [testtype] = [
             ("class test {}", "test", []),
-            ("class test { a: String }", "test", [("a", .String)]),
-            ("class test { a: String; mut b: Int }", "test", [("a", .String), ("b", .Int)]),
-            ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", .String), ("b", .Int)]),
-            ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", .String), ("b", .Int)]),
+            ("class test { a: String }", "test", [("a", StringType())]),
+            ("class test { a: String; mut b: Int }", "test", [("a", StringType()), ("b", IntType())]),
+            ("class test { a: String; mut b: Int; func a() {} }", "test", [("a", StringType()), ("b", IntType())]),
+            ("class test { a: String; mut b: Int; func a() {}; func b () {} }", "test", [("a", StringType()), ("b", IntType())]),
             ("class test { func a() {}; func b () {} }", "test", []),
-            ("class test < easy { func a() {}; func b () {} }", "test", [])
+            ("class test < easy { func a() {}; func b () {} }", "test", []),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -450,7 +457,7 @@ class ParserTests: BaseClass {
             ("123.ident", false),
             ("ident.false", false),
             ("foo().bar()", true),
-            ("(fuc().fun()).(ident.fun(2))", false)
+            ("(fuc().fun()).(ident.fun(2))", false),
         ]
 
         for (i, t) in tests.enumerated() {
@@ -486,7 +493,7 @@ class ParserTests: BaseClass {
             // simple test
 
             // simple test
-            """
+            """,
         ]
 
         for (i, t) in tests.enumerated() {

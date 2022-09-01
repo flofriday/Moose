@@ -39,12 +39,19 @@ class GlobalEnvironmentExplorer: BaseVisitor {
 
     override func visit(_ node: FunctionStatement) throws {
         let paramNames = node.params.map { $0.name.value }
-        let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let params = node.params.map { $0.declaredType }
+        let type = FunctionType(params: params, returnType: node.returnType)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
     }
 
-    override func visit(_: OperationStatement) throws {}
+    override func visit(_ node: OperationStatement) throws {
+        let paramNames = node.params.map { $0.name.value }
+        let params = node.params.map { $0.declaredType }
+        let type = FunctionType(params: params, returnType: node.returnType)
+        let obj = OperatorObj(name: node.name, opPos: node.position, type: type, paramNames: paramNames, value: node.body, closure: environment)
+        environment.set(op: obj.name, value: obj)
+    }
 
     override func visit(_ node: ClassStatement) throws {
         let classEnv = ClassEnvironment(enclosing: environment, className: node.name.value, propertyNames: node.properties.map { $0.name.value })
@@ -55,5 +62,17 @@ class GlobalEnvironmentExplorer: BaseVisitor {
         }
         environment = preEnv
         environment.set(clas: node.name.value, env: classEnv)
+    }
+
+    internal func error(message: String, node: Node) -> CompileErrorMessage {
+        let locator = AstLocator(node: node)
+        let location = locator.getLocation()
+
+        return CompileErrorMessage(
+            line: location.line,
+            startCol: location.col,
+            endCol: location.endCol,
+            message: message
+        )
     }
 }

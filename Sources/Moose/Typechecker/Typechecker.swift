@@ -40,6 +40,10 @@ class Typechecker: Visitor {
             scope: BuiltIns.builtIn_Bool_Env.asClassTypeScope("Bool")
         )
         try scope.add(
+            clas: "String",
+            scope: BuiltIns.builtIn_String_Env.asClassTypeScope("String")
+        )
+        try scope.add(
             clas: "Tuple",
             scope: BuiltIns.builtIn_Tuple_Env.asClassTypeScope("Tuple")
         )
@@ -65,10 +69,12 @@ class Typechecker: Visitor {
 
     func visit(_ node: Program) throws {
         for stmt in node.statements {
+            let oldScope = scope
             do {
                 try stmt.accept(self)
             } catch let error as CompileErrorMessage {
                 errors.append(error)
+                scope = oldScope
             }
         }
     }
@@ -78,11 +84,13 @@ class Typechecker: Visitor {
 
         var returnDec: ReturnDec = nil
         for stmt in node.statements {
+            let oldScope = scope
             do {
                 try stmt.accept(self)
                 returnDec = try newReturnDec(current: returnDec, incoming: stmt)
             } catch let error as CompileErrorMessage {
                 errors.append(error)
+                scope = oldScope
             }
         }
 
@@ -116,7 +124,7 @@ class Typechecker: Visitor {
 
     func visit(_ node: IfStatement) throws {
         try node.condition.accept(self)
-        guard node.condition.mooseType == .Bool else {
+        guard node.condition.mooseType == BoolType() else {
             // TODO: the Error highlights the wrong character here
             throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", node: node.condition)
         }
@@ -166,18 +174,21 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: Tuple) throws {
-        var types: [MooseType] = []
+        var types: [ParamType] = []
 
         for expr in node.expressions {
             try expr.accept(self)
-            types.append(expr.mooseType!)
+            guard let type = expr.mooseType! as? ParamType else {
+                throw error(message: "Expression is of type \(expr.mooseType!) which is not suitable as tuple entry.", node: expr)
+            }
+            types.append(type)
         }
 
-        node.mooseType = .Tuple(types)
+        node.mooseType = TupleType(types)
     }
 
     func visit(_ node: Nil) throws {
-        node.mooseType = .Nil
+        node.mooseType = NilType()
     }
 
     /// Check if me keyword is used inside a class function an set node name to .Class(className)
@@ -186,12 +197,12 @@ class Typechecker: Visitor {
             throw error(message: "`me` keyword is only available in class functions.", node: node)
         }
 
-        node.mooseType = .Class(scope.className)
+        node.mooseType = ClassType(scope.className)
     }
 
     func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
-        var retType: MooseType = .Void
+        var retType: MooseType = VoidType()
         if let expr = node.returnValue {
             guard let t = expr.mooseType else {
                 throw error(message: "Couldn't determine type of return statement.", node: expr)
@@ -214,19 +225,19 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: IntegerLiteral) throws {
-        node.mooseType = .Int
+        node.mooseType = IntType()
     }
 
     func visit(_ node: FloatLiteral) throws {
-        node.mooseType = .Float
+        node.mooseType = FloatType()
     }
 
     func visit(_ node: Boolean) throws {
-        node.mooseType = .Bool
+        node.mooseType = BoolType()
     }
 
     func visit(_ node: StringLiteral) throws {
-        node.mooseType = .String
+        node.mooseType = StringType()
     }
 
     func visit(_ node: FunctionStatement) throws {
@@ -239,10 +250,10 @@ class Typechecker: Visitor {
         }
 
         try node.body.accept(self)
-        var realReturnValue: MooseType = .Void
+        var realReturnValue: MooseType = VoidType()
         if let (typ, eachBranch) = node.body.returnDeclarations {
             // if functions defined returnType is not Void and not all branches return, function body need explicit return at end
-            guard node.returnType == .Void || eachBranch else {
+            guard node.returnType is VoidType || eachBranch else {
                 throw error(message: "Return missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", node: node.body.statements.last ?? node.body)
             }
             realReturnValue = typ

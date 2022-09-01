@@ -26,11 +26,6 @@ protocol Assignable: Expression {
     var assignables: [Assignable] { get }
 }
 
-/// Defines nodes that can be used as referer or obj in dereferer nodes.
-///
-/// Such as `arr[0].fun()`  `ident.arr[0]` and `fun().ident`
-protocol Referible: Expression {}
-
 class Program {
     let statements: [Statement]
 
@@ -56,7 +51,7 @@ class AssignStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
-class Identifier: Assignable, Referible {
+class Identifier: Assignable {
     init(token: Token, value: String) {
         self.token = token
         self.value = value
@@ -76,7 +71,7 @@ class Identifier: Assignable, Referible {
 }
 
 /// Represents the `me` keyword (same as `this` in java or `self` in swift)
-class Me: Referible {
+class Me {
     let token: Token
     var mooseType: MooseType?
 
@@ -202,7 +197,7 @@ class PostfixExpression {
 }
 
 class VariableDefinition {
-    init(token: Token, mutable: Bool, name: Identifier, type: MooseType) {
+    init(token: Token, mutable: Bool, name: Identifier, type: ParamType) {
         self.token = token
         self.mutable = mutable
         self.name = name
@@ -212,7 +207,7 @@ class VariableDefinition {
     let token: Token
     let mutable: Bool
     let name: Identifier
-    let declaredType: MooseType
+    let declaredType: ParamType
     var mooseType: MooseType?
     var returnDeclaration: (MooseType, Bool) {
         (self.declaredType, true)
@@ -344,14 +339,14 @@ class ClassStatement {
 }
 
 /// This class represents the `.` in `object.propertie`
-class Dereferer: Assignable, Referible {
+class Dereferer: Assignable {
     let token: Token
     var mooseType: MooseType?
 
-    let obj: Referible
-    let referer: Referible
+    let obj: Expression
+    let referer: Expression
 
-    init(token: Token, obj: Referible, referer: Referible) {
+    init(token: Token, obj: Expression, referer: Expression) {
         self.token = token
         self.obj = obj
         self.referer = referer
@@ -540,7 +535,7 @@ extension OperationStatement: Statement {
     }
 }
 
-extension CallExpression: Referible {
+extension CallExpression: Expression {
     var description: String { "\(function.value)(\(arguments.map { $0.description }.joined(separator: ", ")))" }
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)

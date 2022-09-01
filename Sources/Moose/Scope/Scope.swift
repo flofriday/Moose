@@ -23,8 +23,9 @@ protocol Scope {
     func isMut(variable: String) throws -> Bool
 
     func add(variable: String, type: MooseType, mutable: Bool) throws
-    func add(op: String, opPos: OpPos, params: [MooseType], returnType: MooseType) throws
-    func add(function: String, params: [MooseType], returnType: MooseType) throws
+    func add(op: String, opPos: OpPos, params: [ParamType], returnType: MooseType) throws
+    func add(function: String, params: [ParamType], returnType: MooseType) throws
 
+    var closed: Bool { get set }
     func isGlobal() -> Bool
 }

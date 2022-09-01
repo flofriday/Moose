@@ -53,11 +53,11 @@ class InterpreterTests: InterpreterBaseClass {
                     ("b", BoolObj(value: false)),
                     ("s", StringObj(value: "hey there")),
                     ("t", TupleObj(
-                        type: .Tuple([.Bool, .String]),
+                        type: TupleType([BoolType(), StringType()]),
                         value: [BoolObj(value: true), StringObj(value: "no")]
                     )),
                     ("l", ListObj(
-                        type: .List(.Int),
+                        type: ListType(IntType()),
                         value: [9, 8, 12].map { IntegerObj(value: $0) }
                     )),
                 ]
@@ -165,30 +165,26 @@ class InterpreterTests: InterpreterBaseClass {
                     ("a", IntegerObj(value: 4)),
                 ]
             ),
-            // TODO: This should work but doesn't
-            // https://github.com/flofriday/Moose/issues/12
-            /*
-                (
-                    """
-                    // Variable name collision
+            (
+                """
+                // Variable name collision
 
-                    func inner() {
-                        x = 8000
-                    }
+                func inner() {
+                    x = 8000
+                }
 
-                    func outer() > Int {
-                        x = 3
-                        inner()
-                        return x
-                    }
+                func outer() > Int {
+                    x = 3
+                    inner()
+                    return x
+                }
 
-                    a = outer()
-                    """,
-                    [
-                        ("a", IntegerObj(value: 3)),
-                    ]
-                ),
-                */
+                a = outer()
+                """,
+                [
+                    ("a", IntegerObj(value: 3)),
+                ]
+            ),
         ]
 
         try runValidTests(name: #function, tests)

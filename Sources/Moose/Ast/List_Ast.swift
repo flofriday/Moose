@@ -18,7 +18,7 @@ class List {
     }
 }
 
-class IndexExpression: Referible, Assignable {
+class IndexExpression: Assignable {
     let token: Token
     let indexable: Expression // left
     let index: Expression

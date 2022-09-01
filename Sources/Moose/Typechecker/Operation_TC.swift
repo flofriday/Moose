@@ -24,10 +24,10 @@ extension Typechecker {
         try node.body.accept(self)
 
         // get real return type
-        var realReturnValue: MooseType = .Void
+        var realReturnValue: MooseType = VoidType()
         if let (typ, eachBranch) = node.body.returnDeclarations {
             // if functions defined returnType is not Void and not all branches return, function body need explizit return at end
-            guard node.returnType == .Void || eachBranch else {
+            guard node.returnType is VoidType || eachBranch else {
                 throw error(message: "Return missing in operator body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of operator body", node: node.body.statements.last ?? node.body)
             }
             realReturnValue = typ

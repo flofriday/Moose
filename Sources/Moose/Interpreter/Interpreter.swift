@@ -66,7 +66,8 @@ class Interpreter: Visitor {
             // TODO: many things can be unwrapped into tuples, like classes
             // and lists.
             switch valueType {
-            case let .Tuple(types):
+            case let t as TupleType:
+                let types = t.entries
                 let valueTuple = value as! TupleObj
                 for (n, assignable) in tuple.assignables.enumerated() {
                     try assign(valueType: types[n], dst: assignable, value: valueTuple.value![n])
@@ -77,19 +78,37 @@ class Interpreter: Visitor {
 
         case let indexExpr as IndexExpression:
             let index = (try indexExpr.index.accept(self) as! IntegerObj).value
-            guard let index = index else {
+            guard var index = index else {
                 throw NilUsagePanic()
             }
 
             let target = try indexExpr.indexable.accept(self) as! IndexWriteableObject
-            guard index < target.length() else {
+
+            // Negative index start counting form the back, just like Python
+            if index < 0 {
+                // this really is a substraction cause the index is negative
+                index = target.length() + index
+            }
+
+            guard index >= 0, index < target.length() else {
                 throw OutOfBoundsPanic()
             }
 
             target.setAt(index: index, value: value)
 
-        case let dereferer as Dereferer:
-            throw RuntimeError(message: "NOT IMPLEMENTED: can not use Derefer as assing")
+        case let dereferExpr as Dereferer:
+            let obj = try dereferExpr.obj.accept(self)
+
+            let prevEnv = environment
+            environment = obj.env
+            let wasClosed = environment.closed
+            environment.closed = true
+
+            let val = try dereferExpr.referer.accept(self)
+            try assign(valueType: val.type, dst: dereferExpr.referer as! Assignable, value: value)
+
+            environment.closed = wasClosed
+            environment = prevEnv
 
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
@@ -139,9 +158,23 @@ class Interpreter: Visitor {
         }
 
         let paramNames = node.params.map { $0.name.value }
-        let type = MooseType.Function(node.params.map { $0.declaredType }, node.returnType)
-        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body)
+        let type = FunctionType(params: node.params.map { $0.declaredType }, returnType: node.returnType)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
         environment.set(function: obj.name, value: obj)
+        return VoidObj()
+    }
+
+    func visit(_ node: OperationStatement) throws -> MooseObject {
+        // The global scope was already added by GlobalEnvironmentExplorer
+        guard !environment.isGlobal() else {
+            return VoidObj()
+        }
+
+        let paramNames = node.params.map { $0.name.value }
+        let params = node.params.map { $0.declaredType }
+        let type = FunctionType(params: params, returnType: node.returnType)
+        let obj = OperatorObj(name: node.name, opPos: node.position, type: type, paramNames: paramNames, value: node.body, closure: environment)
+        environment.set(op: obj.name, value: obj)
         return VoidObj()
     }
 
@@ -198,15 +231,44 @@ class Interpreter: Visitor {
 
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
-            return try callee.function(args, environment)
+            // If the environment is already the class environment we do noting,
+            // however, if it is not we set the current environment to the
+            // global.
+            let oldEnv = environment
+            if !(environment is BuiltInClassEnvironment) {
+                environment = environment.global()
+            }
+
+            // If the environment was previously closed we need to reopen it,
+            // since functions can access variables in the enclosing scopes
+            let wasClosed = environment.closed
+            environment.closed = false
+
+            // Execute the function
+            let res = try callee.function(args, environment)
+
+            // Restore the environments
+            environment.closed = wasClosed
+            environment = oldEnv
+            return res
         } else if let callee = callee as? FunctionObj {
+            // Activate the  environment in which the function was defined
+            let oldEnv = environment
+            environment = callee.closure
+
+            // Open the environment, because it needs to access variables in the
+            // enclosing scopes
+            let wasClosed = environment.closed
+            environment.closed = false
             pushEnvironment()
 
+            // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
                 _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
             }
 
+            // Execute the body
             var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
@@ -214,51 +276,41 @@ class Interpreter: Visitor {
                 result = error.value
             }
 
+            // Reactivate the original environment
             popEnvironment()
-            return result
-        } else if let callee = callee as? BuiltInOperatorObj {
-            return try callee.function(args, environment)
-        } else if let callee = callee as? OperatorObj {
-            pushEnvironment()
-
-            let argPairs = Array(zip(callee.paramNames, args))
-            for (name, value) in argPairs {
-                _ = environment.updateInCurrentEnv(variable: name, value: value, allowDefine: true)
-            }
-
-            var result: MooseObject = VoidObj()
-            do {
-                _ = try callee.value.accept(self)
-            } catch let error as ReturnSignal {
-                result = error.value
-            }
-
-            popEnvironment()
+            environment.closed = wasClosed
+            environment = oldEnv
             return result
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
         }
     }
 
+    func evaluateArgs(exprs: [Expression]) throws -> ([MooseObject], [MooseType]) {
+        let wasClosed = environment.closed
+        environment.closed = false
+        let args = try exprs.map { try $0.accept(self) }
+        let argTypes = exprs.map { $0.mooseType! }
+        environment.closed = wasClosed
+        return (args, argTypes)
+    }
+
     func visit(_ node: PrefixExpression) throws -> MooseObject {
-        let args = try [node.right.accept(self)]
-        let argTypes = [node.right.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.right])
 
         let handler = try environment.get(op: node.op, pos: .Prefix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
     }
 
     func visit(_ node: InfixExpression) throws -> MooseObject {
-        let args = try [node.left, node.right].map { try $0.accept(self) }
-        let argTypes = [node.left.mooseType!, node.right.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.left, node.right])
 
         let handler = try environment.get(op: node.op, pos: .Infix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
     }
 
     func visit(_ node: PostfixExpression) throws -> MooseObject {
-        let args = try [node.left.accept(self)]
-        let argTypes = [node.left.mooseType!]
+        let (args, argTypes) = try evaluateArgs(exprs: [node.left])
 
         let handler = try environment.get(op: node.op, pos: .Postfix, params: argTypes)
         return try callFunctionOrOperator(callee: handler, args: args)
@@ -275,7 +327,7 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: CallExpression) throws -> MooseObject {
-        let args = try node.arguments.map { try $0.accept(self) }
+        let (args, argTypes) = try evaluateArgs(exprs: node.arguments)
 
         if node.isConstructorCall {
             let classDefinition = try environment.get(clas: node.function.value)
@@ -284,7 +336,6 @@ class Interpreter: Visitor {
             return try callConstructor(clas: classObject, args: args)
         }
 
-        let argTypes = args.map { $0.type }
         let callee = try environment.get(function: node.function.value, params: argTypes)
         return try callFunctionOrOperator(callee: callee, args: args)
     }
@@ -297,40 +348,42 @@ class Interpreter: Visitor {
         for (name, arg) in zip(clas.propertyNames, args) {
             _ = clas.updateInCurrentEnv(variable: name, value: arg)
         }
+
+        // Bind all methods to this excat object
+        clas.bindMethods()
+
         return ClassObject(env: clas)
-    }
-
-    func visit(_: OperationStatement) throws -> MooseObject {
-        // The global scope was already added by GlobalEnvironmentExplorer
-        guard !environment.isGlobal() else {
-            return VoidObj()
-        }
-
-        return VoidObj()
     }
 
     func visit(_ node: Dereferer) throws -> MooseObject {
         let obj = try node.obj.accept(self)
-//        guard let obj = obj as? ClassObject else {
-//            throw EnvironmentError(message: "Obj cannot be converted to ClassObject")
-//        }
 
         let prevEnv = environment
         environment = obj.env
+        let wasClosed = environment.closed
+        environment.closed = true
 
         let val = try node.referer.accept(self)
+        environment.closed = wasClosed
         environment = prevEnv
         return val
     }
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let index = (try node.index.accept(self) as! IntegerObj).value
-        guard let index = index else {
+        guard var index = index else {
             throw NilUsagePanic()
         }
 
         let indexable = (try node.indexable.accept(self)) as! IndexableObject
-        guard index < indexable.length() else {
+
+        // Negative index start counting form the back, just like Python
+        if index < 0 {
+            // this really is a substraction cause the index is negative
+            index = indexable.length() + index
+        }
+
+        guard index >= 0, index < indexable.length() else {
             throw OutOfBoundsPanic()
         }
         return indexable.getAt(index: index)
