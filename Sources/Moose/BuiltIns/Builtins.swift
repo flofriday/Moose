@@ -36,8 +36,6 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerDivBuiltIn),
 
         // Integer comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessBuiltIn),
         BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessEqualBuiltIn),
         BuiltInOperatorObj(name: ">", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerGreaterBuiltIn),
@@ -50,8 +48,6 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatDivBuiltIn),
 
         // Float comparisons
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatLessBuiltIn),
         BuiltInOperatorObj(name: "<=", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatLessEqualBuiltIn),
         BuiltInOperatorObj(name: ">", opPos: .Infix, params: [FloatType(), FloatType()], returnType: BoolType(), function: floatGreaterBuiltIn),
@@ -61,16 +57,13 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "&&", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: boolAndBuiltIn),
         BuiltInOperatorObj(name: "||", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: boolOrBuiltIn),
 
-        // Bool comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [BoolType(), BoolType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
-
-        // String comparison
-        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [StringType(), StringType()], returnType: BoolType(), function: genericEqualBuiltIn),
-        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [StringType(), StringType()], returnType: BoolType(), function: genericNotEqualBuiltIn),
-
         // String calculations
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [StringType(), StringType()], returnType: StringType(), function: stringConcatBuiltIn),
+
+        // Generic Operators
+        BuiltInOperatorObj(name: "==", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: equalGeneric),
+        // Generic Operators
+        BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: notEqualGeneric),
     ]
 }
 

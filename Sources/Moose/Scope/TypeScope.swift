@@ -89,11 +89,15 @@ extension TypeScope {
     }
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
-        if let type = ops[op]?
-            .first(where: { isOpBy(pos: opPos, params: params, other: $0) })
-        {
-            return type
+        if let types = ops[op]?.filter({ isOpBy(pos: opPos, params: params, other: $0) }) {
+            if types.count > 1 {
+                throw ScopeError(message: "Multiple possible operators of `\(op)` with operands (\(params.map { $0.description }.joined(separator: "."))). You have to give more context to the operation call.")
+            }
+            if types.count == 1 {
+                return types.first!
+            }
         }
+
         guard let enclosing = enclosing, !closed else {
             throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")
         }

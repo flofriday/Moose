@@ -92,7 +92,7 @@ extension InterpreterTests {
             (
                 """
                 // Float arithmetic
-                // Note: it might be that these are flaky, because floating 
+                // Note: it might be that these are flaky, because floating
                 //point can be difficult
                 a = 1.23 + 78.9
                 b = 1.23 - 78.9
@@ -232,7 +232,7 @@ extension InterpreterTests {
                 """
                 // List method tests
                 a = [1].length()
-                l1: [Int] = [] 
+                l1: [Int] = []
                 b = l1.length()
                 c = [1, 234, 234, 3, 5].length()
                 """,

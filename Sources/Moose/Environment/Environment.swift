@@ -192,12 +192,12 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
         if let obj = other as? BuiltInOperatorObj {
-            return obj.opPos == pos && TypeScope.leftSuperOfRight(supers: params, subtypes: obj.params)
+            return obj.opPos == pos && TypeScope.leftSuperOfRight(supers: obj.params, subtypes: params)
         }
 
         if let obj = other as? OperatorObj {
-            let objParams = (obj.type as! FunctionType).params
-            if obj.opPos == pos, TypeScope.leftSuperOfRight(supers: params, subtypes: objParams) {
+            let storedParams = (obj.type as! FunctionType).params
+            if obj.opPos == pos, TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params) {
                 return true
             }
             return false

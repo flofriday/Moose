@@ -22,7 +22,7 @@ class MooseType: Equatable, CustomStringConvertible {
 
     func superOf(type other: MooseType) -> Bool { true }
 
-    static func == (lhs: MooseType, rhs: MooseType) -> Bool { lhs.superOf(type: rhs) }
+    static func == (lhs: MooseType, rhs: MooseType) -> Bool { lhs.superOf(type: rhs) && rhs.superOf(type: lhs) }
 }
 
 class AnyType: MooseType {
