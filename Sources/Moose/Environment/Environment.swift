@@ -137,14 +137,9 @@ extension BaseEnvironment {
 
 // Define all function operations
 extension BaseEnvironment {
-    private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
-        guard
-            let storedParams = (other as? FunctionType)?.params
-        else {
-            return false
-        }
-
-        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
+    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
+        guard let storedParams = (storedFunction as? FunctionType)?.params else { return nil }
+        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
     }
 
     func set(function: String, value: MooseObject) {
@@ -156,15 +151,14 @@ extension BaseEnvironment {
     }
 
     func get(function: String, params: [MooseType]) throws -> MooseObject {
-        if let objs = funcs[function]?
-            .filter({ isFuncBy(params: params, other: $0.type) })
-        {
-            if objs.count > 1 {
-                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
-            }
-            if objs.count == 1 {
-                return objs.first!
-            }
+        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
+            let rate = rate(storedFunction: storedFun.type, by: params)
+            guard let rate = rate else { return nil }
+            return (storedFun, rate)
+        }.sorted { $0.rate < $1.rate }
+
+        if let obj = objs?.first?.obj {
+            return obj
         }
 
         guard let enclosing = enclosing, !closed else {
@@ -174,36 +168,38 @@ extension BaseEnvironment {
     }
 
     func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
-        if let objs = funcs[function]?
-            .filter({ isFuncBy(params: params, other: $0.type) })
-        {
-            if objs.count > 1 {
-                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
-            }
-            if objs.count == 1 {
-                return objs.first!
-            }
+        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
+            let rate = rate(storedFunction: storedFun.type, by: params)
+            guard let rate = rate else { return nil }
+            return (storedFun, rate)
+        }.sorted { $0.rate < $1.rate }
+
+        if let obj = objs?.first?.obj {
+            return obj
         }
+
         throw EnvironmentError(message: "Function '\(function)' not found.")
     }
 }
 
 // Define all function operations
 extension BaseEnvironment {
-    private func isOpBy(pos: OpPos, params: [MooseType], other: MooseObject) -> Bool {
-        if let obj = other as? BuiltInOperatorObj {
-            return obj.opPos == pos && TypeScope.leftSuperOfRight(supers: obj.params, subtypes: params)
+    private func rate(storedOp: MooseObject, by pos: OpPos, and params: [MooseType]) -> Int? {
+        let storedPos: OpPos!
+        let storedParams: [MooseType]!
+        switch storedOp {
+        case let o as BuiltInOperatorObj:
+            storedPos = o.opPos
+            storedParams = o.params
+        case let o as OperatorObj:
+            storedPos = o.opPos
+            storedParams = (o.type as! FunctionType).params
+        default:
+            return nil
         }
 
-        if let obj = other as? OperatorObj {
-            let storedParams = (obj.type as! FunctionType).params
-            if obj.opPos == pos, TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params) {
-                return true
-            }
-            return false
-        }
-
-        return false
+        guard pos == storedPos else { return nil }
+        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
     }
 
     func set(op: String, value: MooseObject) {
@@ -215,7 +211,13 @@ extension BaseEnvironment {
     }
 
     func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject {
-        if let obj = ops[op]?.first(where: { isOpBy(pos: pos, params: params, other: $0) }) {
+        let objs = ops[op]?.compactMap { storedOp -> (obj: MooseObject, rate: Int)? in
+            let rate = rate(storedOp: storedOp, by: pos, and: params)
+            guard let rate = rate else { return nil }
+            return (storedOp, rate)
+        }.sorted { $0.rate < $1.rate }
+
+        if let obj = objs?.first?.obj {
             return obj
         }
         guard let enclosing = enclosing, !closed else {

@@ -23,6 +23,9 @@ class BuiltIns {
 
         // Debug functions
         BuiltInFunctionObj(name: "dbgEnv", params: [], returnType: VoidType(), function: environmentBuiltIn),
+
+        // Casting Functions
+        BuiltInFunctionObj(name: "String", params: [ParamType()], returnType: StringType(), function: castToString),
     ]
 }
 
@@ -62,7 +65,6 @@ extension BuiltIns {
 
         // Generic Operators
         BuiltInOperatorObj(name: "==", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: equalGeneric),
-        // Generic Operators
         BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: notEqualGeneric),
     ]
 }

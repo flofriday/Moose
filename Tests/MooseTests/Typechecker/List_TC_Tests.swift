@@ -85,14 +85,14 @@ extension TypecheckerTests {
 
     func test_indexing_runThrough() throws {
         try runValidTests(name: #function) {
-            """
-            a = [1,2,3]
-            a[0]
-            """
-            """
-            func arr () > [Int] { return [1,3,4] }
-            arr()[2]
-            """
+//            """
+//            a = [1,2,3]
+//            a[0]
+//            """
+//            """
+//            func arr () > [Int] { return [1,3,4] }
+//            arr()[2]
+//            """
             """
             mut a: Int = [1,2,3][1] + 2
             """

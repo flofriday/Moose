@@ -129,7 +129,7 @@ class StringObj: MooseObject {
 
     var description: String {
         if let description = value?.description {
-            return "\"\(description)\""
+            return "\(description)"
         }
         return "nil"
     }
