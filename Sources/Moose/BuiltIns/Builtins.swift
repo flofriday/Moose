@@ -66,6 +66,9 @@ extension BuiltIns {
         // Generic Operators
         BuiltInOperatorObj(name: "==", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: equalGeneric),
         BuiltInOperatorObj(name: "!=", opPos: .Infix, params: [ParamType(), ParamType()], returnType: BoolType(), function: notEqualGeneric),
+
+        BuiltInOperatorObj(name: "?", opPos: .Postfix, params: [ParamType()], returnType: BoolType(), function: notNullTest),
+        BuiltInOperatorObj(name: "!", opPos: .Prefix, params: [BoolType()], returnType: BoolType(), function: negateOperator),
     ]
 }
 

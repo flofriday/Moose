@@ -7,6 +7,8 @@ import Foundation
 enum Precendence: Int {
     case Lowest
     case OpDefault
+    case LogicalOR
+    case LogicalAND
     case Equals
     case LessGreater
     case Sum
@@ -41,7 +43,10 @@ class Parser {
     ]
 
     let opPrecendences: [String: Precendence] = [
+        "||": .LogicalOR,
+        "&&": .LogicalAND,
         "==": .Equals,
+        "!=": .Equals,
         "<": .LessGreater,
         ">": .LessGreater,
         "<=": .LessGreater,
@@ -660,7 +665,7 @@ extension Parser {
     }
 
     private var isStatementEnd: Bool {
-        isAtEnd() || check(oneOf: .SemiColon, .NLine)
+        isAtEnd() || check(oneOf: .SemiColon, .NLine, .LBrace, .RBrace)
     }
 
     internal func match(types: TokenType...) -> Bool {
