@@ -454,7 +454,7 @@ class ParserTests: BaseClass {
             ("hello().ident", true),
             ("hello.(test.ident)", false), // should not work since (test.ident) should not be referible
             ("(hello.false).ident", false),
-            ("123.ident", false),
+            ("123.ident", true), // since all types are objects, this is true
             ("ident.false", false),
             ("foo().bar()", true),
             ("(fuc().fun()).(ident.fun(2))", false),

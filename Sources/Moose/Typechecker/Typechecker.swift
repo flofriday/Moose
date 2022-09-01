@@ -60,6 +60,9 @@ class Typechecker: Visitor {
         let explorer = GlobalScopeExplorer(program: program, scope: scope)
         scope = try explorer.populate()
 
+        let secondPass = ClassDependecyPass(program: program, scope: scope)
+        scope = try secondPass.populate()
+
         try program.accept(self)
 
         guard errors.count == 0 else {
@@ -246,6 +249,12 @@ class Typechecker: Visitor {
         pushNewScope()
 
         for param in node.params {
+            if let className = (param.declaredType as? ClassType)?.name {
+                guard scope.has(clas: className) else {
+                    throw error(message: "Type `\(className)` of parameter `\(param.name.value)` could not be found.", node: param)
+                }
+            }
+
             try scope.add(variable: param.name.value, type: param.declaredType, mutable: param.mutable)
         }
 
@@ -316,4 +325,16 @@ extension Typechecker {
         }
         scope = enclosing
     }
+}
+
+internal func error(message: String, node: Node) -> CompileErrorMessage {
+    let locator = AstLocator(node: node)
+    let location = locator.getLocation()
+
+    return CompileErrorMessage(
+        line: location.line,
+        startCol: location.col,
+        endCol: location.endCol,
+        message: message
+    )
 }

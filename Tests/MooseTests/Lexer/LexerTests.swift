@@ -86,6 +86,7 @@ class LexerTests: XCTestCase {
         let ts = buildTokenList {
             (TokenType.Identifier, "let")
             (TokenType.Identifier, "a")
+            (TokenType.NLine, "\n")
             (TokenType.Operator(pos: .Infix, assign: false), "+=")
             (TokenType.NLine, "\n")
             (TokenType.EOF, " ")
