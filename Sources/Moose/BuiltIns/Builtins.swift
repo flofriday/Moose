@@ -92,6 +92,9 @@ extension BuiltIns {
 
         let type = ListType(IntType())
         let n = (params[0] as! IntegerObj).value! - 1
+        guard n >= 0 else {
+            return ListObj(type: type, value: [])
+        }
         let l = Array(0 ... n).map { IntegerObj(value: $0) }
         return ListObj(type: type, value: l)
     }
