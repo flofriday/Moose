@@ -154,6 +154,10 @@ extension TypecheckerTests {
             class B < C { }
             class C { func a() > Int {return 2} }
             """
+
+            """
+            class A { a: C }
+            """
         }
     }
 
