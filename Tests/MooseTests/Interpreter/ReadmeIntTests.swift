@@ -142,10 +142,52 @@ extension InterpreterTests {
                     ("cnt2", IntegerObj(value: 34)),
                 ]
             ),
+            (
+                """
+                // Classic Function
+                func myFunction(age: Int, name: String) > String {
+                    return "Hi I am " + name + " " + age.toString()
+                }
+
+                p = myFunction(42, "Alan Turing") 
+                """,
+                [
+                    ("p", StringObj(value: "Hi I am Alan Turing 42")),
+                ]
+            ),
+            (
+                """
+                // What if JS was right with adding numbers to strings?
+                infix + (a: String, b: Int) > String {
+                    return a + b.toString()
+                }
+
+                // A prefix + makes numbers positive
+                prefix + (a: Int) > Int {
+                    if a < 0 {
+                        return a * -1
+                    }
+                    return a
+                }
+
+                a = "4"
+                b = 12
+
+                c = a + b
+                print(c) // 412
+
+                // Adapted here for testsuite
+                mut d = -2
+                d = +d
+                print(d) // 2
+                """,
+                [
+                    ("c", StringObj(value: "412")),
+                    ("d", IntegerObj(value: 2)),
+                ]
+            ),
         ]
 
         try runValidTests(name: #function, tests)
     }
-
-    // TODO: add inheritance tests
 }

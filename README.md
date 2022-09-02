@@ -167,11 +167,11 @@ a = 3; // this is a comment
 ### Classic Functions
 
 ```jsx
-func myFunction(age: Int, name: String) > Person {
-	return Person(name, age)
+func myFunction(age: Int, name: String) > String {
+	return "Hi I am " + name + age.toString()
 }
 
-p = myFunction(12, "Alan Turing")
+print(myFunction(42, "Alan Turing"))
 ```
 
 ### Operator Functions
@@ -179,21 +179,26 @@ p = myFunction(12, "Alan Turing")
 Beside classic functions, Moose provides the possibility to write own operators for own types. In fact, all operators have a function implementation. There are 3 types of operator functions: `prefix`, `infix` and `postfix`
 
 ```jsx
-// from stdlib
-infix func (+) (a: [Int], b: [Int]) > [Int] {
-	return a.merge(b)
-}
-prefix func (+) (a: Int) > Int {
-	return a.abs()
+// What if JS was right with adding numbers to strings?
+infix + (a: String, b: Int) > String {
+	return a + b.toString()
 }
 
-a = [1,2,3]
-b = [2,3,4]
+// A prefix + makes numbers positive
+prefix + (a: Int) > Int {
+	if a < 0 {
+		return a * -1
+	}
+	return a
+}
+
+a = "4"
+b = 12
 
 c = a + b
-print(c) // 1,2,3,2,3,4
+print(c) // 412
 
-d = -2
+mut d = -2
 print(+d) // 2
 ```
 
@@ -225,6 +230,7 @@ class Person {
 
 // Classes have a default constructor in which all all fields have to be filled out
 anna = Person("Anna", 74)
+anna.hello()
 
 ```
 
