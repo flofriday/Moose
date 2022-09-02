@@ -44,6 +44,13 @@ extension Typechecker {
             throw ScopeError(message: "Couldn't find class \(node.function.value)")
         }
 
+        do {
+            // is required since constructor need to know all properties
+            try classScope.flat()
+        } catch let err as ScopeError {
+            throw error(message: err.message, node: node)
+        }
+
         guard MooseType.toType(node.function.value) is ClassType else {
             throw error(message: "`\(node.function.value)` is a built in type and therefore not constructable!", node: node)
         }

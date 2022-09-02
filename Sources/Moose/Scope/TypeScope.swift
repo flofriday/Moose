@@ -301,11 +301,15 @@ class ClassTypeScope: TypeScope {
         super.init(enclosing: enclosing)
     }
 
+    private var alreadyFlat = false
     /// Here we are flatting the class, so we are creating one class that is build-up from all
     /// respecting all inherited properties
     ///
     /// This function is called by the typechecker, so after all classes are checked, they all have nil as superclass and all have their respective functions and variables
     func flat() throws {
+        guard !alreadyFlat else { return }
+        alreadyFlat = true
+
         guard let superClass = superClass else { return }
         try superClass.flat()
 

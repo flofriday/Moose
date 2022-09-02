@@ -176,6 +176,14 @@ extension TypecheckerTests {
             a = A(2)
             print(a.a)
             """
+
+            """
+            a = A(2)
+            print(a.a)
+            class C { a: Int }
+            class A < B {}
+            class B < C {}
+            """
         }
     }
 }
