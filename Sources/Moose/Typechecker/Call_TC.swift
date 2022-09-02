@@ -44,6 +44,10 @@ extension Typechecker {
             throw ScopeError(message: "Couldn't find class \(node.function.value)")
         }
 
+        guard MooseType.toType(node.function.value) is ClassType else {
+            throw error(message: "`\(node.function.value)` is a built in type and therefore not constructable!", node: node)
+        }
+
         guard classScope.propertyCount == node.arguments.count, node.arguments.count == classScope.classProperties.count else {
             throw error(message: "Constructor needs \(classScope.classProperties.count) arguments (\(classScope.classProperties.map { $0.type.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
         }

@@ -71,12 +71,16 @@ extension TypeScope {
 
 // Define all op specific function
 extension TypeScope {
-    private func isOpBy(pos: OpPos, params: [MooseType], other: (MooseType, OpPos)) -> Bool {
-        let storedParams = (other.0 as? FunctionType)?.params
-        guard let storedParams = storedParams else { return false }
-
-        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
-            && pos == other.1
+    /// Rates other operation from 0 to n.
+    /// If a rating is lower, it means that the parameter are fitting better than if it would be higher
+    ///
+    /// nil means it does not match
+    /// 0 is exact match, 1 is away by 1, 2 ..,
+    private func rate(storedOp: (MooseType, OpPos), by pos: OpPos, and params: [MooseType]) -> Int? {
+        let storedParams = (storedOp.0 as? FunctionType)?.params
+        guard let storedParams = storedParams else { return nil }
+        guard pos == storedOp.1 else { return nil }
+        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
     }
 
     private func currentContains(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
@@ -84,16 +88,35 @@ extension TypeScope {
             return false
         }
         return hits.contains {
-            isOpBy(pos: opPos, params: params, other: $0)
+            rate(storedOp: $0, by: opPos, and: params) == 0
         }
     }
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
-        if let type = ops[op]?
-            .first(where: { isOpBy(pos: opPos, params: params, other: $0) })
-        {
-            return type
+        // Go through all operators with name op and then map the results to (type, rate) where
+        // rate is the rating of the stored operator. If operator doesn't match in any way
+        // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
+        let ratedOps = ops[op]?.compactMap { o -> (type: (MooseType, OpPos), rate: Int)? in
+            let rate = rate(storedOp: o, by: opPos, and: params)
+            guard let rate = rate else { return nil }
+            return (o, rate)
+        }.sorted(by: { $0.rate < $1.rate })
+
+        if let types = ratedOps {
+            // if only one operator was found, take it
+            if types.count == 1 {
+                return types.first!.type
+            }
+
+            if types.count > 1 {
+                // if the first 2 have the same rating, we cannot choose which one is taken as operator
+                guard types[0].rate != types[1].rate else {
+                    throw ScopeError(message: "Multiple possible operators of `\(op)` with operands (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the operation call.")
+                }
+                return types[0].type
+            }
         }
+
         guard let enclosing = enclosing, !closed else {
             throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")
         }
@@ -130,18 +153,15 @@ extension TypeScope {
 }
 
 extension TypeScope {
-    /// A function has to have same params OR the given params to check is .Nil
+    /// Rates storedFunction  from 0 to n.
+    /// If a rating is lower, it means that the parameters are fitting better than if it would be higher
     ///
-    ///  @params Parameter to check against (could contain .Nil params)
-    ///  @other Function to check aganst
-    private func isFuncBy(params: [MooseType], other: MooseType) -> Bool {
-        guard
-            let storedParams = (other as? FunctionType)?.params
-        else {
-            return false
-        }
-
-        return TypeScope.leftSuperOfRight(supers: storedParams, subtypes: params)
+    /// nil means it does not match
+    /// 0 is exact match, 1 is away by 1, 2 ..,
+    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
+        let storedParams = (storedFunction as? FunctionType)?.params
+        guard let storedParams = storedParams else { return nil }
+        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
     }
 
     private func currentContains(function: String, params: [MooseType]) -> Bool {
@@ -149,19 +169,29 @@ extension TypeScope {
             return false
         }
         return hits.contains {
-            isFuncBy(params: params, other: $0)
+            rate(storedFunction: $0, by: params) == 0
         }
     }
 
     func typeOf(function: String, params: [MooseType]) throws -> MooseType {
-        if let types = funcs[function]?
-            .filter({ isFuncBy(params: params, other: $0) })
-        {
-            if types.count > 1 {
-                throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
-            }
+        // Go through all functions with name function and then map the results to (type, rate) where
+        // rate is the rating of the stored function. If function doesn't match in any way
+        // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
+        let ratedFuncs = funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: Int)? in
+            let rate = rate(storedFunction: storedFunc, by: params)
+            guard let rate = rate else { return nil }
+            return (storedFunc, rate)
+        }.sorted { $0.rate < $1.rate }
+
+        if let types = ratedFuncs {
             if types.count == 1 {
-                return types.first!
+                return types.first!.type
+            }
+            if types.count > 1 {
+                guard types[0].rate != types[1].rate else {
+                    throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+                }
+                return types[0].type
             }
         }
         guard let enclosing = enclosing, !closed else {
@@ -237,16 +267,20 @@ extension TypeScope {
         return variables.count
     }
 
-    /// Determines if left types are all super types of right types
+    /// Caluclates the distance between two array of params
     ///
-    /// This is used e.g. to find functions with generic params
-    static func leftSuperOfRight(supers: [MooseType], subtypes: [MooseType]) -> Bool {
-        return subtypes.count == supers.count &&
-            zip(subtypes, supers)
-            .reduce(true) { acc, zip in
+    /// Returns `0` if params are exakt matches, `n` if "hamming distance" is `n` and `nil` if params are not compatibale
+    static func distanceSuperToSub(supers: [MooseType], subtypes: [MooseType]) -> Int? {
+        guard subtypes.count == supers.count else { return nil }
+
+        return zip(subtypes, supers)
+            .reduce(0) { acc, zip in
+                guard let acc = acc else { return nil }
+
                 let (subtype, supr) = zip
-                guard subtype is NilType || supr.superOf(type: subtype) else { return false }
-                return acc
+                if subtype == supr { return acc }
+                if subtype is NilType || supr.superOf(type: subtype) { return acc + 1 }
+                return nil
             }
     }
 }
@@ -301,6 +335,14 @@ class ClassTypeScope: TypeScope {
         }
         fns.forEach { fns[$0.key] = $0.value }
         funcs = fns
+    }
+
+    func extends(clas: String) -> Bool {
+        if className == clas { return true }
+        if let superClass = superClass {
+            return superClass.extends(clas: clas)
+        }
+        return false
     }
 
     var propertyCount: Int {

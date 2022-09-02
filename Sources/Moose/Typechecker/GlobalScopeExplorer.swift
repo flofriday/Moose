@@ -17,6 +17,8 @@ class GlobalScopeExplorer: BaseVisitor {
     var scope: TypeScope
     let program: Program
 
+    var errors = [CompileErrorMessage]()
+
     init(program: Program, scope: TypeScope) {
         self.scope = scope
         self.program = program
@@ -25,20 +27,31 @@ class GlobalScopeExplorer: BaseVisitor {
 
     func populate() throws -> TypeScope {
         try visit(program)
+
+        guard errors.count == 0 else {
+            throw CompileError(messages: errors)
+        }
+
         return scope
     }
 
     override func visit(_ node: Program) throws {
         for stmt in node.statements {
-            switch stmt {
-            case is OperationStatement:
-                fallthrough
-            case is FunctionStatement:
-                try stmt.accept(self)
-            case is ClassStatement:
-                try stmt.accept(self)
-            default:
-                break
+            let oldScope = scope
+            do {
+                switch stmt {
+                case is OperationStatement:
+                    fallthrough
+                case is FunctionStatement:
+                    try stmt.accept(self)
+                case is ClassStatement:
+                    try stmt.accept(self)
+                default:
+                    break
+                }
+            } catch let err as CompileErrorMessage {
+                errors.append(err)
+                scope = oldScope
             }
         }
     }

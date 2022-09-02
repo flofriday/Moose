@@ -352,11 +352,15 @@ class Interpreter: Visitor {
         // Bind all methods to this excat object
         clas.bindMethods()
 
-        return ClassObject(env: clas)
+        return ClassObject(env: clas, name: clas.className)
     }
 
     func visit(_ node: Dereferer) throws -> MooseObject {
         let obj = try node.obj.accept(self)
+
+        guard !obj.isNil else {
+            throw RuntimeError(message: "Nullpointer Exception.")
+        }
 
         let prevEnv = environment
         environment = obj.env
@@ -391,7 +395,7 @@ class Interpreter: Visitor {
 
     func visit(_: Me) throws -> MooseObject {
         let env = try environment.nearestClass()
-        return ClassObject(env: env)
+        return ClassObject(env: env, name: env.className)
     }
 
     func visit(_ node: ForEachStatement) throws -> MooseObject {

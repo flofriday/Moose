@@ -12,6 +12,7 @@ protocol MooseObject: CustomStringConvertible {
     var description: String { get }
     var env: BuiltInClassEnvironment { get }
 
+    var isNil: Bool { get }
     func equals(other: MooseObject) -> Bool
 }
 
@@ -54,6 +55,7 @@ class IntegerObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { return value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -76,6 +78,7 @@ class FloatObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { return value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -98,6 +101,7 @@ class BoolObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { return value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -120,6 +124,7 @@ class StringObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { return value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -129,7 +134,7 @@ class StringObj: MooseObject {
 
     var description: String {
         if let description = value?.description {
-            return "\"\(description)\""
+            return "\(description)"
         }
         return "nil"
     }
@@ -143,6 +148,7 @@ class FunctionObj: MooseObject {
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Function_Env)
     var closure: Environment
 
+    var isNil: Bool { return false }
     init(name: String, type: MooseType, paramNames: [String], value: BlockStatement, closure: Environment) {
         self.name = name
         self.type = type
@@ -182,6 +188,7 @@ class BuiltInFunctionObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { false }
     func equals(other _: MooseObject) -> Bool {
         // Functions can never be equal
         return false
@@ -244,6 +251,7 @@ class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
         return Int64(value?.count ?? 0)
     }
 
+    var isNil: Bool { value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -306,6 +314,7 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
         return Int64(value?.count ?? 0)
     }
 
+    var isNil: Bool { value == nil }
     func equals(other: MooseObject) -> Bool {
         guard let other = other as? Self else {
             return false
@@ -348,18 +357,22 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
 
 // TODO: make classes indexable
 class ClassObject: MooseObject {
-    let classEnv: ClassEnvironment
+    let classEnv: ClassEnvironment?
     var env: BuiltInClassEnvironment {
+        guard let classEnv = classEnv else {
+            return BuiltInClassEnvironment(env: BaseEnvironment(enclosing: nil), value: self)
+        }
         return BuiltInClassEnvironment(env: classEnv, value: self)
     }
 
     let type: MooseType
 
-    init(env: ClassEnvironment) {
+    init(env: ClassEnvironment?, name: String) {
         classEnv = env
-        type = ClassType(env.className)
+        type = ClassType(name)
     }
 
+    var isNil: Bool { classEnv == nil }
     func equals(other: MooseObject) -> Bool {
         // Check they have the same type
         guard type == other.type else {
@@ -395,7 +408,7 @@ class ClassObject: MooseObject {
     }
 
     var description: String {
-        "<class object \(classEnv.className): \(type)>"
+        "<class object: \(type)>"
     }
 }
 
@@ -410,6 +423,7 @@ class VoidObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { false }
     func equals(other: MooseObject) -> Bool {
         return type == other.type
     }
@@ -437,6 +451,7 @@ class NilObj: MooseObject {
         env.value = self
     }
 
+    var isNil: Bool { true }
     func equals(other: MooseObject) -> Bool {
         return type == other.type
     }
@@ -459,8 +474,8 @@ class NilObj: MooseObject {
             return NilObj()
         case is VoidType:
             return VoidObj()
-        case is ClassType:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to class")
+        case let c as ClassType:
+            return ClassObject(env: nil, name: c.name)
         case is TupleType:
             return TupleObj(type: type, value: nil)
         case is ListType:

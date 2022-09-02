@@ -9,23 +9,12 @@ import Foundation
 
 extension Typechecker {
     func visit(_ node: ClassStatement) throws {
-        guard scope.isGlobal() else {
-            throw error(message: "INTERNAL ERROR: Classes can only be defined in global scope. Should already be checked in GlobalScopeExplorer!", node: node)
-        }
-
         guard let clasScope = scope.getScope(clas: node.name.value) else {
             throw error(message: "Scope of class `\(node.name.value)` was not found in global scope!", node: node)
         }
 
-        if let extends = node.extends {
-            guard let extendClass = scope.getScope(clas: extends.value) else {
-                throw error(message: "Class `\(extends.value)` was not found, so `\(node.name.value)` can not extend it.", node: extends)
-            }
-
-            clasScope.superClass = extendClass
-            // TODO: We need to check for cycles... so if there are dependency cycles
-            try checkCycle(for: extends, in: extendClass)
-        }
+        // Check if there are dependency circles (like `A < A` or `A < B, B < A`)
+        try checkCycle(for: node.name, in: clasScope)
 
         do {
             try clasScope.flat()

@@ -20,7 +20,7 @@ extension Typechecker {
         }
 
         pushNewScope()
-        try scope.add(variable: node.variable.value, type: typ, mutable: true)
+        try scope.add(variable: node.variable.value, type: typ, mutable: false)
         try node.body.accept(self)
         try popScope()
         node.returnDeclarations = node.body.returnDeclarations
