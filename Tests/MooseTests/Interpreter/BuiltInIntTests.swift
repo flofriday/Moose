@@ -249,16 +249,16 @@ extension InterpreterTests {
 
                 bool1 = 1.toBool()
                 bool2 = 0.toBool()
-                bool3 = nilInt.toBool()
+                //bool3 = nilInt.toBool()
                 bool4 = 3245.toBool()
 
                 float1 = 1.toFloat()
                 float2 = 600.toFloat()
-                float3 = nilInt.toFloat()
+                //float3 = nilInt.toFloat()
 
                 str1 = 1.toString()
                 str2 = 434599.toString()
-                str3 = nilInt.toString()
+                //str3 = nilInt.toString()
                 """,
                 [
                     ("bool1", BoolObj(value: true)),
