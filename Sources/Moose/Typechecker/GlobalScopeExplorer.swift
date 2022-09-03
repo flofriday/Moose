@@ -105,21 +105,14 @@ class GlobalScopeExplorer: BaseVisitor {
 
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
+            location: locationFromToken(token),
             message: message
         )
     }
 
     private func error(message: String, node: Node) -> CompileErrorMessage {
-        let locator = AstLocator(node: node)
-        let location = locator.getLocation()
-
         return CompileErrorMessage(
-            line: location.line,
-            startCol: location.col,
-            endCol: location.endCol,
+            location: node.location,
             message: message
         )
     }

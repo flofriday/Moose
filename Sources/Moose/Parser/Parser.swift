@@ -141,9 +141,11 @@ class Parser {
         }
     }
 
+    // TODO: this function is a mess and should be split up in multiple.
     /// Parses assign and expression statements. If expr starts with mut or first expression is followed by
     ///  `:` or `=`, it will parse an AssignStatement. Else it will return the expression as ExpressionStatement
     func parseAssignExpressionStatement() throws -> Statement {
+        let startToken = peek()
         let mutable = match(types: .Mut)
 
         let exprToken = peek()
@@ -193,7 +195,8 @@ class Parser {
         }
 
         try consumeStatementEnd()
-        return AssignStatement(token: token, assignable: assignable, value: expr, mutable: mutable, type: type)
+        let location = mergeLocations(locationFromToken(startToken), expr.location)
+        return AssignStatement(token: token, location: location, assignable: assignable, value: expr, mutable: mutable, type: type)
     }
 
     func parseReturnStatement() throws -> ReturnStatement {
@@ -301,8 +304,9 @@ class Parser {
             stmts.append(try parseStatement())
             skip(all: .NLine)
         }
-        _ = try consume(type: .RBrace, message: "expected } at end of function body")
-        return BlockStatement(token: token, statements: stmts)
+        let rbrace = try consume(type: .RBrace, message: "expected } at end of function body")
+        let location = mergeLocations(token, rbrace)
+        return BlockStatement(token: token, location: location, statements: stmts)
     }
 
     func parseIfStatement() throws -> IfStatement {
@@ -340,8 +344,10 @@ class Parser {
         skip(all: .NLine)
         let properties = try parseAllVariableDefinitions()
         let methods = try parseAllMethodDefinitions()
-        _ = try consume(type: .RBrace, message: "Expected '}' as end of class body, got '\(peek().lexeme)' instead.")
-        return ClassStatement(token: token, name: name, properties: properties, methods: methods, extends: extends)
+        let rbrace = try consume(type: .RBrace, message: "Expected '}' as end of class body, got '\(peek().lexeme)' instead.")
+
+        let location = mergeLocations(token, rbrace)
+        return ClassStatement(token: token, location: location, name: name, properties: properties, methods: methods, extends: extends)
     }
 
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
@@ -435,7 +441,9 @@ class Parser {
     func parseTupleAndGroupedExpression() throws -> Expression {
         let token = try consume(type: .LParen, message: "'(' expected, but got \(peek().lexeme) instead.")
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
-        _ = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
+        let rparen = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
+
+        let location = mergeLocations(token, rparen)
 
         guard !exprs.isEmpty else {
             // TODO: We should not only point to the opening parenthesis (token) here, but also to the closing.
@@ -448,7 +456,7 @@ class Parser {
         }
 
         // more than 1 expression is a tuple
-        return Tuple(token: token, expressions: exprs)
+        return Tuple(token: token, location: location, expressions: exprs)
     }
 
     func parseGroupedExpression() throws -> Expression {
@@ -484,8 +492,9 @@ class Parser {
         }
 
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
-        _ = try consume(type: .RParen, message: "expected ')' at end of argument list")
-        return CallExpression(token: token, function: function, arguments: exprs)
+        let rparen = try consume(type: .RParen, message: "expected ')' at end of argument list")
+        let location = mergeLocations(token, rparen)
+        return CallExpression(token: token, location: location, function: function, arguments: exprs)
     }
 
     /// Parses expression list until an (exclusivly) end tokentype occures.
@@ -631,15 +640,18 @@ class Parser {
 
     /// Parses strongly typed variable definitions, currently used by parameter and class property definitions
     func parseVariableDefinition() throws -> VariableDefinition {
+        let startToken = peek()
         let mut = match(types: .Mut)
         let ident = try parseIdentifier()
         let token = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
         let type = try parseValueTypeDefinition()
+        let endToken = previous()
         guard let type = type as? ParamType else {
             throw error(message: "Variable cannot be of type \(type).", token: token)
         }
 
-        return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
+        let location = mergeLocations(startToken, endToken)
+        return VariableDefinition(token: ident.token, location: location, mutable: mut, name: ident, type: type)
     }
 
     func parseAllVariableDefinitions() throws -> [VariableDefinition] {
@@ -743,21 +755,14 @@ extension Parser {
 extension Parser {
     private func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
+            location: locationFromToken(token),
             message: message
         )
     }
 
     func error(message: String, node: Node) -> CompileErrorMessage {
-        let locator = AstLocator(node: node)
-        let location = locator.getLocation()
-
         return CompileErrorMessage(
-            line: location.line,
-            startCol: location.col,
-            endCol: location.endCol,
+            location: node.location,
             message: message
         )
     }

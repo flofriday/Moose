@@ -286,6 +286,7 @@ extension Lexer {
 
 extension Lexer {
     func error(message: String) -> CompileErrorMessage {
-        CompileErrorMessage(line: line, startCol: column, endCol: column, message: message)
+        let location = Location(col: column, endCol: column, line: line, endLine: line)
+        return CompileErrorMessage(location: location, message: message)
     }
 }

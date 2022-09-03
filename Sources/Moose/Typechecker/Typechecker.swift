@@ -283,21 +283,14 @@ class Typechecker: Visitor {
 
     internal func error(message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            line: token.line,
-            startCol: token.column,
-            endCol: token.column + token.lexeme.count,
+            location: locationFromToken(token),
             message: message
         )
     }
 
     internal func error(message: String, node: Node) -> CompileErrorMessage {
-        let locator = AstLocator(node: node)
-        let location = locator.getLocation()
-
         return CompileErrorMessage(
-            line: location.line,
-            startCol: location.col,
-            endCol: location.endCol,
+            location: node.location,
             message: message
         )
     }
@@ -321,20 +314,15 @@ extension Typechecker {
     /// Replaces the current scope by the enclosing scope of the current scope. If it doesn't has an enclosing scope, the internal error occures.
     func popScope() throws {
         guard let enclosing = scope.enclosing else {
-            throw CompileErrorMessage(line: 1, startCol: 1, endCol: 1, message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
+            throw CompileErrorMessage(location: Location(col: 1, endCol: 1, line: 1, endLine: 1), message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
         }
         scope = enclosing
     }
 }
 
 internal func error(message: String, node: Node) -> CompileErrorMessage {
-    let locator = AstLocator(node: node)
-    let location = locator.getLocation()
-
     return CompileErrorMessage(
-        line: location.line,
-        startCol: location.col,
-        endCol: location.endCol,
+        location: node.location,
         message: message
     )
 }

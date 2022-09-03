@@ -6,6 +6,7 @@ import Foundation
 
 protocol Node: CustomStringConvertible {
     var token: Token { get }
+    var location: Location { get }
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R
 }
 
@@ -35,8 +36,9 @@ class Program {
 }
 
 class AssignStatement {
-    init(token: Token, assignable: Assignable, value: Expression, mutable: Bool, type: MooseType?) {
+    init(token: Token, location: Location, assignable: Assignable, value: Expression, mutable: Bool, type: MooseType?) {
         self.token = token
+        self.location = location
         self.assignable = assignable
         self.value = value
         self.mutable = mutable
@@ -44,6 +46,7 @@ class AssignStatement {
     }
 
     let token: Token
+    let location: Location
     let assignable: Assignable
     let value: Expression
     let mutable: Bool
@@ -197,14 +200,16 @@ class PostfixExpression {
 }
 
 class VariableDefinition {
-    init(token: Token, mutable: Bool, name: Identifier, type: ParamType) {
+    init(token: Token, location: Location, mutable: Bool, name: Identifier, type: ParamType) {
         self.token = token
+        self.location = location
         self.mutable = mutable
         self.name = name
         declaredType = type
     }
 
     let token: Token
+    let location: Location
     let mutable: Bool
     let name: Identifier
     let declaredType: ParamType
@@ -215,12 +220,14 @@ class VariableDefinition {
 }
 
 class BlockStatement {
-    init(token: Token, statements: [Statement]) {
+    init(token: Token, location: Location, statements: [Statement]) {
         self.token = token
+        self.location = location
         self.statements = statements
     }
 
     let token: Token
+    let location: Location
     let statements: [Statement]
     var returnDeclarations: (MooseType, Bool)?
 }
@@ -264,13 +271,15 @@ class OperationStatement {
 }
 
 class CallExpression {
-    init(token: Token, function: Identifier, arguments: [Expression]) {
+    init(token: Token, location: Location, function: Identifier, arguments: [Expression]) {
         self.token = token
+        self.location = location
         self.function = function
         self.arguments = arguments
     }
 
     let token: Token
+    let location: Location
     let function: Identifier
     let arguments: [Expression]
     var mooseType: MooseType?
@@ -295,12 +304,14 @@ class IfStatement {
 }
 
 class Tuple: Assignable {
-    init(token: Token, expressions: [Expression]) {
+    init(token: Token, location: Location, expressions: [Expression]) {
         self.token = token
+        self.location = location
         self.expressions = expressions
     }
 
     let token: Token
+    let location: Location
     let expressions: [Expression]
     var mooseType: MooseType?
 
@@ -322,13 +333,15 @@ class Tuple: Assignable {
 
 class ClassStatement {
     let token: Token
+    let location: Location
     let name: Identifier
     let properties: [VariableDefinition]
     let methods: [FunctionStatement]
     let extends: Identifier?
 
-    init(token: Token, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement], extends: Identifier? = nil) {
+    init(token: Token, location: Location, name: Identifier, properties: [VariableDefinition], methods: [FunctionStatement], extends: Identifier? = nil) {
         self.token = token
+        self.location = location
         self.name = name
         self.properties = properties
         self.methods = methods
@@ -374,6 +387,14 @@ extension Program: Node {
         return f.token
     }
 
+    var location: Location {
+        guard let first = statements.first, let last = statements.last else {
+            return Location(col: 0, endCol: 0, line: 0, endLine: 0)
+        }
+
+        return mergeLocations(first.location, last.location)
+    }
+
     var description: String {
         statements.map {
             $0.description
@@ -399,11 +420,15 @@ extension AssignStatement: Statement {
 }
 
 extension Identifier: Expression {
+    var description: String { value }
+
+    var location: Location {
+        locationFromToken(token)
+    }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
-
-    var description: String { value }
 }
 
 extension Me: Expression {
@@ -412,6 +437,10 @@ extension Me: Expression {
     }
 
     var description: String { "me" }
+
+    var location: Location {
+        locationFromToken(token)
+    }
 }
 
 extension ReturnStatement: Statement {
@@ -420,6 +449,15 @@ extension ReturnStatement: Statement {
     }
 
     var description: String { "\(token.lexeme) \(returnValue?.description ?? "")" }
+
+    var location: Location {
+        let tokenLocation = locationFromToken(token)
+        guard let expr = returnValue else {
+            return tokenLocation
+        }
+
+        return mergeLocations(tokenLocation, expr.location)
+    }
 }
 
 extension ExpressionStatement: Statement {
@@ -428,10 +466,15 @@ extension ExpressionStatement: Statement {
     }
 
     var description: String { expression.description }
+
+    var location: Location { expression.location }
 }
 
 extension IntegerLiteral: Expression {
     var description: String { token.lexeme }
+
+    var location: Location { locationFromToken(token) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -439,6 +482,9 @@ extension IntegerLiteral: Expression {
 
 extension FloatLiteral: Expression {
     var description: String { token.lexeme }
+
+    var location: Location { locationFromToken(token) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -446,6 +492,9 @@ extension FloatLiteral: Expression {
 
 extension Nil: Expression {
     var description: String { "nil" }
+
+    var location: Location { locationFromToken(token) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -453,6 +502,9 @@ extension Nil: Expression {
 
 extension Boolean: Expression {
     var description: String { token.lexeme }
+
+    var location: Location { locationFromToken(token) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -460,6 +512,9 @@ extension Boolean: Expression {
 
 extension StringLiteral: Expression {
     var description: String { "\"\(token.lexeme)\"" }
+
+    var location: Location { locationFromToken(token) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -474,6 +529,9 @@ extension Tuple: Expression {
 
 extension PrefixExpression: Expression {
     var description: String { "(\(op)\(right.description))" }
+
+    var location: Location { mergeLocations(locationFromToken(token), right.location) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -481,6 +539,9 @@ extension PrefixExpression: Expression {
 
 extension InfixExpression: Expression {
     var description: String { "(\(left.description) \(op) \(right.description))" }
+
+    var location: Location { mergeLocations(left.location, right.location) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -488,6 +549,7 @@ extension InfixExpression: Expression {
 
 extension PostfixExpression: Expression {
     var description: String { "(\(left.description)\(op))" }
+    var location: Location { mergeLocations(left.location, locationFromToken(token)) }
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -516,6 +578,10 @@ extension FunctionStatement: Statement {
         return out
     }
 
+    var location: Location {
+        mergeLocations(locationFromToken(token), body.location)
+    }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
@@ -528,6 +594,10 @@ extension OperationStatement: Statement {
         out += " > \(returnType.description)"
         out += " \(body.description)"
         return out
+    }
+
+    var location: Location {
+        mergeLocations(locationFromToken(token), body.location)
     }
 
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
@@ -549,6 +619,15 @@ extension IfStatement: Statement {
             return base
         }
         return base + "else \(alt.description)"
+    }
+
+    var location: Location {
+        let tokenLocation = locationFromToken(token)
+        if let alternative = alternative {
+            return mergeLocations(tokenLocation, alternative.location)
+        } else {
+            return mergeLocations(tokenLocation, consequence.location)
+        }
     }
 
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
@@ -576,5 +655,9 @@ extension Dereferer: Expression {
 
     var description: String {
         "\(obj.description).\(referer.description)"
+    }
+
+    var location: Location {
+        return mergeLocations(obj.location, referer.location)
     }
 }

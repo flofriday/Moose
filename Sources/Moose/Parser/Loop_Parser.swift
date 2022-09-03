@@ -48,7 +48,7 @@ extension Parser {
             }
 
             let body = try parseBlockStatement()
-            return ForCStyleStatement(token: token, preStmt: nil, condition: preStmt.expression, postEachSmt: nil, body: body)
+            return ForCStyleStatement(token: token, preStmt: nil, condition: preStmt.expression, postEachStmt: nil, body: body)
         }
         skip(all: .NLine)
 
@@ -63,6 +63,6 @@ extension Parser {
         skip(all: .NLine)
 
         let body = try parseBlockStatement()
-        return ForCStyleStatement(token: token, preStmt: preStmt, condition: condition, postEachSmt: postStmt, body: body)
+        return ForCStyleStatement(token: token, preStmt: preStmt, condition: condition, postEachStmt: postStmt, body: body)
     }
 }

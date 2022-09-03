@@ -65,13 +65,8 @@ class ClassDependecyPass: BaseVisitor {
     }
 
     internal func error(message: String, node: Node) -> CompileErrorMessage {
-        let locator = AstLocator(node: node)
-        let location = locator.getLocation()
-
         return CompileErrorMessage(
-            line: location.line,
-            startCol: location.col,
-            endCol: location.endCol,
+            location: node.location,
             message: message
         )
     }
