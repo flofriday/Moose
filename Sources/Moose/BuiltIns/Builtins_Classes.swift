@@ -328,6 +328,10 @@ struct BuiltInClassEnvironment: Environment {
         env.getAllVariables()
     }
 
+    func has(function: String, params: [MooseType]) -> Bool {
+        env.has(function: function, params: params)
+    }
+
     func set(function: String, value: MooseObject) {
         env.set(function: function, value: value)
     }

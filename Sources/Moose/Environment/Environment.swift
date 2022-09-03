@@ -10,6 +10,7 @@ protocol Environment {
 
     func set(function: String, value: MooseObject)
     func get(function: String, params: [MooseType]) throws -> MooseObject
+    func has(function: String, params: [MooseType]) -> Bool
 
     func set(op: String, value: MooseObject)
     func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject
@@ -137,9 +138,11 @@ extension BaseEnvironment {
 
 // Define all function operations
 extension BaseEnvironment {
-    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
-        guard let storedParams = (storedFunction as? FunctionType)?.params else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
+    func has(function: String, params: [MooseType]) -> Bool {
+        guard let hits = funcs[function] else { return false }
+        return hits.contains {
+            TypeScope.rate(storedFunction: $0.type, by: params) == 0
+        }
     }
 
     func set(function: String, value: MooseObject) {
@@ -150,12 +153,16 @@ extension BaseEnvironment {
         funcs[function]!.append(value)
     }
 
-    func get(function: String, params: [MooseType]) throws -> MooseObject {
-        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
-            let rate = rate(storedFunction: storedFun.type, by: params)
+    private func getAllSorted(functions name: String, with params: [MooseType]) -> [(obj: MooseObject, rate: Int)]? {
+        funcs[name]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
+            let rate = TypeScope.rate(storedFunction: storedFun.type, by: params)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
+    }
+
+    func get(function: String, params: [MooseType]) throws -> MooseObject {
+        let objs = getAllSorted(functions: function, with: params)
 
         if let obj = objs?.first?.obj {
             return obj
@@ -169,7 +176,7 @@ extension BaseEnvironment {
 
     func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
         let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
-            let rate = rate(storedFunction: storedFun.type, by: params)
+            let rate = TypeScope.rate(storedFunction: storedFun.type, by: params)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
@@ -234,6 +241,10 @@ extension BaseEnvironment {
     }
 
     func get(clas: String) throws -> ClassEnvironment {
+        guard isGlobal() else {
+            return try global().get(clas: clas)
+        }
+
         guard let env = classDefinitions[clas] else {
             throw EnvironmentError(message: "Class `\(clas)` not found.")
         }
@@ -346,7 +357,7 @@ extension BaseEnvironment {
 }
 
 class ClassEnvironment: BaseEnvironment {
-    let propertyNames: [String]
+    var propertyNames: [String]
     let className: String
     var superClass: ClassEnvironment?
 
@@ -369,6 +380,27 @@ class ClassEnvironment: BaseEnvironment {
         for meths in funcs {
             for meth in meths.value {
                 (meth as! FunctionObj).closure = self
+            }
+        }
+    }
+
+    private var alreadyFlat = false
+    func flat() {
+        guard !alreadyFlat else { return }
+        alreadyFlat = true
+
+        guard let superClass = superClass else { return }
+        superClass.flat()
+
+        // Run through all functions of superClass
+        for (superName, sFns) in superClass.funcs {
+            for sFn in sFns {
+                if let sFn = sFn as? FunctionObj, let sFnType = sFn.type as? FunctionType {
+                    // If function of superclass is not overridden by this class, add superclass function
+                    if !has(function: superName, params: sFnType.params) {
+                        set(function: superName, value: sFn)
+                    }
+                }
             }
         }
     }

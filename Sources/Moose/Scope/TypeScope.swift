@@ -153,23 +153,12 @@ extension TypeScope {
 }
 
 extension TypeScope {
-    /// Rates storedFunction  from 0 to n.
-    /// If a rating is lower, it means that the parameters are fitting better than if it would be higher
-    ///
-    /// nil means it does not match
-    /// 0 is exact match, 1 is away by 1, 2 ..,
-    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
-        let storedParams = (storedFunction as? FunctionType)?.params
-        guard let storedParams = storedParams else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
-    }
-
     private func currentContains(function: String, params: [MooseType]) -> Bool {
         guard let hits = funcs[function] else {
             return false
         }
         return hits.contains {
-            rate(storedFunction: $0, by: params) == 0
+            TypeScope.rate(storedFunction: $0, by: params) == 0
         }
     }
 
@@ -178,7 +167,7 @@ extension TypeScope {
         // rate is the rating of the stored function. If function doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
         let ratedFuncs = funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: Int)? in
-            let rate = rate(storedFunction: storedFunc, by: params)
+            let rate = TypeScope.rate(storedFunction: storedFunc, by: params)
             guard let rate = rate else { return nil }
             return (storedFunc, rate)
         }.sorted { $0.rate < $1.rate }
@@ -283,6 +272,17 @@ extension TypeScope {
                 return nil
             }
     }
+
+    /// Rates storedFunction  from 0 to n.
+    /// If a rating is lower, it means that the parameters are fitting better than if it would be higher
+    ///
+    /// nil means it does not match
+    /// 0 is exact match, 1 is away by 1, 2 ..,
+    static func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
+        let storedParams = (storedFunction as? FunctionType)?.params
+        guard let storedParams = storedParams else { return nil }
+        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
+    }
 }
 
 /// Class Scope specific methods
@@ -324,21 +324,39 @@ class ClassTypeScope: TypeScope {
         variables.forEach { vars[$0.key] = $0.value }
         variables = vars
 
-        var fns = superClass.funcs
-        for (name, fns) in funcs {
-            for fn in fns {
-                if let fn = fn as? FunctionType {
-                    if superClass.has(function: name, params: fn.params, includeEnclosing: false) {
-                        let superRettype = try superClass.returnType(function: name, params: fn.params)
-                        guard fn.returnType == superRettype else {
-                            throw ScopeError(message: "Function `\(name)(\(fn.params.map { $0.description }.joined(separator: ","))) > \(fn.returnType)` of class \(className) does not match return type \(fn.returnType) of superclass.")
+        // Run through all funcs of superclass
+        for (superName, sFns) in superClass.funcs {
+            for sFn in sFns {
+                if let sFn = sFn as? FunctionType {
+                    // if this class overrides a function from superclass, check if return types match each other
+                    // else (if superclass function was not overridden) add superclass function to functions of this class
+                    if has(function: superName, params: sFn.params, includeEnclosing: false) {
+                        let thisReturnType = try returnType(function: superName, params: sFn.params)
+                        guard sFn.returnType == thisReturnType else {
+                            throw ScopeError(message: "Function `\(superName)(\(sFn.params.map { $0.description }.joined(separator: ","))) > \(thisReturnType)` of class \(className) does not match return type \(sFn.returnType) of superclass.")
                         }
+                    } else {
+                        try add(function: superName, params: sFn.params, returnType: sFn.returnType)
                     }
                 }
             }
         }
-        fns.forEach { fns[$0.key] = $0.value }
-        funcs = fns
+
+//        for (name, fns) in funcs {
+//            for fn in fns {
+//                if let fn = fn as? FunctionType {
+//                    if superClass.has(function: name, params: fn.params, includeEnclosing: false) {
+//                        let superRettype = try superClass.returnType(function: name, params: fn.params)
+//                        guard fn.returnType == superRettype else {
+//                            throw ScopeError(message: "Function `\(name)(\(fn.params.map { $0.description }.joined(separator: ","))) > \(fn.returnType)` of class \(className) does not match return type \(fn.returnType) of superclass.")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        var fns = superClass.funcs
+//        fns.forEach { fns[$0.key] = $0.value }
+//        funcs = fns
     }
 
     func extends(clas: String) -> Bool {

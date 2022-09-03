@@ -70,6 +70,7 @@ class BoolType: ParamType {
 
 class ClassType: ParamType {
     let name: String
+
     override var asClass: ClassType? { self }
     override var description: String { name }
 

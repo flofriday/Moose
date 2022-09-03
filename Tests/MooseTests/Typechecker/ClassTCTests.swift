@@ -188,6 +188,12 @@ extension TypecheckerTests {
             class A < B {}
             class B < C {}
             """
+
+            """
+            class A < B { func a(a: String) {}}
+            class C { func a(a: String) {}}
+            class B < C { func a(a: Int) {}}
+            """
         }
     }
 }

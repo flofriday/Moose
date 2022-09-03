@@ -140,4 +140,73 @@ extension InterpreterTests {
     }
 
     // TODO: add inheritance tests
+
+    func test_methodInheritance() throws {
+        try runValidTests(name: #function) {
+            ("""
+            class A < B { func a(a: String) > String {return "A"}}
+            class C { func a(a: String) > String {return "C"}}
+            class B < C { func a(a: Int) > String {return "B"}}
+
+            cC = C().a("T")
+            bC = B().a("T")
+            bB = B().a(2)
+            aB = A().a(2)
+            aA = A().a("T")
+            """, [
+                ("cC", StringObj(value: "C")),
+                ("bC", StringObj(value: "C")),
+                ("bB", StringObj(value: "B")),
+                ("aB", StringObj(value: "B")),
+                ("aA", StringObj(value: "A")),
+            ])
+
+            // The only difference to the test above is
+            // that the class definitions are after the constructor calls
+            // we have to test this since it is the reason why we need the
+            // dependency resolver pass
+            ("""
+            cC = C().a("T")
+            bC = B().a("T")
+            bB = B().a(2)
+            aB = A().a(2)
+            aA = A().a("T")
+
+            class A < B { func a(a: String) > String {return "A"}}
+            class C { func a(a: String) > String {return "C"}}
+            class B < C { func a(a: Int) > String {return "B"}}
+            """, [
+                ("cC", StringObj(value: "C")),
+                ("bC", StringObj(value: "C")),
+                ("bB", StringObj(value: "B")),
+                ("aB", StringObj(value: "B")),
+                ("aA", StringObj(value: "A")),
+            ])
+
+            // The only difference to the test above is
+            // that it uses a constructor inside a method
+            ("""
+            cC = C().a("T")
+            bC = B().a("T")
+            bB = B().a(2)
+            aB = A().a(2)
+            aC = A().a("T")
+
+            class A < B { func a(a: String) > String {return C().a("T")}}
+            class C { func a(a: String) > String {return "C"}}
+            class B < C { func a(a: Int) > String {return "B"}}
+            """, [
+                ("cC", StringObj(value: "C")),
+                ("bC", StringObj(value: "C")),
+                ("bB", StringObj(value: "B")),
+                ("aB", StringObj(value: "B")),
+                ("aC", StringObj(value: "C")),
+            ])
+
+//            ("""
+//
+//            """, [
+//            ])
+        }
+    }
 }
