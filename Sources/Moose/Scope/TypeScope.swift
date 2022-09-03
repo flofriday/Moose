@@ -341,22 +341,6 @@ class ClassTypeScope: TypeScope {
                 }
             }
         }
-
-//        for (name, fns) in funcs {
-//            for fn in fns {
-//                if let fn = fn as? FunctionType {
-//                    if superClass.has(function: name, params: fn.params, includeEnclosing: false) {
-//                        let superRettype = try superClass.returnType(function: name, params: fn.params)
-//                        guard fn.returnType == superRettype else {
-//                            throw ScopeError(message: "Function `\(name)(\(fn.params.map { $0.description }.joined(separator: ","))) > \(fn.returnType)` of class \(className) does not match return type \(fn.returnType) of superclass.")
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        var fns = superClass.funcs
-//        fns.forEach { fns[$0.key] = $0.value }
-//        funcs = fns
     }
 
     func extends(clas: String) -> Bool {

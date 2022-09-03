@@ -392,6 +392,8 @@ class ClassEnvironment: BaseEnvironment {
         guard let superClass = superClass else { return }
         superClass.flat()
 
+        propertyNames += superClass.propertyNames
+
         // Run through all functions of superClass
         for (superName, sFns) in superClass.funcs {
             for sFn in sFns {

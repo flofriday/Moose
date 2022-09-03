@@ -209,4 +209,43 @@ extension InterpreterTests {
 //            ])
         }
     }
+
+    func test_propertyInheritance() throws {
+        try runValidTests(name: #function) {
+            // Tests basic property inheritance
+            ("""
+            a = A("AValue", "BValue")
+            aA = a.a
+            aB = a.b
+
+            class A < B { a: String}
+            class B { b: String }
+            """, [
+                ("aA", StringObj(value: "AValue")),
+                ("aB", StringObj(value: "BValue")),
+            ])
+
+            // tests property reference over multiple superclasses
+            ("""
+            a = A("AValue", "BValue").a()
+
+            class A < B { a: String; func a() > String { return b } }
+            class B < C {}
+            class C { b: String }
+            """, [
+                ("a", StringObj(value: "BValue")),
+            ])
+
+            // tests me reference to property over multiple superclasses
+            ("""
+            a = A("AValue", "BValue").a("InvalidString")
+
+            class A < B { a: String; func a(b: String) > String { return me.b } }
+            class B < C {}
+            class C { b: String }
+            """, [
+                ("a", StringObj(value: "BValue")),
+            ])
+        }
+    }
 }
