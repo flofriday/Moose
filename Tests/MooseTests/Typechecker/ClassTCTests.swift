@@ -196,4 +196,66 @@ extension TypecheckerTests {
             """
         }
     }
+
+    func test_classTyping_fail() throws {
+        try runInvalidTests(name: #function) {
+            """
+            a: A = B()
+
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: B = A(2)
+            print(a.a)
+
+            class A < B {a: Int}
+            class B {}
+            """
+
+            """
+            C(B())
+
+            class A < B {a: Int}
+            class B {}
+            class C {c: A}
+            """
+        }
+    }
+
+    func test_classTyping_ok() throws {
+        try runValidTests(name: #function) {
+            """
+            a: B = A()
+
+            class A < B {}
+            class B {}
+            """
+
+            """
+            C(A(2))
+
+            class A < B {a: Int}
+            class B {}
+            class C {c: B}
+            """
+
+            """
+            a(A())
+
+            func a(a: B) {}
+            class A < B{}
+            class B{}
+            """
+
+            """
+            ++A()
+
+            prefix ++ (a: B) {}
+            class A < B{}
+            class B{}
+            """
+        }
+    }
 }

@@ -60,8 +60,10 @@ extension Typechecker {
         }
 
         for (arg, prop) in zip(node.arguments, classScope.classProperties) {
-            guard arg.mooseType == prop.type else {
-                throw error(message: "Property `\(prop.name)` is of type `\(prop.type)`, but got `\(arg.mooseType?.description ?? "Unknown")` instead.", node: arg)
+            do {
+                try checkAssignment(given: prop.type, with: arg.mooseType!, on: arg)
+            } catch let err as CompileErrorMessage {
+                throw error(message: "Couldn't assign \(arg) to property \(prop.name): \(err.message)", node: arg)
             }
         }
 
