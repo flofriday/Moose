@@ -162,6 +162,13 @@ class AstLocator: Visitor {
         update(node)
     }
 
+    func visit(_ node: Is) throws {
+        update(node)
+
+        try node.expression.accept(self)
+        try node.type.accept(self)
+    }
+
     func visit(_ node: CallExpression) throws {
         update(node)
 

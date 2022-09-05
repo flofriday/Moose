@@ -30,6 +30,7 @@ protocol Visitor {
     func visit(_ node: Tuple) throws -> VisitorResult
     func visit(_ node: Nil) throws -> VisitorResult
     func visit(_ node: Me) throws -> VisitorResult
+    func visit(_ node: Is) throws -> VisitorResult
     func visit(_ node: CallExpression) throws -> VisitorResult
     func visit(_ node: OperationStatement) throws -> VisitorResult
     func visit(_ node: ClassStatement) throws -> VisitorResult
@@ -120,6 +121,10 @@ class BaseVisitor: Visitor {
     }
 
     func visit(_: Me) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: Is) throws {
         fatalError(errorMessage)
     }
 

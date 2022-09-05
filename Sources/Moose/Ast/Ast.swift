@@ -80,6 +80,20 @@ class Me {
     }
 }
 
+class Is {
+    let token: Token
+    let expression: Expression
+    let type: Identifier
+
+    var mooseType: MooseType?
+
+    init(token: Token, expression: Expression, type: Identifier) {
+        self.token = token
+        self.expression = expression
+        self.type = type
+    }
+}
+
 class ReturnStatement {
     init(token: Token, returnValue: Expression?) {
         self.token = token
@@ -412,6 +426,14 @@ extension Me: Expression {
     }
 
     var description: String { "me" }
+}
+
+extension Is: Expression {
+    func accept<V, R>(_ visitor: V) throws -> R where V: Visitor, R == V.VisitorResult {
+        try visitor.visit(self)
+    }
+
+    var description: String { "(\(expression) is \(type))" }
 }
 
 extension ReturnStatement: Statement {

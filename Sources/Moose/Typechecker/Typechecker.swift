@@ -243,6 +243,16 @@ class Typechecker: Visitor {
         node.mooseType = StringType()
     }
 
+    func visit(_ node: Is) throws {
+        try node.expression.accept(self)
+        if let clas = MooseType.toType(node.type.value) as? ClassType {
+            guard scope.has(clas: clas.name) else {
+                throw error(message: "Type `\(clas.name)` does not exist.", node: node.type)
+            }
+        }
+        node.mooseType = BoolType()
+    }
+
     func visit(_ node: FunctionStatement) throws {
         let wasFunction = isFunction
         isFunction = true

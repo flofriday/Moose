@@ -373,6 +373,8 @@ class ClassEnvironment: BaseEnvironment {
     init(copy: ClassEnvironment) {
         propertyNames = copy.propertyNames
         className = copy.className
+        superClass = copy.superClass
+        alreadyFlat = copy.alreadyFlat
         super.init(copy: copy)
     }
 

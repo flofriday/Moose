@@ -233,6 +233,14 @@ class Interpreter: Visitor {
         return ListObj(type: node.mooseType!, value: args)
     }
 
+    func visit(_ node: Is) throws -> MooseObject {
+        let obj = try node.expression.accept(self)
+        if let obj = obj as? ClassObject {
+            return BoolObj(value: obj.classEnv?.extends(clas: node.type.value).extends ?? false)
+        }
+        return BoolObj(value: obj.type.description == node.type.value)
+    }
+
     func callFunctionOrOperator(callee: MooseObject, args: [MooseObject]) throws -> MooseObject {
         if let callee = callee as? BuiltInFunctionObj {
             // If the environment is already the class environment we do noting,

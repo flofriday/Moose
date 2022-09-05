@@ -82,6 +82,7 @@ enum TokenType: Equatable, Hashable {
     case Void
     case Nil
     case Me
+    case Is
 }
 
 extension TokenType {
@@ -122,6 +123,7 @@ internal func lookUpIdent(ident: String) -> TokenType {
     case "if": return .If
     case "else": return .Else
     case "me": return .Me
+    case "is": return .Is
     default: return .Identifier
     }
 }

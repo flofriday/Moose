@@ -6,6 +6,7 @@ import Foundation
 
 enum Precendence: Int {
     case Lowest
+    case IsOperator
     case OpDefault
     case LogicalOR
     case LogicalAND
@@ -35,6 +36,7 @@ class Parser {
 
     // precendences by type
     let typePrecendences: [TokenType: Precendence] = [
+        .Is: .IsOperator,
         .Operator(pos: .Prefix, assign: false): .Prefix,
         .Operator(pos: .Postfix, assign: false): .Postfix,
         .LParen: .Call,
@@ -78,6 +80,7 @@ class Parser {
         infixParseFns[.LParen] = parseCallExpression
         infixParseFns[.LBracket] = parseIndex
         infixParseFns[.Dot] = parseDereferer
+        infixParseFns[.Is] = parseIs
 
         postfixParseFns[.Operator(pos: .Postfix, assign: true)] = parsePostfixExpression
         postfixParseFns[.Operator(pos: .Postfix, assign: false)] = parsePostfixExpression
@@ -403,6 +406,12 @@ class Parser {
     func parseMe() throws -> Me {
         let token = try consume(type: .Me, message: "Expected keyword `me`, but got `\(peek().lexeme)` instead.")
         return Me(token: token)
+    }
+
+    func parseIs(expression: Expression) throws -> Is {
+        let token = try consume(type: .Is, message: "Expected keyword `is`.")
+        let ident = try parseIdentifier()
+        return Is(token: token, expression: expression, type: ident)
     }
 
     func parseIntegerLiteral() throws -> Expression {
