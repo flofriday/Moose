@@ -10,8 +10,8 @@ import Foundation
 class TypeScope: Scope {
     typealias rateType = (rate: Int, extendStep: Int)
     internal var variables: [String: (type: MooseType, mut: Bool)] = [:]
-    internal var funcs: [String: [MooseType]] = [:]
-    private var ops: [String: [(MooseType, OpPos)]] = [:]
+    internal var funcs: [String: [FunctionType]] = [:]
+    private var ops: [String: [(FunctionType, OpPos)]] = [:]
 
     private var classes: [String: ClassTypeScope] = [:]
 
@@ -262,12 +262,15 @@ extension TypeScope {
     /// Caluclates the distance between two array of params
     ///
     /// Supers are the params of the function that should be callable with the params of subtypes.
+    ///
     /// classExtends is the function that is used to determine if and in how many steps a subtype class type extends a super class type parameter
     ///  the first param is the subclass and the second the eventual superclass
     ///
     /// Returns for rate: `0` if params are exakt matches, `n` if "hamming distance" is `n` and `nil` if params are not compatibale
     /// Returns for extendSteps: `0` if all class types are exaclty matching the super param types, `n` if the sum of all inheritances of subtypes to the supers class types is `n`
-    static func distanceSuperToSub(supers: [MooseType], subtypes: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> rateType? {
+    static func rate(storedFunction: FunctionType, by params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> rateType? {
+        let supers = storedFunction.params
+        let subtypes = params
         guard subtypes.count == supers.count else { return nil }
 
         return zip(subtypes, supers)
@@ -294,19 +297,7 @@ extension TypeScope {
             }
     }
 
-    /// Rates storedFunction  from 0 to n.
-    /// If a rating is lower, it means that the parameters are fitting better than if it would be higher
-    ///
-    /// nil means it does not match
-    /// rate: 0 is exact match of mooseType, 1 is away by 1, 2 ..,
-    /// extendStep: sum of number inheritance steps of all subclasses from params to the storedParams
-    static func rate(storedFunction: MooseType, by params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> rateType? {
-        let storedParams = (storedFunction as? FunctionType)?.params
-        guard let storedParams = storedParams else { return nil }
-        return distanceSuperToSub(supers: storedParams, subtypes: params, classExtends: classExtends)
-    }
-
-    static func rate(of storedFunction: MooseType, equalTo params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> Bool {
+    static func rate(of storedFunction: FunctionType, equalTo params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> Bool {
         guard let (rate, steps) = rate(storedFunction: storedFunction, by: params, classExtends: classExtends) else { return false }
         return rate == 0 && steps == 0
     }
@@ -354,17 +345,15 @@ class ClassTypeScope: TypeScope {
         // Run through all funcs of superclass
         for (superName, sFns) in superClass.funcs {
             for sFn in sFns {
-                if let sFn = sFn as? FunctionType {
-                    // if this class overrides a function from superclass, check if return types match each other
-                    // else (if superclass function was not overridden) add superclass function to functions of this class
-                    if has(function: superName, params: sFn.params, includeEnclosing: false) {
-                        let thisReturnType = try returnType(function: superName, params: sFn.params)
-                        guard sFn.returnType == thisReturnType else {
-                            throw ScopeError(message: "Function `\(superName)(\(sFn.params.map { $0.description }.joined(separator: ","))) > \(thisReturnType)` of class \(className) does not match return type \(sFn.returnType) of superclass.")
-                        }
-                    } else {
-                        try add(function: superName, params: sFn.params, returnType: sFn.returnType)
+                // if this class overrides a function from superclass, check if return types match each other
+                // else (if superclass function was not overridden) add superclass function to functions of this class
+                if has(function: superName, params: sFn.params, includeEnclosing: false) {
+                    let thisReturnType = try returnType(function: superName, params: sFn.params)
+                    guard sFn.returnType == thisReturnType else {
+                        throw ScopeError(message: "Function `\(superName)(\(sFn.params.map { $0.description }.joined(separator: ","))) > \(thisReturnType)` of class \(className) does not match return type \(sFn.returnType) of superclass.")
                     }
+                } else {
+                    try add(function: superName, params: sFn.params, returnType: sFn.returnType)
                 }
             }
         }

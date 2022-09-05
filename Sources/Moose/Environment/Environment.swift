@@ -144,7 +144,7 @@ extension BaseEnvironment {
         guard let hits = funcs[function] else { return false }
         return hits.contains {
 //            rate(storedFunction: $0.type, by: params) == 0
-            TypeScope.rate(of: $0.type, equalTo: params, classExtends: self.doesEnvironmentExtend)
+            TypeScope.rate(of: $0.type as! FunctionType, equalTo: params, classExtends: self.doesEnvironmentExtend)
         }
     }
 
@@ -158,7 +158,7 @@ extension BaseEnvironment {
 
     private func getAllSorted(functions name: String, with params: [MooseType]) -> [(obj: MooseObject, rate: rateType)]? {
         funcs[name]?.compactMap { storedFun -> (obj: MooseObject, rate: rateType)? in
-            let rate = TypeScope.rate(storedFunction: storedFun.type, by: params, classExtends: doesEnvironmentExtend)
+            let rate = TypeScope.rate(storedFunction: storedFun.type as! FunctionType, by: params, classExtends: doesEnvironmentExtend)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
@@ -179,7 +179,7 @@ extension BaseEnvironment {
 
     func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
         let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: rateType)? in
-            let rate = TypeScope.rate(storedFunction: storedFun.type, by: params, classExtends: doesEnvironmentExtend)
+            let rate = TypeScope.rate(storedFunction: storedFun.type as! FunctionType, by: params, classExtends: doesEnvironmentExtend)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
@@ -196,20 +196,20 @@ extension BaseEnvironment {
 extension BaseEnvironment {
     private func rate(storedOp: MooseObject, by pos: OpPos, and params: [MooseType]) -> rateType? {
         let storedPos: OpPos!
-        let storedParams: [MooseType]!
+        let storedFunction: FunctionType!
         switch storedOp {
         case let o as BuiltInOperatorObj:
             storedPos = o.opPos
-            storedParams = o.params
+            storedFunction = (o.type as! FunctionType)
         case let o as OperatorObj:
             storedPos = o.opPos
-            storedParams = (o.type as! FunctionType).params
+            storedFunction = (o.type as! FunctionType)
         default:
             return nil
         }
 
         guard pos == storedPos else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params, classExtends: doesEnvironmentExtend)
+        return TypeScope.rate(storedFunction: storedFunction, by: params, classExtends: doesEnvironmentExtend)
     }
 
     func set(op: String, value: MooseObject) {
