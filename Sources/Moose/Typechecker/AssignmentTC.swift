@@ -139,11 +139,11 @@ extension Typechecker {
     /// else check if assigntype is the same es the given type
     internal func checkAssignment(given givenType: MooseType, with assignType: MooseType, on node: Node, to variable: Identifier? = nil) throws {
         if let declaredClass = givenType as? ClassType, let valueClass = assignType as? ClassType {
-            guard scope.has(clas: declaredClass.name) else { throw error(message: "Class `\(declaredClass.name)` does not exist.", node: node) }
+            guard scope.global().has(clas: declaredClass.name) else { throw error(message: "Class `\(declaredClass.name)` does not exist.", node: node) }
 
             guard let valueClassScope = scope.getScope(clas: valueClass.name) else { throw error(message: "Class `\(valueClass.name)` does not exist.", node: node) }
 
-            guard valueClassScope.extends(clas: declaredClass.name) else {
+            guard valueClassScope.extends(clas: declaredClass.name).extends else {
                 throw error(message: "`\(valueClass.name)` does not extend declared type `\(declaredClass.name)`.", node: node)
             }
 

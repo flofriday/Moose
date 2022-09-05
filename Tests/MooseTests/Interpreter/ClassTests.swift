@@ -203,10 +203,55 @@ extension InterpreterTests {
                 ("aC", StringObj(value: "C")),
             ])
 
-//            ("""
-//
-//            """, [
-//            ])
+            // Tests that function with nearest params to class type is chosen
+            ("""
+            mut a: String = nil
+            t(A())
+
+            func t(x: C) { a = "C"}
+            func t(x: B) { a = "B"}
+            class A < B {}
+            class B < C {}
+            class C {}
+            """, [
+                ("a", StringObj(value: "B")),
+            ])
+
+            // Tests that the function of any is before a unkown function
+            ("""
+            mut a: String = "Unchanged"
+            print(A())
+
+            func print(b: C) { a = "Changed" }
+            class A {}
+            class C {}
+            """, [
+                ("a", StringObj(value: "Unchanged")),
+            ])
+
+            // Tests that the function with a class subtype is chosen over the any of print
+            ("""
+            mut a: String = "Unchanged"
+            print(A())
+
+            func print(b: C) { a = "Changed" }
+            class A < C {}
+            class C {}
+            """, [
+                ("a", StringObj(value: "Changed")),
+            ])
+
+            // Tests that the function with a class subtype is chosen over the any of print
+            ("""
+            mut a: String = "Unchanged"
+            ++A()
+
+            prefix ++ (b: B) { a = "Changed"}
+            class A < B{}
+            class B{}
+            """, [
+                ("a", StringObj(value: "Changed")),
+            ])
         }
     }
 
