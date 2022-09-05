@@ -22,6 +22,11 @@ extension Typechecker {
             throw error(message: err.message, node: node)
         }
 
+        // check if declared types exist
+        try node.properties.forEach {
+            try $0.accept(self)
+        }
+
         let prevScope = scope
         scope = clasScope
 

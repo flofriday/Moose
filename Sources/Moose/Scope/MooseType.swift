@@ -70,6 +70,7 @@ class BoolType: ParamType {
 
 class ClassType: ParamType {
     let name: String
+
     override var asClass: ClassType? { self }
     override var description: String { name }
 
@@ -79,7 +80,7 @@ class ClassType: ParamType {
 
     override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? ClassType else { return false }
-        return other.name == other.name
+        return name == other.name
     }
 }
 

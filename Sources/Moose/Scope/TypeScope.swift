@@ -8,9 +8,10 @@
 import Foundation
 
 class TypeScope: Scope {
+    typealias rateType = (rate: Int, extendStep: Int)
     internal var variables: [String: (type: MooseType, mut: Bool)] = [:]
-    internal var funcs: [String: [MooseType]] = [:]
-    private var ops: [String: [(MooseType, OpPos)]] = [:]
+    internal var funcs: [String: [FunctionType]] = [:]
+    private var ops: [String: [(FunctionType, OpPos)]] = [:]
 
     private var classes: [String: ClassTypeScope] = [:]
 
@@ -71,24 +72,14 @@ extension TypeScope {
 
 // Define all op specific function
 extension TypeScope {
-    /// Rates other operation from 0 to n.
-    /// If a rating is lower, it means that the parameter are fitting better than if it would be higher
-    ///
-    /// nil means it does not match
-    /// 0 is exact match, 1 is away by 1, 2 ..,
-    private func rate(storedOp: (MooseType, OpPos), by pos: OpPos, and params: [MooseType]) -> Int? {
-        let storedParams = (storedOp.0 as? FunctionType)?.params
-        guard let storedParams = storedParams else { return nil }
-        guard pos == storedOp.1 else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
-    }
-
     private func currentContains(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
         guard let hits = ops[op] else {
             return false
         }
         return hits.contains {
-            rate(storedOp: $0, by: opPos, and: params) == 0
+            guard opPos == $0.1 else { return false }
+            guard let (rate, steps) = TypeScope.rate(storedFunction: $0.0, by: params, classExtends: self.doesScopeExtend) else { return false }
+            return rate == 0 && steps == 0
         }
     }
 
@@ -96,8 +87,9 @@ extension TypeScope {
         // Go through all operators with name op and then map the results to (type, rate) where
         // rate is the rating of the stored operator. If operator doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
-        let ratedOps = ops[op]?.compactMap { o -> (type: (MooseType, OpPos), rate: Int)? in
-            let rate = rate(storedOp: o, by: opPos, and: params)
+        let ratedOps = ops[op]?.compactMap { o -> (type: (MooseType, OpPos), rate: rateType)? in
+            guard o.1 == opPos else { return nil }
+            let rate = TypeScope.rate(storedFunction: o.0, by: params, classExtends: self.doesScopeExtend)
             guard let rate = rate else { return nil }
             return (o, rate)
         }.sorted(by: { $0.rate < $1.rate })
@@ -153,23 +145,13 @@ extension TypeScope {
 }
 
 extension TypeScope {
-    /// Rates storedFunction  from 0 to n.
-    /// If a rating is lower, it means that the parameters are fitting better than if it would be higher
-    ///
-    /// nil means it does not match
-    /// 0 is exact match, 1 is away by 1, 2 ..,
-    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
-        let storedParams = (storedFunction as? FunctionType)?.params
-        guard let storedParams = storedParams else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
-    }
-
     private func currentContains(function: String, params: [MooseType]) -> Bool {
         guard let hits = funcs[function] else {
             return false
         }
         return hits.contains {
-            rate(storedFunction: $0, by: params) == 0
+            guard let (rate, steps) = TypeScope.rate(storedFunction: $0, by: params, classExtends: doesScopeExtend) else { return false }
+            return rate == 0 && steps == 0
         }
     }
 
@@ -177,8 +159,8 @@ extension TypeScope {
         // Go through all functions with name function and then map the results to (type, rate) where
         // rate is the rating of the stored function. If function doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
-        let ratedFuncs = funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: Int)? in
-            let rate = rate(storedFunction: storedFunc, by: params)
+        let ratedFuncs = funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: rateType)? in
+            let rate = TypeScope.rate(storedFunction: storedFunc, by: params, classExtends: self.doesScopeExtend)
             guard let rate = rate else { return nil }
             return (storedFunc, rate)
         }.sorted { $0.rate < $1.rate }
@@ -232,6 +214,13 @@ extension TypeScope {
     func isGlobal() -> Bool {
         return enclosing == nil && !closed
     }
+
+    func global() -> TypeScope {
+        guard let enclosing = enclosing else {
+            return self
+        }
+        return enclosing.global()
+    }
 }
 
 extension TypeScope {
@@ -244,10 +233,13 @@ extension TypeScope {
     }
 
     func has(clas: String) -> Bool {
+        guard isGlobal() else { return global().has(clas: clas) }
         return classes.contains(where: { $0.key == clas })
     }
 
     func getScope(clas: String) -> ClassTypeScope? {
+        guard isGlobal() else { return global().getScope(clas: clas) }
+
         if let clasScope = classes[clas] {
             return clasScope
         }
@@ -269,19 +261,45 @@ extension TypeScope {
 
     /// Caluclates the distance between two array of params
     ///
-    /// Returns `0` if params are exakt matches, `n` if "hamming distance" is `n` and `nil` if params are not compatibale
-    static func distanceSuperToSub(supers: [MooseType], subtypes: [MooseType]) -> Int? {
+    /// Supers are the params of the function that should be callable with the params of subtypes.
+    ///
+    /// classExtends is the function that is used to determine if and in how many steps a subtype class type extends a super class type parameter
+    ///  the first param is the subclass and the second the eventual superclass
+    ///
+    /// Returns for rate: `0` if params are exakt matches, `n` if "hamming distance" is `n` and `nil` if params are not compatibale
+    /// Returns for extendSteps: `0` if all class types are exaclty matching the super param types, `n` if the sum of all inheritances of subtypes to the supers class types is `n`
+    static func rate(storedFunction: FunctionType, by params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> rateType? {
+        let supers = storedFunction.params
+        let subtypes = params
         guard subtypes.count == supers.count else { return nil }
 
         return zip(subtypes, supers)
-            .reduce(0) { acc, zip in
-                guard let acc = acc else { return nil }
+            .reduce((0, 0)) { acc, zip -> rateType? in
+                guard let (rate, extendStep) = acc else { return nil }
 
                 let (subtype, supr) = zip
+                // check if type equivalent
                 if subtype == supr { return acc }
-                if subtype is NilType || supr.superOf(type: subtype) { return acc + 1 }
+                // check if type
+                if subtype is NilType || supr.superOf(type: subtype) { return (rate + 1, extendStep) }
+
+                if
+                    let subtype = subtype as? ClassType,
+                    let supr = supr as? ClassType
+                {
+                    let (extends, steps) = classExtends(subtype.name, supr.name)
+                    guard extends else { return nil }
+
+                    return (rate, extendStep + steps)
+                }
+
                 return nil
             }
+    }
+
+    static func rate(of storedFunction: FunctionType, equalTo params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> Bool {
+        guard let (rate, steps) = rate(storedFunction: storedFunction, by: params, classExtends: classExtends) else { return false }
+        return rate == 0 && steps == 0
     }
 }
 
@@ -301,11 +319,15 @@ class ClassTypeScope: TypeScope {
         super.init(enclosing: enclosing)
     }
 
+    private var alreadyFlat = false
     /// Here we are flatting the class, so we are creating one class that is build-up from all
     /// respecting all inherited properties
     ///
     /// This function is called by the typechecker, so after all classes are checked, they all have nil as superclass and all have their respective functions and variables
     func flat() throws {
+        guard !alreadyFlat else { return }
+        alreadyFlat = true
+
         guard let superClass = superClass else { return }
         try superClass.flat()
 
@@ -320,32 +342,45 @@ class ClassTypeScope: TypeScope {
         variables.forEach { vars[$0.key] = $0.value }
         variables = vars
 
-        var fns = superClass.funcs
-        for (name, fns) in funcs {
-            for fn in fns {
-                if let fn = fn as? FunctionType {
-                    if superClass.has(function: name, params: fn.params, includeEnclosing: false) {
-                        let superRettype = try superClass.returnType(function: name, params: fn.params)
-                        guard fn.returnType == superRettype else {
-                            throw ScopeError(message: "Function `\(name)(\(fn.params.map { $0.description }.joined(separator: ","))) > \(fn.returnType)` of class \(className) does not match return type \(fn.returnType) of superclass.")
-                        }
+        // Run through all funcs of superclass
+        for (superName, sFns) in superClass.funcs {
+            for sFn in sFns {
+                // if this class overrides a function from superclass, check if return types match each other
+                // else (if superclass function was not overridden) add superclass function to functions of this class
+                if has(function: superName, params: sFn.params, includeEnclosing: false) {
+                    let thisReturnType = try returnType(function: superName, params: sFn.params)
+                    guard sFn.returnType == thisReturnType else {
+                        throw ScopeError(message: "Function `\(superName)(\(sFn.params.map { $0.description }.joined(separator: ","))) > \(thisReturnType)` of class \(className) does not match return type \(sFn.returnType) of superclass.")
                     }
+                } else {
+                    try add(function: superName, params: sFn.params, returnType: sFn.returnType)
                 }
             }
         }
-        fns.forEach { fns[$0.key] = $0.value }
-        funcs = fns
     }
 
-    func extends(clas: String) -> Bool {
-        if className == clas { return true }
+    private func extendStep(clas: String, step: Int) -> (extends: Bool, steps: Int) {
+        if className == clas { return (true, step) }
         if let superClass = superClass {
-            return superClass.extends(clas: clas)
+            return superClass.extendStep(clas: clas, step: step + 1)
         }
-        return false
+        return (false, step)
+    }
+
+    /// Returns if and in how many steps a class extends an other class
+    func extends(clas: String) -> (extends: Bool, steps: Int) {
+        return extendStep(clas: clas, step: 0)
     }
 
     var propertyCount: Int {
         return super.variableCount
+    }
+}
+
+extension TypeScope {
+    /// Returns if and in how many steps a class extends an other class
+    func doesScopeExtend(clas: String, extend superclass: String) -> (extends: Bool, steps: Int) {
+        guard let subClas = getScope(clas: clas) else { return (false, 0) }
+        return subClas.extends(clas: superclass)
     }
 }

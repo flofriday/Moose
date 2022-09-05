@@ -154,6 +154,10 @@ extension TypecheckerTests {
             class B < C { }
             class C { func a() > Int {return 2} }
             """
+
+            """
+            class A { a: C }
+            """
         }
     }
 
@@ -175,6 +179,82 @@ extension TypecheckerTests {
             class B { a: Int }
             a = A(2)
             print(a.a)
+            """
+
+            """
+            a = A(2)
+            print(a.a)
+            class C { a: Int }
+            class A < B {}
+            class B < C {}
+            """
+
+            """
+            class A < B { func a(a: String) {}}
+            class C { func a(a: String) {}}
+            class B < C { func a(a: Int) {}}
+            """
+        }
+    }
+
+    func test_classTyping_fail() throws {
+        try runInvalidTests(name: #function) {
+            """
+            a: A = B()
+
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: B = A(2)
+            print(a.a)
+
+            class A < B {a: Int}
+            class B {}
+            """
+
+            """
+            C(B())
+
+            class A < B {a: Int}
+            class B {}
+            class C {c: A}
+            """
+        }
+    }
+
+    func test_classTyping_ok() throws {
+        try runValidTests(name: #function) {
+            """
+            a: B = A()
+
+            class A < B {}
+            class B {}
+            """
+
+            """
+            C(A(2))
+
+            class A < B {a: Int}
+            class B {}
+            class C {c: B}
+            """
+
+            """
+            a(A())
+
+            func a(a: B) {}
+            class A < B{}
+            class B{}
+            """
+
+            """
+            ++A()
+
+            prefix ++ (a: B) {}
+            class A < B{}
+            class B{}
             """
         }
     }

@@ -250,7 +250,7 @@ class Typechecker: Visitor {
 
         for param in node.params {
             if let className = (param.declaredType as? ClassType)?.name {
-                guard scope.has(clas: className) else {
+                guard scope.global().has(clas: className) else {
                     throw error(message: "Type `\(className)` of parameter `\(param.name.value)` could not be found.", node: param)
                 }
             }
@@ -279,6 +279,12 @@ class Typechecker: Visitor {
 
     func visit(_ node: VariableDefinition) throws {
         node.mooseType = node.declaredType
+
+        if let className = (node.declaredType as? ClassType)?.name {
+            guard scope.global().has(clas: className) else {
+                throw error(message: "Classtype `\(className)` of variable `\(node.name.value)` is not defined.", node: node)
+            }
+        }
     }
 
     internal func error(message: String, token: Token) -> CompileErrorMessage {

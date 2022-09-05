@@ -25,6 +25,10 @@ class Interpreter: Visitor {
     func run(program: Program) throws {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
+
+        let dependencyResolver = ClassDependencyResolverPass(program: program, environment: environment)
+        environment = try dependencyResolver.populate()
+
         _ = try visit(program)
     }
 
@@ -330,29 +334,32 @@ class Interpreter: Visitor {
         let (args, argTypes) = try evaluateArgs(exprs: node.arguments)
 
         if node.isConstructorCall {
-            let classDefinition = try environment.get(clas: node.function.value)
-            // create new object from definition
-            let classObject = ClassEnvironment(copy: classDefinition)
-            return try callConstructor(clas: classObject, args: args)
+            return try callConstructor(className: node.function.value, args: args)
         }
 
         let callee = try environment.get(function: node.function.value, params: argTypes)
         return try callFunctionOrOperator(callee: callee, args: args)
     }
 
-    private func callConstructor(clas: ClassEnvironment, args: [MooseObject]) throws -> MooseObject {
-        guard clas.propertyNames.count == args.count else {
+    private func callConstructor(className: String, args: [MooseObject]) throws -> MooseObject {
+        let classDefinition = try environment.get(clas: className)
+        // flat class definition to eliminate class hirachie
+        classDefinition.flat()
+        // create new object from definition
+        let classObject = ClassEnvironment(copy: classDefinition)
+
+        guard classObject.propertyNames.count == args.count else {
             throw EnvironmentError(message: "Args and property names have not same number of elements")
         }
 
-        for (name, arg) in zip(clas.propertyNames, args) {
-            _ = clas.updateInCurrentEnv(variable: name, value: arg)
+        for (name, arg) in zip(classObject.propertyNames, args) {
+            _ = classObject.updateInCurrentEnv(variable: name, value: arg)
         }
 
         // Bind all methods to this excat object
-        clas.bindMethods()
+        classObject.bindMethods()
 
-        return ClassObject(env: clas, name: clas.className)
+        return ClassObject(env: classObject, name: classObject.className)
     }
 
     func visit(_ node: Dereferer) throws -> MooseObject {
