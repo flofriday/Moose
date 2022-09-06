@@ -37,7 +37,7 @@ class ClassDependecyPass: BaseVisitor {
                 case is ClassStatement:
                     try stmt.accept(self)
                 default:
-                    return
+                    break
                 }
             } catch let err as CompileErrorMessage {
                 errors.append(err)

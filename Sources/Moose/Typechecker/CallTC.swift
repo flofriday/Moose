@@ -44,6 +44,13 @@ extension Typechecker {
             throw ScopeError(message: "Couldn't find class \(node.function.value)")
         }
 
+        do {
+            // is required since constructor need to know all properties
+            try classScope.flat()
+        } catch let err as ScopeError {
+            throw error(message: err.message, node: node)
+        }
+
         guard MooseType.toType(node.function.value) is ClassType else {
             throw error(message: "`\(node.function.value)` is a built in type and therefore not constructable!", node: node)
         }
@@ -53,8 +60,10 @@ extension Typechecker {
         }
 
         for (arg, prop) in zip(node.arguments, classScope.classProperties) {
-            guard arg.mooseType == prop.type else {
-                throw error(message: "Property `\(prop.name)` is of type `\(prop.type)`, but got `\(arg.mooseType?.description ?? "Unknown")` instead.", node: arg)
+            do {
+                try checkAssignment(given: prop.type, with: arg.mooseType!, on: arg)
+            } catch let err as CompileErrorMessage {
+                throw error(message: "Couldn't assign \(arg) to property \(prop.name): \(err.message)", node: arg)
             }
         }
 

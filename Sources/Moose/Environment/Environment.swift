@@ -10,6 +10,7 @@ protocol Environment {
 
     func set(function: String, value: MooseObject)
     func get(function: String, params: [MooseType]) throws -> MooseObject
+    func has(function: String, params: [MooseType]) -> Bool
 
     func set(op: String, value: MooseObject)
     func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject
@@ -45,6 +46,8 @@ extension Environment {
 // can assume here that the programs we see are well typed. And even if they
 // weren't it wouldn't be our concern but a bug in the typechecker.
 class BaseEnvironment: Environment {
+    typealias rateType = (rate: Int, extendStep: Int)
+
     var enclosing: Environment?
     var closed: Bool = false
     var variables: [String: MooseObject] = [:]
@@ -137,9 +140,12 @@ extension BaseEnvironment {
 
 // Define all function operations
 extension BaseEnvironment {
-    private func rate(storedFunction: MooseType, by params: [MooseType]) -> Int? {
-        guard let storedParams = (storedFunction as? FunctionType)?.params else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
+    func has(function: String, params: [MooseType]) -> Bool {
+        guard let hits = funcs[function] else { return false }
+        return hits.contains {
+//            rate(storedFunction: $0.type, by: params) == 0
+            TypeScope.rate(of: $0.type as! FunctionType, equalTo: params, classExtends: self.doesEnvironmentExtend)
+        }
     }
 
     func set(function: String, value: MooseObject) {
@@ -150,12 +156,16 @@ extension BaseEnvironment {
         funcs[function]!.append(value)
     }
 
-    func get(function: String, params: [MooseType]) throws -> MooseObject {
-        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
-            let rate = rate(storedFunction: storedFun.type, by: params)
+    private func getAllSorted(functions name: String, with params: [MooseType]) -> [(obj: MooseObject, rate: rateType)]? {
+        funcs[name]?.compactMap { storedFun -> (obj: MooseObject, rate: rateType)? in
+            let rate = TypeScope.rate(storedFunction: storedFun.type as! FunctionType, by: params, classExtends: doesEnvironmentExtend)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
+    }
+
+    func get(function: String, params: [MooseType]) throws -> MooseObject {
+        let objs = getAllSorted(functions: function, with: params)
 
         if let obj = objs?.first?.obj {
             return obj
@@ -168,8 +178,8 @@ extension BaseEnvironment {
     }
 
     func getInCurrentEnv(function: String, params: [MooseType]) throws -> MooseObject {
-        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: Int)? in
-            let rate = rate(storedFunction: storedFun.type, by: params)
+        let objs = funcs[function]?.compactMap { storedFun -> (obj: MooseObject, rate: rateType)? in
+            let rate = TypeScope.rate(storedFunction: storedFun.type as! FunctionType, by: params, classExtends: doesEnvironmentExtend)
             guard let rate = rate else { return nil }
             return (storedFun, rate)
         }.sorted { $0.rate < $1.rate }
@@ -184,22 +194,22 @@ extension BaseEnvironment {
 
 // Define all function operations
 extension BaseEnvironment {
-    private func rate(storedOp: MooseObject, by pos: OpPos, and params: [MooseType]) -> Int? {
+    private func rate(storedOp: MooseObject, by pos: OpPos, and params: [MooseType]) -> rateType? {
         let storedPos: OpPos!
-        let storedParams: [MooseType]!
+        let storedFunction: FunctionType!
         switch storedOp {
         case let o as BuiltInOperatorObj:
             storedPos = o.opPos
-            storedParams = o.params
+            storedFunction = (o.type as! FunctionType)
         case let o as OperatorObj:
             storedPos = o.opPos
-            storedParams = (o.type as! FunctionType).params
+            storedFunction = (o.type as! FunctionType)
         default:
             return nil
         }
 
         guard pos == storedPos else { return nil }
-        return TypeScope.distanceSuperToSub(supers: storedParams, subtypes: params)
+        return TypeScope.rate(storedFunction: storedFunction, by: params, classExtends: doesEnvironmentExtend)
     }
 
     func set(op: String, value: MooseObject) {
@@ -211,7 +221,7 @@ extension BaseEnvironment {
     }
 
     func get(op: String, pos: OpPos, params: [MooseType]) throws -> MooseObject {
-        let objs = ops[op]?.compactMap { storedOp -> (obj: MooseObject, rate: Int)? in
+        let objs = ops[op]?.compactMap { storedOp -> (obj: MooseObject, rate: rateType)? in
             let rate = rate(storedOp: storedOp, by: pos, and: params)
             guard let rate = rate else { return nil }
             return (storedOp, rate)
@@ -234,6 +244,10 @@ extension BaseEnvironment {
     }
 
     func get(clas: String) throws -> ClassEnvironment {
+        guard isGlobal() else {
+            return try global().get(clas: clas)
+        }
+
         guard let env = classDefinitions[clas] else {
             throw EnvironmentError(message: "Class `\(clas)` not found.")
         }
@@ -346,7 +360,7 @@ extension BaseEnvironment {
 }
 
 class ClassEnvironment: BaseEnvironment {
-    let propertyNames: [String]
+    var propertyNames: [String]
     let className: String
     var superClass: ClassEnvironment?
 
@@ -359,6 +373,8 @@ class ClassEnvironment: BaseEnvironment {
     init(copy: ClassEnvironment) {
         propertyNames = copy.propertyNames
         className = copy.className
+        superClass = copy.superClass
+        alreadyFlat = copy.alreadyFlat
         super.init(copy: copy)
     }
 
@@ -370,6 +386,54 @@ class ClassEnvironment: BaseEnvironment {
             for meth in meths.value {
                 (meth as! FunctionObj).closure = self
             }
+        }
+    }
+
+    private var alreadyFlat = false
+    func flat() {
+        guard !alreadyFlat else { return }
+        alreadyFlat = true
+
+        guard let superClass = superClass else { return }
+        superClass.flat()
+
+        propertyNames += superClass.propertyNames
+
+        // Run through all functions of superClass
+        for (superName, sFns) in superClass.funcs {
+            for sFn in sFns {
+                if let sFn = sFn as? FunctionObj, let sFnType = sFn.type as? FunctionType {
+                    // If function of superclass is not overridden by this class, add superclass function
+                    if !has(function: superName, params: sFnType.params) {
+                        set(function: superName, value: sFn)
+                    }
+                }
+            }
+        }
+    }
+
+    private func extendStep(clas: String, step: Int) -> (extends: Bool, steps: Int) {
+        if className == clas { return (true, step) }
+        if let superClass = superClass {
+            return superClass.extendStep(clas: clas, step: step + 1)
+        }
+        return (false, step)
+    }
+
+    /// Returns if and in how many steps a class extends an other class
+    func extends(clas: String) -> (extends: Bool, steps: Int) {
+        return extendStep(clas: clas, step: 0)
+    }
+}
+
+extension Environment {
+    /// Returns if and in how many steps a class extends an other class
+    func doesEnvironmentExtend(clas: String, extend superclass: String) -> (extends: Bool, steps: Int) {
+        do {
+            let subClass = try get(clas: clas)
+            return subClass.extends(clas: superclass)
+        } catch {
+            return (false, 0)
         }
     }
 }

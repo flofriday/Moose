@@ -1,0 +1,8 @@
+
+a = A(2)
+
+print(a.b)
+
+class A < B {}
+
+class B {b: Int}

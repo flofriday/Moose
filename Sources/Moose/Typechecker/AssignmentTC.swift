@@ -43,9 +43,7 @@ extension Typechecker {
     private func assign(valueType: MooseType, to dereferer: Dereferer, with declaredType: MooseType?, on node: AssignStatement) throws {
         // TODO: is something like `mut A().b = 2` or `A().b: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
-            guard declaredType == valueType else {
-                throw error(message: "The declared type `\(declaredType)` does not match the actual type `\(valueType)`", node: node)
-            }
+            try checkAssignment(given: declaredType, with: valueType, on: node)
         }
 
         // TODO: Doesn't work yet! Also if property is not mutable, it cannot get checked!
@@ -70,17 +68,13 @@ extension Typechecker {
     private func assign(valueType: MooseType, to indexing: IndexExpression, with declaredType: MooseType?, on node: AssignStatement) throws {
         // TODO: is something like `mut a[0] = 2` or `a[0]: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
-            guard declaredType == valueType else {
-                throw error(message: "The declared type `\(declaredType)` does not match the actual type `\(valueType)`", node: node)
-            }
+            try checkAssignment(given: declaredType, with: valueType, on: node)
         }
 
         // processs own mooseType and check if everything is valid
         try indexing.accept(self)
 
-        guard valueType == indexing.mooseType || valueType is NilType else {
-            throw error(message: "`\(indexing.description)` is of type `\(indexing.mooseType!)`, but you want to assign a value of type `\(valueType)`. ", node: node)
-        }
+        try checkAssignment(given: indexing.mooseType!, with: valueType, on: node)
     }
 
     /// Assignment to tuple
@@ -108,9 +102,7 @@ extension Typechecker {
     private func assign(valueType: MooseType, to variable: Identifier, with declaredType: MooseType?, on node: AssignStatement) throws {
         // if assignment is declared with type, check if expression has same type as declared
         if let declaredType = declaredType {
-            guard valueType == declaredType || valueType is NilType else {
-                throw error(message: "Declared type for variable `\(variable.value)` is `\(declaredType.description)` but you want to assign value of type `\(valueType)`", node: node)
-            }
+            try checkAssignment(given: declaredType, with: valueType, on: node, to: variable)
         }
 
         // check if variable exists
@@ -126,9 +118,7 @@ extension Typechecker {
             }
 
             // check that tuple to assign has same type as stored variable
-            guard valueType == varType || valueType is NilType else {
-                throw error(message: "Variable `\(variable.value)` has type `\(varType.description)` but you try to assign type `\(valueType.description)`.", node: node)
-            }
+            try checkAssignment(given: varType, with: valueType, on: node, to: variable)
 
             guard try scope.isMut(variable: variable.value) else {
                 throw error(message: "Variable `\(variable.value)` is inmutable.\nTip: Make `\(variable.value)` mutable by adding the keyworkd `mut` at its declaration.", node: node)
@@ -140,6 +130,64 @@ extension Typechecker {
         } else {
             let type: MooseType = node.declaredType ?? valueType
             try scope.add(variable: variable.value, type: type, mutable: node.mutable)
+        }
+    }
+
+    /// Checks if assignType is assignable to givenType
+    ///
+    /// If given and assign type are class types, check if given type is superclass of assigntype
+    /// else check if assigntype is the same es the given type
+    internal func checkAssignment(given givenType: MooseType, with assignType: MooseType, on node: Node, to variable: Identifier? = nil) throws {
+        guard let givenType = givenType as? ParamType else {
+            throw error(message: "INTERNAL ERROR: Given type must be param type.", node: node)
+        }
+
+        if assignType is NilType { return }
+
+        switch (given: givenType, assign: assignType) {
+        case let t as (ListType, ListType):
+            try checkAssignment(givenList: t.0, withList: t.1, on: node, to: variable)
+        case let t as (ClassType, ClassType):
+            try checkAssignment(givenClass: t.0, withClass: t.1, on: node, to: variable)
+        case let t as (TupleType, TupleType):
+            try checkAssignment(givenTuple: t.0, withTuple: t.1, on: node, to: variable)
+        case let t as (DictType, DictType):
+            try checkAssignment(givenDict: t.0, withDict: t.1, on: node, to: variable)
+        default:
+            guard assignType == givenType else {
+                if let variable = variable {
+                    throw error(message: "Variable `\(variable.value)` has type `\(givenType.description)` but you try to assign type `\(assignType.description)`.", node: node)
+                }
+                throw error(message: "You want to assign value of type `\(assignType)` to defined type `\(givenType)`.", node: node)
+            }
+        }
+    }
+
+    private func checkAssignment(givenTuple givenType: TupleType, withTuple assignType: TupleType, on node: Node, to variable: Identifier? = nil) throws {
+        guard givenType.entries.count == assignType.entries.count else {
+            throw error(message: "Given type \(givenType.description) has \(givenType.entries.count) entries while type to assign \(assignType.description) has \(givenType.entries.count).", node: node)
+        }
+        try zip(givenType.entries, assignType.entries).forEach {
+            try checkAssignment(given: $0.0, with: $0.1, on: node, to: variable)
+        }
+    }
+
+    private func checkAssignment(givenList givenType: ListType, withList assignType: ListType, on node: Node, to variable: Identifier? = nil) throws {
+        try checkAssignment(given: givenType.type, with: assignType.type, on: node, to: variable)
+    }
+
+    private func checkAssignment(givenDict givenType: DictType, withDict assignType: DictType, on node: Node, to variable: Identifier? = nil) throws {
+        try checkAssignment(given: givenType.keyType, with: assignType.keyType, on: node, to: variable)
+        try checkAssignment(given: givenType.valueType, with: assignType.valueType, on: node, to: variable)
+    }
+
+    private func checkAssignment(givenClass givenType: ClassType, withClass assignType: ClassType, on node: Node, to variable: Identifier? = nil) throws {
+        guard scope.global().has(clas: givenType.name) else { throw error(message: "Class `\(givenType.name)` does not exist.", node: node) }
+
+        guard let valueClassScope = scope.getScope(clas: assignType.name) else { throw error(message: "Class `\(assignType.name)` does not exist.", node: node) }
+
+        guard valueClassScope.extends(clas: givenType.name).extends else {
+            throw error(message: "`\(assignType.name)` does not extend declared type `\(givenType.name)`.", node: node)
         }
     }
 

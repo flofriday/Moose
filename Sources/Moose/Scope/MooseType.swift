@@ -70,6 +70,7 @@ class BoolType: ParamType {
 
 class ClassType: ParamType {
     let name: String
+
     override var asClass: ClassType? { self }
     override var description: String { name }
 
@@ -79,7 +80,7 @@ class ClassType: ParamType {
 
     override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? ClassType else { return false }
-        return other.name == other.name
+        return name == other.name
     }
 }
 
@@ -114,6 +115,24 @@ class ListType: ParamType {
 
     override var asClass: ClassType? { ClassType("List") }
     override var description: String { "[\(type)]" }
+}
+
+class DictType: ParamType {
+    let keyType: ParamType
+    let valueType: ParamType
+
+    init(_ key: ParamType, _ value: ParamType) {
+        keyType = key
+        valueType = value
+    }
+
+    override func superOf(type other: MooseType) -> Bool {
+        guard let other = other as? DictType else { return false }
+        return keyType.superOf(type: other.keyType) && valueType.superOf(type: other.valueType)
+    }
+
+    override var asClass: ClassType? { ClassType("Dict") }
+    override var description: String { "{\(keyType):\(valueType)}" }
 }
 
 class FunctionType: ParamType {

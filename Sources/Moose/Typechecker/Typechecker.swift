@@ -243,6 +243,16 @@ class Typechecker: Visitor {
         node.mooseType = StringType()
     }
 
+    func visit(_ node: Is) throws {
+        try node.expression.accept(self)
+        if let clas = MooseType.toType(node.type.value) as? ClassType {
+            guard scope.has(clas: clas.name) else {
+                throw error(message: "Type `\(clas.name)` does not exist.", node: node.type)
+            }
+        }
+        node.mooseType = BoolType()
+    }
+
     func visit(_ node: FunctionStatement) throws {
         let wasFunction = isFunction
         isFunction = true
@@ -250,7 +260,7 @@ class Typechecker: Visitor {
 
         for param in node.params {
             if let className = (param.declaredType as? ClassType)?.name {
-                guard scope.has(clas: className) else {
+                guard scope.global().has(clas: className) else {
                     throw error(message: "Type `\(className)` of parameter `\(param.name.value)` could not be found.", node: param)
                 }
             }
@@ -279,6 +289,12 @@ class Typechecker: Visitor {
 
     func visit(_ node: VariableDefinition) throws {
         node.mooseType = node.declaredType
+
+        if let className = (node.declaredType as? ClassType)?.name {
+            guard scope.global().has(clas: className) else {
+                throw error(message: "Classtype `\(className)` of variable `\(node.name.value)` is not defined.", node: node)
+            }
+        }
     }
 
     internal func error(message: String, token: Token) -> CompileErrorMessage {
@@ -317,6 +333,14 @@ extension Typechecker {
             throw CompileErrorMessage(location: Location(col: 1, endCol: 1, line: 1, endLine: 1), message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
         }
         scope = enclosing
+    }
+
+    func validType(ident: String) -> Bool {
+        guard let clas = (MooseType.toType(ident) as? ClassType) else {
+            return true
+        }
+
+        return scope.global().has(clas: clas.name)
     }
 }
 

@@ -67,7 +67,15 @@ class InterpreterBaseClass: XCTestCase {
         }
     }
 
-    // func runInvalidTests(name: String, @StringArrayBuilder _ tests: () -> [String]) throws {
-    //     try runInvalidTests(name: name, tests())
-    // }
+    func runValidTests(name: String, @InterpreterTestBuilder _ tests: () -> [(String, [(String, MooseObject)])]) throws {
+        try runValidTests(name: name, tests())
+    }
+
+    @resultBuilder
+    enum InterpreterTestBuilder {
+        typealias testCase = (String, [(String, MooseObject)])
+        static func buildBlock(_ components: testCase...) -> [testCase] {
+            components
+        }
+    }
 }

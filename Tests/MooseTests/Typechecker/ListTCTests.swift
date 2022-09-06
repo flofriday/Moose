@@ -22,6 +22,18 @@ extension TypecheckerTests {
             arrTwo = [1,2,3,4]
             arr = [arrOne, arrTwo]
             """
+
+            """
+            [A(), B()]
+            class A {}
+            class B {}
+            """
+
+            """
+            a: [A] = [A(), B()]
+            class A < B {}
+            class B {}
+            """
         }
     }
 
@@ -39,6 +51,24 @@ extension TypecheckerTests {
             arrOne = [1,2,3]
             arrTwo = [1,2,3,4]
             arr = [arrOne, arrTwo]
+            """
+
+            """
+            [A(), B()]
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: [B] = [A(), A()]
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: [B] = [A(), B()]
+            class A < B {}
+            class B {}
             """
         }
     }
@@ -85,14 +115,14 @@ extension TypecheckerTests {
 
     func test_indexing_runThrough() throws {
         try runValidTests(name: #function) {
-//            """
-//            a = [1,2,3]
-//            a[0]
-//            """
-//            """
-//            func arr () > [Int] { return [1,3,4] }
-//            arr()[2]
-//            """
+            """
+            a = [1,2,3]
+            a[0]
+            """
+            """
+            func arr () > [Int] { return [1,3,4] }
+            arr()[2]
+            """
             """
             mut a: Int = [1,2,3][1] + 2
             """
