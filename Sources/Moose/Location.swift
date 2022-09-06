@@ -4,6 +4,9 @@
 
 import Foundation
 
+/// The common datastructure to determine where something
+/// (a token or a AST node) is.
+/// A document starts on line 1 with column 1.
 struct Location {
     var col: Int
     var endCol: Int
@@ -47,7 +50,7 @@ func mergeLocations(_ a: Token, _ b: Token) -> Location {
 func locationFromToken(_ t: Token) -> Location {
     return Location(
         col: t.column,
-        endCol: max(t.column, t.lexeme.lines.last?.count ?? t.column, t.column),
+        endCol: max(t.column, t.column + (t.lexeme.lines.last?.count ?? t.column) - 1),
         line: t.line,
         endLine: max(t.line, t.line + t.lexeme.lines.count - 1)
     )
