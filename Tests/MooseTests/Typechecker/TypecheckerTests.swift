@@ -39,14 +39,6 @@ class TypecheckerTests: TypecheckerBaseClass {
             """,
             """
             func a() > Int {
-            {
-                return true
-            }
-                return 2
-            }
-            """,
-            """
-            func a() > Int {
             if true {
             return 2
             }
@@ -133,9 +125,7 @@ class TypecheckerTests: TypecheckerBaseClass {
             """,
             """
             func a() > Int {
-            {
                 return 2
-            }
             }
             """,
             "a: Int = 3",

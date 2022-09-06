@@ -233,6 +233,10 @@ class Interpreter: Visitor {
         return ListObj(type: node.mooseType!, value: args)
     }
 
+    func visit(_: Dict) throws -> MooseObject {
+        fatalError("Not implemented")
+    }
+
     func visit(_ node: Is) throws -> MooseObject {
         let obj = try node.expression.accept(self)
         if let obj = obj as? ClassObject {

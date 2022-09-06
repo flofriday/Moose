@@ -341,6 +341,14 @@ extension Typechecker {
         }
         scope = enclosing
     }
+
+    func validType(ident: String) -> Bool {
+        guard let clas = (MooseType.toType(ident) as? ClassType) else {
+            return true
+        }
+
+        return scope.global().has(clas: clas.name)
+    }
 }
 
 internal func error(message: String, node: Node) -> CompileErrorMessage {

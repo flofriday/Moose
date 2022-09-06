@@ -215,6 +215,15 @@ class AstLocator: Visitor {
         }
     }
 
+    func visit(_ node: Dict) throws {
+        update(node)
+
+        for (key, value) in node.pairs {
+            try key.accept(self)
+            try value.accept(self)
+        }
+    }
+
     func visit(_ node: IndexExpression) throws {
         update(node)
 

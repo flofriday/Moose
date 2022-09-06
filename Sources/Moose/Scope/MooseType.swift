@@ -117,6 +117,24 @@ class ListType: ParamType {
     override var description: String { "[\(type)]" }
 }
 
+class DictType: ParamType {
+    let keyType: ParamType
+    let valueType: ParamType
+
+    init(_ key: ParamType, _ value: ParamType) {
+        keyType = key
+        valueType = value
+    }
+
+    override func superOf(type other: MooseType) -> Bool {
+        guard let other = other as? DictType else { return false }
+        return keyType.superOf(type: other.keyType) && valueType.superOf(type: other.valueType)
+    }
+
+    override var asClass: ClassType? { ClassType("Dict") }
+    override var description: String { "{\(keyType):\(valueType)}" }
+}
+
 class FunctionType: ParamType {
     let params: [ParamType]
     let returnType: MooseType

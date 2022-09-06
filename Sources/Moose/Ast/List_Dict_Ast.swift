@@ -18,6 +18,20 @@ class List {
     }
 }
 
+class Dict {
+    typealias dictPairs = [(key: Expression, value: Expression)]
+
+    let token: Token
+    let pairs: dictPairs
+
+    var mooseType: MooseType?
+
+    init(token: Token, pairs: dictPairs) {
+        self.token = token
+        self.pairs = pairs
+    }
+}
+
 class IndexExpression: Assignable {
     let token: Token
     let indexable: Expression // left
@@ -41,6 +55,16 @@ class IndexExpression: Assignable {
 
 extension List: Expression {
     var description: String { "[\(expressions.map { $0.description }.joined(separator: ", "))]" }
+    func accept<V, R>(_ visitor: V) throws -> R where V: Visitor, R == V.VisitorResult {
+        try visitor.visit(self)
+    }
+}
+
+extension Dict: Expression {
+    var description: String {
+        "{\(pairs.map { "\($0.key.description): \($0.value.description)" }.joined(separator: ", "))}"
+    }
+
     func accept<V, R>(_ visitor: V) throws -> R where V: Visitor, R == V.VisitorResult {
         try visitor.visit(self)
     }

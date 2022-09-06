@@ -259,6 +259,25 @@ extension TypeScope {
         return variables.count
     }
 
+    typealias SuperClass = String
+    typealias SubClass = String
+    typealias ExtendsFunction = (SubClass, SuperClass) -> (extends: Bool, steps: Int)
+    static func rate(subtype: MooseType, ofSuper superType: MooseType, classExtends: ExtendsFunction) -> rateType? {
+        if subtype == superType { return (0, 0) }
+        if subtype is NilType || superType.superOf(type: subtype) { return (1, 0) }
+        if
+            let subtype = subtype as? ClassType,
+            let supr = superType as? ClassType
+        {
+            let (extends, steps) = classExtends(subtype.name, supr.name)
+            guard extends else { return nil }
+
+            return (0, steps)
+        }
+
+        return nil
+    }
+
     /// Caluclates the distance between two array of params
     ///
     /// Supers are the params of the function that should be callable with the params of subtypes.
@@ -268,7 +287,7 @@ extension TypeScope {
     ///
     /// Returns for rate: `0` if params are exakt matches, `n` if "hamming distance" is `n` and `nil` if params are not compatibale
     /// Returns for extendSteps: `0` if all class types are exaclty matching the super param types, `n` if the sum of all inheritances of subtypes to the supers class types is `n`
-    static func rate(storedFunction: FunctionType, by params: [MooseType], classExtends: (String, String) -> (extends: Bool, steps: Int)) -> rateType? {
+    static func rate(storedFunction: FunctionType, by params: [MooseType], classExtends: ExtendsFunction) -> rateType? {
         let supers = storedFunction.params
         let subtypes = params
         guard subtypes.count == supers.count else { return nil }
@@ -276,24 +295,30 @@ extension TypeScope {
         return zip(subtypes, supers)
             .reduce((0, 0)) { acc, zip -> rateType? in
                 guard let (rate, extendStep) = acc else { return nil }
-
                 let (subtype, supr) = zip
-                // check if type equivalent
-                if subtype == supr { return acc }
-                // check if type
-                if subtype is NilType || supr.superOf(type: subtype) { return (rate + 1, extendStep) }
 
-                if
-                    let subtype = subtype as? ClassType,
-                    let supr = supr as? ClassType
-                {
-                    let (extends, steps) = classExtends(subtype.name, supr.name)
-                    guard extends else { return nil }
-
-                    return (rate, extendStep + steps)
+                guard let (curRate, curExtendStep) = TypeScope.rate(subtype: subtype, ofSuper: supr, classExtends: classExtends) else {
+                    return nil
                 }
 
-                return nil
+                return (rate + curRate, extendStep + curExtendStep)
+
+//                // check if type equivalent
+//                if subtype == supr { return acc }
+//                // check if type
+//                if subtype is NilType || supr.superOf(type: subtype) { return (rate + 1, extendStep) }
+//
+//                if
+//                    let subtype = subtype as? ClassType,
+//                    let supr = supr as? ClassType
+//                {
+//                    let (extends, steps) = classExtends(subtype.name, supr.name)
+//                    guard extends else { return nil }
+//
+//                    return (rate, extendStep + steps)
+//                }
+//
+//                return nil
             }
     }
 

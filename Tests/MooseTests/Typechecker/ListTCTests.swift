@@ -22,6 +22,18 @@ extension TypecheckerTests {
             arrTwo = [1,2,3,4]
             arr = [arrOne, arrTwo]
             """
+
+            """
+            [A(), B()]
+            class A {}
+            class B {}
+            """
+
+            """
+            a: [A] = [A(), B()]
+            class A < B {}
+            class B {}
+            """
         }
     }
 
@@ -39,6 +51,24 @@ extension TypecheckerTests {
             arrOne = [1,2,3]
             arrTwo = [1,2,3,4]
             arr = [arrOne, arrTwo]
+            """
+
+            """
+            [A(), B()]
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: [B] = [A(), A()]
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: [B] = [A(), B()]
+            class A < B {}
+            class B {}
             """
         }
     }
