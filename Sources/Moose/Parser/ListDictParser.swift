@@ -34,7 +34,7 @@ extension Parser {
 
         let rbracket = try consume(type: .RBracket, message: "Expected `]` as end of index access, but got `\(peek().lexeme)` instead.")
 
-        let location = mergeLocations(token, rbracket)
+        let location = mergeLocations(left.location, locationFromToken(rbracket))
         return IndexExpression(token: token, location: location, indexable: left, index: index)
     }
 

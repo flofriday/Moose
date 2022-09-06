@@ -261,12 +261,16 @@ extension Lexer {
     /// already be consumed and the column pointer should point to the next
     /// column.
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
+        var lexeme = lexeme
+
         // TODO: This is wrong for newlines
         var startCol = column - lexeme.count
 
         // String literals need to be adjusted for two qutationmarks
         if type == .String {
             startCol -= 2
+        } else if type == .EOF {
+            lexeme = " "
         }
 
         let t = Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)

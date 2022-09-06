@@ -31,6 +31,8 @@ extension CompileErrorMessage {
         if !(l - 1 < lines.count) {
             l = lines.count
         }
+
+        // TOOD: Update for multiline errors
         // The source code line causing the error
         out += String(format: "%3d| ".blue, location.line)
         out += "\(lines[l - 1])\n"

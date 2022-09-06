@@ -83,7 +83,7 @@ class Interpreter: Visitor {
         case let indexExpr as IndexExpression:
             let index = (try indexExpr.index.accept(self) as! IntegerObj).value
             guard var index = index else {
-                throw NilUsagePanic()
+                throw NilUsagePanic(node: indexExpr.index)
             }
 
             let target = try indexExpr.indexable.accept(self) as! IndexWriteableObject
@@ -95,7 +95,7 @@ class Interpreter: Visitor {
             }
 
             guard index >= 0, index < target.length() else {
-                throw OutOfBoundsPanic()
+                throw OutOfBoundsPanic(length: target.length(), attemptedIndex: index, node: indexExpr)
             }
 
             target.setAt(index: index, value: value)
@@ -194,7 +194,11 @@ class Interpreter: Visitor {
     func visit(_ node: IfStatement) throws -> MooseObject {
         let conditionResult = try node.condition.accept(self) as! BoolObj
 
-        if conditionResult.value! {
+        guard let value = conditionResult.value else {
+            throw NilUsagePanic(node: node.condition)
+        }
+
+        if value {
             _ = try node.consequence.accept(self)
         } else if let alternative = node.alternative {
             _ = try alternative.accept(self)
@@ -315,21 +319,36 @@ class Interpreter: Visitor {
         let (args, argTypes) = try evaluateArgs(exprs: [node.right])
 
         let handler = try environment.get(op: node.op, pos: .Prefix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_ node: InfixExpression) throws -> MooseObject {
         let (args, argTypes) = try evaluateArgs(exprs: [node.left, node.right])
 
         let handler = try environment.get(op: node.op, pos: .Infix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_ node: PostfixExpression) throws -> MooseObject {
         let (args, argTypes) = try evaluateArgs(exprs: [node.left])
 
         let handler = try environment.get(op: node.op, pos: .Postfix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_: VariableDefinition) throws -> MooseObject {
@@ -350,7 +369,13 @@ class Interpreter: Visitor {
         }
 
         let callee = try environment.get(function: node.function.value, params: argTypes)
-        return try callFunctionOrOperator(callee: callee, args: args)
+
+        do {
+            return try callFunctionOrOperator(callee: callee, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     private func callConstructor(className: String, args: [MooseObject]) throws -> MooseObject {
@@ -395,10 +420,14 @@ class Interpreter: Visitor {
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let index = (try node.index.accept(self) as! IntegerObj).value
         guard var index = index else {
-            throw NilUsagePanic()
+            throw NilUsagePanic(node: node.index)
         }
 
         let indexable = (try node.indexable.accept(self)) as! IndexableObject
+
+        guard !indexable.isNil else {
+            throw NilUsagePanic(node: node)
+        }
 
         // Negative index start counting form the back, just like Python
         if index < 0 {
@@ -407,7 +436,7 @@ class Interpreter: Visitor {
         }
 
         guard index >= 0, index < indexable.length() else {
-            throw OutOfBoundsPanic()
+            throw OutOfBoundsPanic(length: indexable.length(), attemptedIndex: index, node: node)
         }
         return indexable.getAt(index: index)
     }
@@ -442,7 +471,7 @@ class Interpreter: Visitor {
             // Check condition
             let condition: Bool? = (try node.condition.accept(self) as! BoolObj).value
             guard condition != nil else {
-                throw NilUsagePanic()
+                throw NilUsagePanic(node: node.condition)
             }
             if condition == false {
                 break
