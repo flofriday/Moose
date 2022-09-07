@@ -264,13 +264,15 @@ class Interpreter: Visitor {
             let wasClosed = environment.closed
             environment.closed = false
 
-            // Execute the function
-            let res = try callee.function(args, environment)
+            // Restore the environments when at the end
+            defer {
+                environment.closed = wasClosed
+                environment = oldEnv
+            }
 
-            // Restore the environments
-            environment.closed = wasClosed
-            environment = oldEnv
-            return res
+            // Execute the function
+            return try callee.function(args, environment)
+
         } else if let callee = callee as? FunctionObj {
             // Activate the  environment in which the function was defined
             let oldEnv = environment
@@ -282,6 +284,13 @@ class Interpreter: Visitor {
             environment.closed = false
             pushEnvironment()
 
+            // Reactivate the original environment at the end
+            defer {
+                popEnvironment()
+                environment.closed = wasClosed
+                environment = oldEnv
+            }
+
             // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
             for (name, value) in argPairs {
@@ -289,18 +298,14 @@ class Interpreter: Visitor {
             }
 
             // Execute the body
-            var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
             } catch let error as ReturnSignal {
-                result = error.value
+                return error.value
             }
 
-            // Reactivate the original environment
-            popEnvironment()
-            environment.closed = wasClosed
-            environment = oldEnv
-            return result
+            return VoidObj()
+
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
         }
