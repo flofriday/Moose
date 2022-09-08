@@ -5,6 +5,10 @@ extension Interpreter {
         pushEnvironment()
         defer { popEnvironment() }
 
+        guard indexable.length() > 0 else {
+            return VoidObj()
+        }
+
         for i in 0 ... indexable.length() - 1 {
             do {
                 _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i), allowDefine: true)

@@ -77,17 +77,67 @@ extension InterpreterTests {
                     all +: day + " "
                 }
 
-                // TODO: At the moment this creating empty list literals don't 
-                // compile.
-                // https: // github.com/flofriday/Moose/issues/9
-                //empty: [Int] = [ ]
-                //mut perfect = 42
-                //for nothing in emtpy {
-                //    perfect = 0
-                //}
+                empty: [Int] = [ ]
+                mut perfect = 42
+                for nothing in empty {
+                    perfect = 0
+                }
                 """, [
                     ("all", StringObj(value: "Mo Tue Thur Fri ")),
-                    // ("perfect", IntegerObj(value: 42)),
+                    ("perfect", IntegerObj(value: 42)),
+                ]
+            ),
+            (
+                """
+                // Break and continue at c-style for loops tests
+                mut cnt = 0
+
+                for mut i = 0; i < 100; i +: 1 {
+                    cnt +: 1
+
+                    if cnt == 3 {
+                        break
+                    }
+
+                    continue
+                    // should never run
+                    cnt = 1000
+                }
+
+                // Check that the post-statement gets exectued correct
+                mut j = 0
+                for ; j < 100; j +: 1 {
+                    if j == 10 {
+                        break
+                    }
+                }
+
+                """, [
+                    ("cnt", IntegerObj(value: 3)),
+                    ("j", IntegerObj(value: 10)),
+                ]
+            ),
+            (
+                """
+                // Break and continue at c-style for loops tests
+                mut chosen = ""
+
+                members = ["Paul", "Flo", "Lukas", "Anna", "Vanessa"]
+
+                for member in members {
+                    chosen +: member + " "
+
+                    if member == "Flo" {
+                        break
+                    }
+
+                    continue
+                    // should never run
+                    chosen = "devil"
+
+                }
+                """, [
+                    ("chosen", StringObj(value: "Paul Flo ")),
                 ]
             ),
         ]
