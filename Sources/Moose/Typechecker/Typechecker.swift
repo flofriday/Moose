@@ -16,6 +16,8 @@ class Typechecker: Visitor {
 
     init() throws {
         scope = TypeScope()
+        TypeScope.global = scope
+
         try addBuiltIns()
     }
 
@@ -50,6 +52,10 @@ class Typechecker: Visitor {
         try scope.add(
             clas: "List",
             scope: BuiltIns.builtIn_List_Env.asClassTypeScope("List")
+        )
+        try scope.add(
+            clas: "Dict",
+            scope: BuiltIns.builtIn_Dict_Env.asClassTypeScope("Dict")
         )
     }
 

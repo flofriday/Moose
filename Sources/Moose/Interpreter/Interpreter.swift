@@ -233,8 +233,9 @@ class Interpreter: Visitor {
         return ListObj(type: node.mooseType!, value: args)
     }
 
-    func visit(_: Dict) throws -> MooseObject {
-        fatalError("Not implemented")
+    func visit(_ node: Dict) throws -> MooseObject {
+        let pairs = try node.pairs.map { (key: try $0.key.accept(self), value: try $0.value.accept(self)) }
+        return DictObj(type: node.mooseType!, pairs: pairs)
     }
 
     func visit(_ node: Is) throws -> MooseObject {
@@ -378,7 +379,7 @@ class Interpreter: Visitor {
         let obj = try node.obj.accept(self)
 
         guard !obj.isNil else {
-            throw RuntimeError(message: "Nullpointer Exception.")
+            throw NilUsagePanic()
         }
 
         let prevEnv = environment
@@ -393,23 +394,10 @@ class Interpreter: Visitor {
     }
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
-        let index = (try node.index.accept(self) as! IntegerObj).value
-        guard var index = index else {
-            throw NilUsagePanic()
-        }
-
-        let indexable = (try node.indexable.accept(self)) as! IndexableObject
-
-        // Negative index start counting form the back, just like Python
-        if index < 0 {
-            // this really is a substraction cause the index is negative
-            index = indexable.length() + index
-        }
-
-        guard index >= 0, index < indexable.length() else {
-            throw OutOfBoundsPanic()
-        }
-        return indexable.getAt(index: index)
+        let funcIdent = Identifier(token: node.indexable.token, value: "indexing")
+        let indexCall = CallExpression(token: node.index.token, function: funcIdent, arguments: [node.index])
+        let dereferer = Dereferer(token: node.token, obj: node.indexable, referer: indexCall)
+        return try dereferer.accept(self)
     }
 
     func visit(_: Me) throws -> MooseObject {

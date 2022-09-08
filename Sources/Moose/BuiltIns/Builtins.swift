@@ -162,8 +162,10 @@ extension BuiltIns {
 // Buit-in OperatorFunction
 extension BuiltIns {
     // Asserts that either Int, Float, Bool or String inputs are not nil
-    private static func assertNoNil(_ args: [MooseObject]) throws {
+    static func assertNoNil(_ args: [MooseObject]) throws {
         try args.forEach {
+            if $0.isNil { throw NilUsagePanic() }
+
             switch $0 {
             case let int as IntegerObj:
                 if int.value == nil {

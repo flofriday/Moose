@@ -8,6 +8,8 @@
 import Foundation
 
 class TypeScope: Scope {
+    static var global = TypeScope()
+
     typealias rateType = (rate: Int, extendStep: Int)
     internal var variables: [String: (type: MooseType, mut: Bool)] = [:]
     internal var funcs: [String: [FunctionType]] = [:]
@@ -20,6 +22,15 @@ class TypeScope: Scope {
 
     init(enclosing: TypeScope? = nil) {
         self.enclosing = enclosing
+    }
+
+    init(copy: TypeScope) {
+        self.funcs = copy.funcs
+        self.variables = copy.variables
+        self.ops = copy.ops
+        self.classes = copy.classes
+        self.enclosing = copy.enclosing
+        self.closed = copy.closed
     }
 }
 
@@ -84,6 +95,7 @@ extension TypeScope {
     }
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
+        guard isGlobal() else { return try global().typeOf(op: op, opPos: opPos, params: params) }
         // Go through all operators with name op and then map the results to (type, rate) where
         // rate is the rating of the stored operator. If operator doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
@@ -116,23 +128,22 @@ extension TypeScope {
     }
 
     func returnType(op: String, opPos: OpPos, params: [MooseType]) throws -> MooseType {
+        guard isGlobal() else { return try global().returnType(op: op, opPos: opPos, params: params) }
+
         guard let retType = (try typeOf(op: op, opPos: opPos, params: params).0 as? FunctionType)?.returnType else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
         }
         return retType
     }
 
-    func has(op: String, opPos: OpPos, params: [MooseType], includeEnclosing: Bool = true) -> Bool {
-        if currentContains(op: op, opPos: opPos, params: params) {
-            return true
-        }
-        guard includeEnclosing, let enclosing = enclosing, !closed else {
-            return false
-        }
-        return enclosing.has(op: op, opPos: opPos, params: params, includeEnclosing: includeEnclosing)
+    func has(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
+        guard isGlobal() else { return global().has(op: op, opPos: opPos, params: params) }
+        return currentContains(op: op, opPos: opPos, params: params)
     }
 
     func add(op: String, opPos: OpPos, params: [ParamType], returnType: MooseType) throws {
+        guard isGlobal() else { return try global().add(op: op, opPos: opPos, params: params, returnType: returnType) }
+
         let inCurrent = currentContains(op: op, opPos: opPos, params: params)
         guard !inCurrent else {
             throw ScopeError(message: "Operator '\(op)' with params (\(params.map { $0.description }.joined(separator: ","))) is alraedy defined.")
@@ -155,16 +166,22 @@ extension TypeScope {
         }
     }
 
-    func typeOf(function: String, params: [MooseType]) throws -> MooseType {
+    private func getPossible(function: String, params: [MooseType]) -> [(type: MooseType, rate: TypeScope.rateType)]? {
         // Go through all functions with name function and then map the results to (type, rate) where
         // rate is the rating of the stored function. If function doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
-        let ratedFuncs = funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: rateType)? in
+        return funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: rateType)? in
             let rate = TypeScope.rate(storedFunction: storedFunc, by: params, classExtends: self.doesScopeExtend)
             guard let rate = rate else { return nil }
             return (storedFunc, rate)
         }.sorted { $0.rate < $1.rate }
+    }
 
+    func typeOf(function: String, params: [MooseType]) throws -> MooseType {
+        // Go through all functions with name function and then map the results to (type, rate) where
+        // rate is the rating of the stored function. If function doesn't match in any way
+        // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
+        let ratedFuncs = getPossible(function: function, params: params)
         if let types = ratedFuncs {
             if types.count == 1 {
                 return types.first!.type
@@ -208,6 +225,25 @@ extension TypeScope {
         list.append(FunctionType(params: params, returnType: returnType))
         funcs.updateValue(list, forKey: function)
     }
+
+    func replace(function: String, with params: [ParamType], by newType: FunctionType) throws {
+        let possibleFuncs = getPossible(function: function, params: params)
+        guard let possibleFuncs = possibleFuncs, !possibleFuncs.isEmpty else {
+            throw ScopeError(message: "No function \(function)(\(params.map { $0.description }.joined(separator: ", "))) could be found to replace.")
+        }
+
+        guard possibleFuncs.count == 1 || possibleFuncs[0].rate < possibleFuncs[1].rate else {
+            throw ScopeError(message: "Multiple possible function to replace.")
+        }
+
+        let selectedRate = possibleFuncs[0].rate
+        let selectedIndex = funcs[function]!.firstIndex {
+            guard let currRate = TypeScope.rate(storedFunction: $0, by: params, classExtends: doesScopeExtend) else { return false }
+            return currRate == selectedRate
+        }
+
+        funcs[function]![selectedIndex!] = newType
+    }
 }
 
 extension TypeScope {
@@ -238,7 +274,7 @@ extension TypeScope {
     }
 
     func getScope(clas: String) -> ClassTypeScope? {
-        guard isGlobal() else { return global().getScope(clas: clas) }
+        guard isGlobal() else { return TypeScope.global.getScope(clas: clas) }
 
         if let clasScope = classes[clas] {
             return clasScope
@@ -302,23 +338,6 @@ extension TypeScope {
                 }
 
                 return (rate + curRate, extendStep + curExtendStep)
-
-//                // check if type equivalent
-//                if subtype == supr { return acc }
-//                // check if type
-//                if subtype is NilType || supr.superOf(type: subtype) { return (rate + 1, extendStep) }
-//
-//                if
-//                    let subtype = subtype as? ClassType,
-//                    let supr = supr as? ClassType
-//                {
-//                    let (extends, steps) = classExtends(subtype.name, supr.name)
-//                    guard extends else { return nil }
-//
-//                    return (rate, extendStep + steps)
-//                }
-//
-//                return nil
             }
     }
 
@@ -339,9 +358,17 @@ class ClassTypeScope: TypeScope {
     var visited = false
 
     init(enclosing: TypeScope? = nil, name: String, properties: [propType]) {
-        className = name
-        classProperties = properties
+        self.className = name
+        self.classProperties = properties
         super.init(enclosing: enclosing)
+    }
+
+    init(copy: ClassTypeScope) {
+        self.className = copy.className
+        self.classProperties = copy.classProperties
+        self.visited = copy.visited
+        self.superClass = copy.superClass
+        super.init(copy: copy)
     }
 
     private var alreadyFlat = false

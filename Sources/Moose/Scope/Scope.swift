@@ -18,7 +18,7 @@ protocol Scope {
 
     func has(variable: String, includeEnclosing: Bool) -> Bool
     func has(function: String, params: [MooseType], includeEnclosing: Bool) -> Bool
-    func has(op: String, opPos: OpPos, params: [MooseType], includeEnclosing: Bool) -> Bool
+    func has(op: String, opPos: OpPos, params: [MooseType]) -> Bool
 
     func isMut(variable: String) throws -> Bool
 

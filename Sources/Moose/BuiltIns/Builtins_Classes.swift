@@ -19,6 +19,15 @@ extension BuiltIns {
         return env
     }
 
+    static func getGenericEnv(type: IntType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
+    }
+
     private static func intToBoolBuiltIn(params _: [MooseObject], _ env: Environment) throws -> BoolObj {
         let int: IntegerObj = try env
             .cast(to: BuiltInClassEnvironment.self)
@@ -67,6 +76,15 @@ extension BuiltIns {
         return env
     }
 
+    static func getGenericEnv(type: FloatType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
+    }
+
     private static func floatToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> IntegerObj {
         let float: FloatObj = try env
             .cast(to: BuiltInClassEnvironment.self)
@@ -102,6 +120,15 @@ extension BuiltIns {
         env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: boolToFloatBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: boolToStrBuiltIn))
         return env
+    }
+
+    static func getGenericEnv(type: BoolType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
     }
 
     private static func boolToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> IntegerObj {
@@ -147,11 +174,37 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+//        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [IntType()], returnType: StringType(), function: indexingString))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
         env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
         return env
     }
+
+    static func getGenericEnv(type: StringType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
+    }
+
+//    private static func indexingString(params: [MooseObject], env: Environment) throws -> MooseObject {
+//        let key = params[0] as! IntegerObj
+//        try assertNoNil(params)
+//
+//        let obj: StringObj = try env
+//            .cast(to: BuiltInClassEnvironment.self)
+//            .value.cast()
+//
+//        let value = obj.value!
+//        guard value.count > key.value! else {
+//            throw RuntimeError(message: "Array Access Error: String has a length of \(value.count) but you want to access \(key.value!).")
+//        }
+//
+//        return StringObj(value: value[key])
+//    }
 
     private static func strToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> TupleObj {
         let bool: StringObj = try env
@@ -232,6 +285,15 @@ extension BuiltIns {
         let env = BaseEnvironment(enclosing: nil)
         return env
     }
+
+    static func getGenericEnv(type: FunctionType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
+    }
 }
 
 /// Opterator Environment Creation
@@ -262,6 +324,15 @@ extension BuiltIns {
         let env = BaseEnvironment(enclosing: nil)
         return env
     }
+
+    static func getGenericEnv(type: TupleType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        return ndict
+    }
 }
 
 /// List Environment Creation
@@ -271,7 +342,19 @@ extension BuiltIns {
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
+        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [IntType()], returnType: ParamType(), function: indexingList))
         return env
+    }
+
+    static func getGenericEnv(type: ListType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        try ndict.replace(function: "indexing", with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
+
+        return ndict
     }
 
     private static func listLengthImpl(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
@@ -280,6 +363,62 @@ extension BuiltIns {
             .value.cast()
 
         return IntegerObj(value: Int64(list.length()))
+    }
+
+    private static func indexingList(params: [MooseObject], env: Environment) throws -> MooseObject {
+        let key = params[0] as! IntegerObj
+        try assertNoNil(params)
+
+        let obj: ListObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        guard obj.length() > key.value! else {
+            throw OutOfBoundsPanic()
+        }
+
+        return obj.getAt(index: key.value!)
+    }
+}
+
+/// Dict Environment Creation
+extension BuiltIns {
+    static let builtIn_Dict_Env: BaseEnvironment = createDictEnv()
+
+    private static func createDictEnv() -> BaseEnvironment {
+        let env = BaseEnvironment(enclosing: nil)
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: represent))
+        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [ParamType()], returnType: ParamType(), function: indexingDict))
+
+        return env
+    }
+
+    static func getGenericEnv(type: DictType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        let ndict = ClassTypeScope(copy: old)
+
+        // generic indexing
+        try ndict.replace(function: "indexing", with: [ParamType()], by: FunctionType(params: [type.keyType], returnType: type.valueType))
+
+        return ndict
+    }
+
+    private static func represent(params _: [MooseObject], env: Environment) throws -> MooseObject {
+        let obj: DictObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+        return StringObj(value: obj.description)
+    }
+
+    private static func indexingDict(params: [MooseObject], env: Environment) throws -> MooseObject {
+        let key = params[0]
+        let obj: DictObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        return obj.getAt(key: key)
     }
 }
 
@@ -300,6 +439,13 @@ extension BuiltIns {
     private static func createNilEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         return env
+    }
+
+    static func getGenericEnv(type: NilType) throws -> ClassTypeScope {
+        guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
+            fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
+        }
+        return old
     }
 }
 
