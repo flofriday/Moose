@@ -31,6 +31,8 @@ protocol Visitor {
     func visit(_ node: Nil) throws -> VisitorResult
     func visit(_ node: Me) throws -> VisitorResult
     func visit(_ node: Is) throws -> VisitorResult
+    func visit(_ node: Break) throws -> VisitorResult
+    func visit(_ node: Continue) throws -> VisitorResult
     func visit(_ node: CallExpression) throws -> VisitorResult
     func visit(_ node: OperationStatement) throws -> VisitorResult
     func visit(_ node: ClassStatement) throws -> VisitorResult
@@ -126,6 +128,14 @@ class BaseVisitor: Visitor {
     }
 
     func visit(_: Is) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: Break) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: Continue) throws {
         fatalError(errorMessage)
     }
 

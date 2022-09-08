@@ -142,6 +142,10 @@ class Parser {
             return try parseClassDefinition()
         } else if check(type: .For) {
             return try parseForLoop()
+        } else if check(type: .Break) {
+            return try parseBreak()
+        } else if check(type: .Continue) {
+            return try parseContinue()
         } else {
             return try parseAssignExpressionStatement()
         }
@@ -421,6 +425,16 @@ class Parser {
         let token = try consume(type: .Is, message: "Expected keyword `is`.")
         let ident = try parseIdentifier()
         return Is(token: token, expression: expression, type: ident)
+    }
+
+    func parseBreak() throws -> Break {
+        let token = try consume(type: .Break, message: "Expected keyword `break`.")
+        return Break(token: token)
+    }
+
+    func parseContinue() throws -> Continue {
+        let token = try consume(type: .Continue, message: "Expected keyword `continue`.")
+        return Continue(token: token)
     }
 
     func parseIntegerLiteral() throws -> Expression {

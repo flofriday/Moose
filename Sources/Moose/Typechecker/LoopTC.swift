@@ -40,4 +40,12 @@ extension Typechecker {
         node.returnDeclarations = node.body.returnDeclarations
         try popScope()
     }
+
+    func visit(_: Break) throws {
+        // TODO: check that we are inside a loop
+    }
+
+    func visit(_: Continue) throws {
+        // TODO: check that we are inside a loop
+    }
 }

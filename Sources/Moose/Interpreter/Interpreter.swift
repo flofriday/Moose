@@ -141,17 +141,12 @@ class Interpreter: Visitor {
 
     func visit(_ node: BlockStatement) throws -> MooseObject {
         pushEnvironment()
-        do {
-            for statement in node.statements {
-                _ = try statement.accept(self)
-            }
-        } catch {
-            // Always leave the environment in peace
-            popEnvironment()
-            throw error
+        defer { popEnvironment() }
+
+        for statement in node.statements {
+            _ = try statement.accept(self)
         }
 
-        popEnvironment()
         return VoidObj()
     }
 
@@ -449,50 +444,5 @@ class Interpreter: Visitor {
     func visit(_: Me) throws -> MooseObject {
         let env = try environment.nearestClass()
         return ClassObject(env: env, name: env.className)
-    }
-
-    func visit(_ node: ForEachStatement) throws -> MooseObject {
-        let indexable = try node.list.accept(self) as! IndexableObject
-
-        pushEnvironment()
-        for i in 0 ... indexable.length() - 1 {
-            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i), allowDefine: true)
-            _ = try node.body.accept(self)
-        }
-        popEnvironment()
-        return VoidObj()
-    }
-
-    func visit(_ node: ForCStyleStatement) throws -> MooseObject {
-        // First push a new Environment since the variable definitions only
-        // apply here
-        pushEnvironment()
-
-        if let preStmt = node.preStmt {
-            _ = try preStmt.accept(self)
-        }
-
-        while true {
-            // Check condition
-            let condition: Bool? = (try node.condition.accept(self) as! BoolObj).value
-            guard condition != nil else {
-                throw NilUsagePanic(node: node.condition)
-            }
-            if condition == false {
-                break
-            }
-
-            // Execute body
-            _ = try node.body.accept(self)
-
-            // Post statement
-            if let postEachStmt = node.postEachStmt {
-                _ = try postEachStmt.accept(self)
-            }
-        }
-
-        // Pop the loop environment
-        popEnvironment()
-        return VoidObj()
     }
 }

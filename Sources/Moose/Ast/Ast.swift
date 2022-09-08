@@ -97,6 +97,26 @@ class Is {
     }
 }
 
+class Break {
+    let token: Token
+    var returnDeclarations: ReturnDec
+
+    init(token: Token) {
+        self.token = token
+        returnDeclarations = nil
+    }
+}
+
+class Continue {
+    let token: Token
+    var returnDeclarations: ReturnDec
+
+    init(token: Token) {
+        self.token = token
+        returnDeclarations = nil
+    }
+}
+
 class ReturnStatement {
     init(token: Token, returnValue: Expression?) {
         self.token = token
@@ -463,6 +483,30 @@ extension Is: Expression {
     }
 
     var description: String { "(\(expression) is \(type))" }
+
+    var location: Location {
+        return locationFromToken(token)
+    }
+}
+
+extension Break: Statement {
+    func accept<V, R>(_ visitor: V) throws -> R where V: Visitor, R == V.VisitorResult {
+        try visitor.visit(self)
+    }
+
+    var description: String { "break" }
+
+    var location: Location {
+        return locationFromToken(token)
+    }
+}
+
+extension Continue: Statement {
+    func accept<V, R>(_ visitor: V) throws -> R where V: Visitor, R == V.VisitorResult {
+        try visitor.visit(self)
+    }
+
+    var description: String { "break" }
 
     var location: Location {
         return locationFromToken(token)
