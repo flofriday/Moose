@@ -46,6 +46,30 @@ extension InterpreterTests {
             ),
             (
                 """
+                // Long else-if chain test
+                name = "Paul"
+                mut number = 0
+
+                if name == "Flo" {
+                    number = 2
+                } else if name == "Luis" {
+                    number = 3
+                } else if name == "Jojo" {
+                    number = 4
+                } else if name == "Elenor" {
+                    number = 5
+                } else if name == "Paul" {
+                    number = 42
+                } else if name == "Ada" {
+                    number = 6
+                }
+                """,
+                [
+                    ("number", IntegerObj(value: 42)),
+                ]
+            ),
+            (
+                """
                 // C-style for loop tests
                 mut phrase = "Na"
                 for mut i = 0; i < 6; i +: 1 {
@@ -62,7 +86,8 @@ extension InterpreterTests {
                 for ;false; {
                     perfect = 0
                 }
-                """, [
+                """,
+                [
                     ("phrase", StringObj(value: "Nanananananana batman!")),
                     ("cnt", IntegerObj(value: 5)),
                     ("perfect", IntegerObj(value: 42)),
@@ -82,7 +107,8 @@ extension InterpreterTests {
                 for nothing in empty {
                     perfect = 0
                 }
-                """, [
+                """,
+                [
                     ("all", StringObj(value: "Mo Tue Thur Fri ")),
                     ("perfect", IntegerObj(value: 42)),
                 ]
@@ -112,7 +138,8 @@ extension InterpreterTests {
                     }
                 }
 
-                """, [
+                """,
+                [
                     ("cnt", IntegerObj(value: 3)),
                     ("j", IntegerObj(value: 10)),
                 ]
@@ -136,7 +163,8 @@ extension InterpreterTests {
                     chosen = "devil"
 
                 }
-                """, [
+                """,
+                [
                     ("chosen", StringObj(value: "Paul Flo ")),
                 ]
             ),
