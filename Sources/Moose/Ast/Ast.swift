@@ -323,7 +323,7 @@ class CallExpression {
 }
 
 class IfStatement {
-    init(token: Token, condition: Expression, consequence: BlockStatement, alternative: BlockStatement?) {
+    init(token: Token, condition: Expression, consequence: BlockStatement, alternative: Statement?) {
         self.token = token
         self.condition = condition
         self.consequence = consequence
@@ -333,7 +333,7 @@ class IfStatement {
     let token: Token
     let condition: Expression
     let consequence: BlockStatement
-    let alternative: BlockStatement?
+    let alternative: Statement?
     var returnDeclarations: (MooseType, Bool)?
 }
 

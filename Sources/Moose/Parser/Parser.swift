@@ -330,7 +330,13 @@ class Parser {
             return IfStatement(token: token, condition: condition, consequence: consequence, alternative: nil)
         }
         skip(all: .NLine)
-        let alternative = try parseBlockStatement()
+        var alternative: Statement?
+        if peek().type == .If {
+            alternative = try parseIfStatement()
+        } else {
+            alternative = try parseBlockStatement()
+        }
+
         try consumeStatementEnd()
         return IfStatement(token: token, condition: condition, consequence: consequence, alternative: alternative)
     }
