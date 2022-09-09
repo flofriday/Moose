@@ -95,7 +95,7 @@ extension TypeScope {
     }
 
     func typeOf(op: String, opPos: OpPos, params: [MooseType]) throws -> (MooseType, OpPos) {
-        guard isGlobal() else { return try global().typeOf(op: op, opPos: opPos, params: params) }
+        guard isGlobal() else { return try TypeScope.global.typeOf(op: op, opPos: opPos, params: params) }
         // Go through all operators with name op and then map the results to (type, rate) where
         // rate is the rating of the stored operator. If operator doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
@@ -128,7 +128,7 @@ extension TypeScope {
     }
 
     func returnType(op: String, opPos: OpPos, params: [MooseType]) throws -> MooseType {
-        guard isGlobal() else { return try global().returnType(op: op, opPos: opPos, params: params) }
+        guard isGlobal() else { return try TypeScope.global.returnType(op: op, opPos: opPos, params: params) }
 
         guard let retType = (try typeOf(op: op, opPos: opPos, params: params).0 as? FunctionType)?.returnType else {
             fatalError("INTERNAL ERROR: MooseType is not of type .Function")
@@ -137,12 +137,12 @@ extension TypeScope {
     }
 
     func has(op: String, opPos: OpPos, params: [MooseType]) -> Bool {
-        guard isGlobal() else { return global().has(op: op, opPos: opPos, params: params) }
+        guard isGlobal() else { return TypeScope.global.has(op: op, opPos: opPos, params: params) }
         return currentContains(op: op, opPos: opPos, params: params)
     }
 
     func add(op: String, opPos: OpPos, params: [ParamType], returnType: MooseType) throws {
-        guard isGlobal() else { return try global().add(op: op, opPos: opPos, params: params, returnType: returnType) }
+        guard isGlobal() else { return try TypeScope.global.add(op: op, opPos: opPos, params: params, returnType: returnType) }
 
         let inCurrent = currentContains(op: op, opPos: opPos, params: params)
         guard !inCurrent else {
@@ -171,10 +171,20 @@ extension TypeScope {
         // rate is the rating of the stored function. If function doesn't match in any way
         // return nil (sorted out). Last but not least sort the result by the rating (lower is better)
         return funcs[function]?.compactMap { storedFunc -> (type: MooseType, rate: rateType)? in
-            let rate = TypeScope.rate(storedFunction: storedFunc, by: params, classExtends: self.doesScopeExtend)
+            let rate = TypeScope.rate(storedFunction: storedFunc, by: params, classExtends: TypeScope.global.doesScopeExtend)
             guard let rate = rate else { return nil }
             return (storedFunc, rate)
         }.sorted { $0.rate < $1.rate }
+    }
+
+    func callIsPossible(of function: String, with params: [MooseType]) -> Bool {
+        guard
+            let ratedFuncs = getPossible(function: function, params: params)
+        else { return false }
+
+        if ratedFuncs.count == 1 { return true }
+        if ratedFuncs.count > 1, ratedFuncs[0].rate != ratedFuncs[1].rate { return true }
+        return false
     }
 
     func typeOf(function: String, params: [MooseType]) throws -> MooseType {
@@ -188,13 +198,13 @@ extension TypeScope {
             }
             if types.count > 1 {
                 guard types[0].rate != types[1].rate else {
-                    throw ScopeError(message: "Multiple possible functions of `\(function)` with params (\(params.map { $0.description }.joined(separator: ","))). You have to give more context to the function call.")
+                    throw ScopeError(message: "Multiple possible functions with signatures `\(function)(\(params.map { $0.description }.joined(separator: ",")))`. You have to give more context to the function call.")
                 }
                 return types[0].type
             }
         }
         guard let enclosing = enclosing, !closed else {
-            throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) isn't defined.")
+            throw ScopeError(message: "Function with signature `\(function)(\(params.map { $0.description }.joined(separator: ",")))` isn't defined.")
         }
         return try enclosing.typeOf(function: function, params: params)
     }
@@ -432,6 +442,7 @@ class ClassTypeScope: TypeScope {
 extension TypeScope {
     /// Returns if and in how many steps a class extends an other class
     func doesScopeExtend(clas: String, extend superclass: String) -> (extends: Bool, steps: Int) {
+        guard isGlobal() else { return global().doesScopeExtend(clas: clas, extend: superclass) }
         guard let subClas = getScope(clas: clas) else { return (false, 0) }
         return subClas.extends(clas: superclass)
     }

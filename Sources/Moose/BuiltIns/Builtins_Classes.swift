@@ -174,7 +174,7 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-//        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [IntType()], returnType: StringType(), function: indexingString))
+//        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemStringgetItemString))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
         env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
@@ -190,7 +190,7 @@ extension BuiltIns {
         return ndict
     }
 
-//    private static func indexingString(params: [MooseObject], env: Environment) throws -> MooseObject {
+//    private static func getItemString(params: [MooseObject], env: Environment) throws -> MooseObject {
 //        let key = params[0] as! IntegerObj
 //        try assertNoNil(params)
 //
@@ -342,7 +342,8 @@ extension BuiltIns {
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
-        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [IntType()], returnType: ParamType(), function: indexingList))
+        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
+        env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [IntType(), ParamType()], returnType: VoidType(), function: setItemList))
         return env
     }
 
@@ -352,7 +353,8 @@ extension BuiltIns {
         }
         let ndict = ClassTypeScope(copy: old)
 
-        try ndict.replace(function: "indexing", with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
+        try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
+        try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [IntType(), ParamType()], by: FunctionType(params: [IntType(), type.type], returnType: VoidType()))
 
         return ndict
     }
@@ -365,7 +367,7 @@ extension BuiltIns {
         return IntegerObj(value: Int64(list.length()))
     }
 
-    private static func indexingList(params: [MooseObject], env: Environment) throws -> MooseObject {
+    private static func getItemList(params: [MooseObject], env: Environment) throws -> MooseObject {
         let key = params[0] as! IntegerObj
         try assertNoNil(params)
 
@@ -373,11 +375,31 @@ extension BuiltIns {
             .cast(to: BuiltInClassEnvironment.self)
             .value.cast()
 
-        guard obj.length() > key.value! else {
+        // if arr[-1] than return last item
+        let index = key.value! < 0 ? obj.length() + key.value! : key.value!
+
+        guard obj.length() > index, index >= 0 else {
             throw OutOfBoundsPanic()
         }
 
-        return obj.getAt(index: key.value!)
+        return obj.getAt(index: index)
+    }
+
+    private static func setItemList(params: [MooseObject], env: Environment) throws -> VoidObj {
+        let key = (params[0] as! IntegerObj)
+        try assertNoNil([key])
+
+        let obj: ListObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        let index = key.value! < 0 ? obj.length() + key.value! : key.value!
+        guard obj.length() > index, index >= 0 else {
+            throw OutOfBoundsPanic()
+        }
+
+        obj.setAt(index: key.value!, value: params[1])
+        return VoidObj()
     }
 }
 
@@ -388,7 +410,8 @@ extension BuiltIns {
     private static func createDictEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: represent))
-        env.set(function: "indexing", value: BuiltInFunctionObj(name: "indexing", params: [ParamType()], returnType: ParamType(), function: indexingDict))
+        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [ParamType()], returnType: ParamType(), function: getItemDict))
+        env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [ParamType(), ParamType()], returnType: VoidType(), function: setItemDict))
 
         return env
     }
@@ -400,7 +423,8 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         // generic indexing
-        try ndict.replace(function: "indexing", with: [ParamType()], by: FunctionType(params: [type.keyType], returnType: type.valueType))
+        try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [ParamType()], by: FunctionType(params: [type.keyType], returnType: type.valueType))
+        try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [ParamType(), ParamType()], by: FunctionType(params: [type.keyType, type.valueType], returnType: VoidType()))
 
         return ndict
     }
@@ -412,13 +436,25 @@ extension BuiltIns {
         return StringObj(value: obj.description)
     }
 
-    private static func indexingDict(params: [MooseObject], env: Environment) throws -> MooseObject {
+    private static func getItemDict(params: [MooseObject], env: Environment) throws -> MooseObject {
         let key = params[0]
         let obj: DictObj = try env
             .cast(to: BuiltInClassEnvironment.self)
             .value.cast()
 
         return obj.getAt(key: key)
+    }
+
+    private static func setItemDict(params: [MooseObject], env: Environment) throws -> VoidObj {
+        let key = params[0]
+        try assertNoNil([key])
+
+        let obj: DictObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        obj.setAt(key: key, val: params[1])
+        return VoidObj()
     }
 }
 
@@ -512,15 +548,6 @@ struct BuiltInClassEnvironment: Environment {
 
     func global() -> Environment {
         env.global()
-    }
-
-    var closed: Bool {
-        get {
-            return env.closed
-        }
-        set(newClosed) {
-            env.closed = newClosed
-        }
     }
 
     var enclosing: Environment? {

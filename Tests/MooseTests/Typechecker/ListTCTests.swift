@@ -130,6 +130,21 @@ extension TypecheckerTests {
             a = [1,2,4]
             a[0] = 2
             """
+
+            """
+            a: [B] = [A(1), A(2), A(3)]
+            class A < B {}
+            class B { a: Int }
+            """
+
+            """
+            a: [B] = [A(1), A(2), A(3)]
+            print(a[1].a)
+            a[1] = B(2)
+            a[0] = A(12)
+            class A < B {}
+            class B { a: Int }
+            """
         }
     }
 }

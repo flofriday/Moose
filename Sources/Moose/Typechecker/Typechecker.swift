@@ -14,6 +14,10 @@ class Typechecker: Visitor {
     var errors: [CompileErrorMessage] = []
     var scope: TypeScope
 
+    /// We set the param scope since params have to be in current scope not in class scope.
+    /// E.g.: `func a() { b = 2; obj.call(b) }` would not find b
+    var paramScope: TypeScope?
+
     init() throws {
         scope = TypeScope()
         TypeScope.global = scope
@@ -212,6 +216,11 @@ class Typechecker: Visitor {
     func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
         var retType: MooseType = VoidType()
+
+        guard isFunction else {
+            throw error(message: "A return is only possible inside a function.", node: node)
+        }
+
         if let expr = node.returnValue {
             guard let t = expr.mooseType else {
                 throw error(message: "Couldn't determine type of return statement.", node: expr)

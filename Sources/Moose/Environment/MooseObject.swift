@@ -395,10 +395,15 @@ class DictObj: MooseObject, HashableObject {
     // use the MooseObject as key...
     var pairs: [(key: MooseObject, value: MooseObject)]?
 
-    init(type: MooseType, pairs: [(MooseObject, MooseObject)]) {
+    init(type: MooseType, pairs: [(MooseObject, MooseObject)]?) {
         self.type = type
-        self.pairs = pairs
         env.value = self
+
+        guard let pairs = pairs else { return }
+        self.pairs = []
+        pairs.forEach {
+            setAt(key: $0.0, val: $0.1)
+        }
     }
 
     var description: String {
@@ -426,6 +431,15 @@ class DictObj: MooseObject, HashableObject {
 
     func getAt(key: MooseObject) -> MooseObject {
         pairs?.first(where: { $0.key.equals(other: key) })?.value ?? NilObj()
+    }
+
+    func setAt(key: MooseObject, val: MooseObject) {
+        let index = pairs?.firstIndex(where: { $0.key.equals(other: key) })
+        guard let index = index else {
+            pairs?.append((key, val))
+            return
+        }
+        pairs?[index].value = val
     }
 
     func equals(other: MooseObject) -> Bool {

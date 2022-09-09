@@ -75,6 +75,15 @@ extension Typechecker {
         try indexing.accept(self)
 
         try checkAssignment(given: indexing.mooseType!, with: valueType, on: node)
+
+        let indexType = indexing.index.mooseType!
+
+        do {
+            let inferredScope = try (indexing.indexable.mooseType! as! AnyType).inferredClass()
+            _ = try inferredScope.typeOf(function: Settings.SET_ITEM_FUNCTIONNAME, params: [indexType, valueType])
+        } catch let err as ScopeError {
+            throw error(message: "Type \(indexing.indexable.mooseType!) isn't assignable via index: \(err.message)", node: indexing)
+        }
     }
 
     /// Assignment to tuple

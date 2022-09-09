@@ -293,4 +293,96 @@ extension InterpreterTests {
             ])
         }
     }
+
+    func test_environment() throws {
+        try runValidTests(name: #function) {
+            ("""
+            mut a = 0
+            obj = A()
+            test()
+
+            class A {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            func test() {
+                b = 2
+                obj.set(b)
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    me.set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            ("""
+            mut a = 0
+            A(2).call()
+
+            func test(b: Int) { a = b }
+
+            class A {
+                b: Int
+                func call() {
+                    test(me.b)
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+        }
+    }
 }

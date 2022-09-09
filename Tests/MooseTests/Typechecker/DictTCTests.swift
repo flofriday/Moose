@@ -99,6 +99,15 @@ extension TypecheckerTests {
             class B {}
             class C {}
             """
+
+            """
+            a: {C:B} = {C(): A(), C(): B()}
+
+            a[C()] = C()
+            class A < B {}
+            class B {}
+            class C {}
+            """
         }
     }
 

@@ -68,6 +68,12 @@ extension Typechecker {
         }
         scope.closed = wasClosed
 
+        // We set the param scope since params have to be in current scope not in class scope
+        // like: `func a() { b = 2; obj.call(b) }` would not find b
+        let prevParamScope = paramScope
+        // when derefering multiple times, only the first deref should change paramScope
+        paramScope = paramScope == nil ? scope : paramScope
+
         let prevScope = scope
         scope = classScope
         wasClosed = scope.closed
@@ -78,5 +84,7 @@ extension Typechecker {
 
         scope.closed = wasClosed
         scope = prevScope
+
+        paramScope = prevParamScope
     }
 }

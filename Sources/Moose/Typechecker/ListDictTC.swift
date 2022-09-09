@@ -89,7 +89,11 @@ extension Typechecker {
 
     func visit(_ node: IndexExpression) throws {
         try node.indexable.accept(self)
+
+        let normalScope = scope
+        scope = paramScope ?? scope
         try node.index.accept(self)
+        scope = normalScope
 
         do {
             guard let indexableType = node.indexable.mooseType as? AnyType else {
@@ -97,7 +101,7 @@ extension Typechecker {
             }
 
             let classScope = try indexableType.inferredClass()
-            let retType = try classScope.returnType(function: "indexing", params: [node.index.mooseType!])
+            let retType = try classScope.returnType(function: Settings.GET_ITEM_FUNCTIONNAME, params: [node.index.mooseType!])
             node.mooseType = retType
 
         } catch let err as ScopeError {

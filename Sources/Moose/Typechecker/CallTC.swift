@@ -10,10 +10,16 @@ import Foundation
 extension Typechecker {
     /// CallExpressions are responisble for classic function calls and constructor calls
     func visit(_ node: CallExpression) throws {
+        // set scope to paramScope to ensure that params are called via right outer scope
+        let normalScope = scope
+        scope = paramScope ?? scope
+
         // Calculate the arguments
         for arg in node.arguments {
             try arg.accept(self)
         }
+        scope = normalScope
+
         let paramTypes = node.arguments.map { param in
             param.mooseType!
         }
