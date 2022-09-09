@@ -379,7 +379,7 @@ extension BuiltIns {
         let index = key.value! < 0 ? obj.length() + key.value! : key.value!
 
         guard obj.length() > index, index >= 0 else {
-            throw OutOfBoundsPanic()
+            throw OutOfBoundsPanic(length: obj.length(), attemptedIndex: index)
         }
 
         return obj.getAt(index: index)
@@ -395,7 +395,7 @@ extension BuiltIns {
 
         let index = key.value! < 0 ? obj.length() + key.value! : key.value!
         guard obj.length() > index, index >= 0 else {
-            throw OutOfBoundsPanic()
+            throw OutOfBoundsPanic(length: obj.length(), attemptedIndex: index)
         }
 
         obj.setAt(index: key.value!, value: params[1])

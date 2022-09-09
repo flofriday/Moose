@@ -130,15 +130,18 @@ extension Parser {
 
     /// Parses strongly typed variable definitions, currently used by parameter and class property definitions
     func parseVariableDefinition() throws -> VariableDefinition {
+        let startToken = peek()
         let mut = match(types: .Mut)
         let ident = try parseIdentifier()
         let token = try consume(type: .Colon, message: "expected : to define type, but got \(peek().lexeme) instead")
         let type = try parseValueTypeDefinition()
+        let endToken = previous()
         guard let type = type as? ParamType else {
             throw error(message: "Variable cannot be of type \(type).", token: token)
         }
 
-        return VariableDefinition(token: ident.token, mutable: mut, name: ident, type: type)
+        let location = mergeLocations(startToken, endToken)
+        return VariableDefinition(token: ident.token, location: location, mutable: mut, name: ident, type: type)
     }
 
     func parseAllVariableDefinitions() throws -> [VariableDefinition] {

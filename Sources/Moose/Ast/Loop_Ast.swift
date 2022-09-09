@@ -30,6 +30,10 @@ class ForEachStatement: Statement {
     var description: String {
         return "for \(variable.description) in \(list.description) \(body)"
     }
+
+    var location: Location {
+        return mergeLocations(locationFromToken(token), body.location)
+    }
 }
 
 /// ast for `for mut a = 2; a > 2; a++ {}`
@@ -42,11 +46,11 @@ class ForCStyleStatement: Statement {
 
     var returnDeclarations: ReturnDec = nil
 
-    init(token: Token, preStmt: Statement?, condition: Expression, postEachSmt: Statement?, body: BlockStatement) {
+    init(token: Token, preStmt: Statement?, condition: Expression, postEachStmt: Statement?, body: BlockStatement) {
         self.token = token
         self.preStmt = preStmt
         self.condition = condition
-        self.postEachStmt = postEachSmt
+        self.postEachStmt = postEachStmt
         self.body = body
     }
 
@@ -58,5 +62,9 @@ class ForCStyleStatement: Statement {
         let preStmt = (preStmt != nil) ? "\(preStmt!); " : ""
         let postStmt = (postEachStmt != nil) ? "; \(postEachStmt!)" : ""
         return "for \(preStmt)\(condition)\(postStmt) \(body)"
+    }
+
+    var location: Location {
+        return mergeLocations(locationFromToken(token), body.location)
     }
 }

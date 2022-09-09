@@ -9,11 +9,13 @@ import Foundation
 
 class List {
     let token: Token
+    let location: Location
     let expressions: [Expression]
     var mooseType: MooseType?
 
-    init(token: Token, expressions: [Expression]) {
+    init(token: Token, location: Location, expressions: [Expression]) {
         self.token = token
+        self.location = location
         self.expressions = expressions
     }
 }
@@ -22,24 +24,28 @@ class Dict {
     typealias dictPairs = [(key: Expression, value: Expression)]
 
     let token: Token
+    let location: Location
     let pairs: dictPairs
 
     var mooseType: MooseType?
 
-    init(token: Token, pairs: dictPairs) {
+    init(token: Token, location: Location, pairs: dictPairs) {
         self.token = token
+        self.location = location
         self.pairs = pairs
     }
 }
 
 class IndexExpression: Assignable {
     let token: Token
+    let location: Location
     let indexable: Expression // left
     let index: Expression
     var mooseType: MooseType?
 
-    init(token: Token, indexable: Expression, index: Expression) {
+    init(token: Token, location: Location, indexable: Expression, index: Expression) {
         self.token = token
+        self.location = location
         self.indexable = indexable
         self.index = index
     }

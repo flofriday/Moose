@@ -15,7 +15,7 @@ class Lexer {
 
     init(input: String) {
         self.input = input
-        readChar()
+        readChar() // TODO: WHY this line?
     }
 }
 
@@ -43,28 +43,40 @@ extension Lexer {
 
         switch (char, peekChar()) {
         case ("\n", _):
+            readChar()
             tok = genToken(.NLine)
         case let ("=", peek) where !isOpChar(char: peek):
+            readChar()
             tok = genToken(.Assign)
         case (";", _):
+            readChar()
             tok = genToken(.SemiColon)
         case let (":", peek) where !isOpChar(char: peek):
+            readChar()
             tok = genToken(.Colon)
         case ("(", _):
+            readChar()
             tok = genToken(.LParen)
         case (")", _):
+            readChar()
             tok = genToken(.RParen)
         case (",", _):
+            readChar()
             tok = genToken(.Comma)
         case ("{", _):
+            readChar()
             tok = genToken(.LBrace)
         case ("}", _):
+            readChar()
             tok = genToken(.RBrace)
         case ("[", _):
+            readChar()
             tok = genToken(.LBracket)
         case ("]", _):
+            readChar()
             tok = genToken(.RBracket)
         case (".", _):
+            readChar()
             tok = genToken(.Dot)
         default:
             guard let unwrappedChar = char else {
@@ -125,7 +137,6 @@ extension Lexer {
             }
         }
 
-        readChar()
         return tok!
     }
 }
@@ -236,7 +247,8 @@ extension Lexer {
 extension Lexer {
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
-        genToken(type, nil, "\(char ?? " ")")
+        let lastChar = input[readPosition - 2]
+        return genToken(type, nil, "\(lastChar ?? " ")")
     }
 
     /// genToken with lexeme and literal nil
@@ -244,9 +256,25 @@ extension Lexer {
         genToken(type, nil, lexeme)
     }
 
+    /// Generate the specified token.
+    /// Note: When calling this function the last character of the token should
+    /// already be consumed and the column pointer should point to the next
+    /// column.
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
-        let startCol = column - lexeme.count - 1
-        return Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
+        var lexeme = lexeme
+
+        // TODO: This is wrong for newlines
+        var startCol = column - lexeme.count
+
+        // String literals need to be adjusted for two qutationmarks
+        if type == .String {
+            startCol -= 2
+        } else if type == .EOF {
+            lexeme = " "
+        }
+
+        let t = Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
+        return t
     }
 }
 
@@ -286,6 +314,7 @@ extension Lexer {
 
 extension Lexer {
     func error(message: String) -> CompileErrorMessage {
-        CompileErrorMessage(line: line, startCol: column, endCol: column, message: message)
+        let location = Location(col: column, endCol: column, line: line, endLine: line)
+        return CompileErrorMessage(location: location, message: message)
     }
 }

@@ -155,17 +155,12 @@ class Interpreter: Visitor {
 
     func visit(_ node: BlockStatement) throws -> MooseObject {
         pushEnvironment()
-        do {
-            for statement in node.statements {
-                _ = try statement.accept(self)
-            }
-        } catch {
-            // Always leave the environment in peace
-            popEnvironment()
-            throw error
+        defer { popEnvironment() }
+
+        for statement in node.statements {
+            _ = try statement.accept(self)
         }
 
-        popEnvironment()
         return VoidObj()
     }
 
@@ -208,7 +203,11 @@ class Interpreter: Visitor {
     func visit(_ node: IfStatement) throws -> MooseObject {
         let conditionResult = try node.condition.accept(self) as! BoolObj
 
-        if conditionResult.value! {
+        guard let value = conditionResult.value else {
+            throw NilUsagePanic(node: node.condition)
+        }
+
+        if value {
             _ = try node.consequence.accept(self)
         } else if let alternative = node.alternative {
             _ = try alternative.accept(self)
@@ -270,17 +269,23 @@ class Interpreter: Visitor {
                 environment = environment.global()
             }
 
+            defer {
+                environment = oldEnv
+            }
             // Execute the function
-            let res = try callee.function(args, environment)
-
-            environment = oldEnv
-            return res
+            return try callee.function(args, environment)
         } else if let callee = callee as? FunctionObj {
             // Activate the  environment in which the function was defined
             let oldEnv = environment
             environment = callee.closure
 
             pushEnvironment()
+
+            // Reactivate the original environment at the end
+            defer {
+                popEnvironment()
+                environment = oldEnv
+            }
 
             // Set all arguments
             let argPairs = Array(zip(callee.paramNames, args))
@@ -289,17 +294,14 @@ class Interpreter: Visitor {
             }
 
             // Execute the body
-            var result: MooseObject = VoidObj()
             do {
                 _ = try callee.value.accept(self)
             } catch let error as ReturnSignal {
-                result = error.value
+                return error.value
             }
 
-            // Reactivate the original environment
-            popEnvironment()
-            environment = oldEnv
-            return result
+            return VoidObj()
+
         } else {
             throw RuntimeError(message: "I cannot call \(callee)!")
         }
@@ -326,21 +328,36 @@ class Interpreter: Visitor {
         let (args, argTypes) = try evaluateArgs(exprs: [node.right])
 
         let handler = try environment.get(op: node.op, pos: .Prefix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_ node: InfixExpression) throws -> MooseObject {
         let (args, argTypes) = try evaluateArgs(exprs: [node.left, node.right])
 
         let handler = try environment.get(op: node.op, pos: .Infix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_ node: PostfixExpression) throws -> MooseObject {
         let (args, argTypes) = try evaluateArgs(exprs: [node.left])
 
         let handler = try environment.get(op: node.op, pos: .Postfix, params: argTypes)
-        return try callFunctionOrOperator(callee: handler, args: args)
+        do {
+            return try callFunctionOrOperator(callee: handler, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     func visit(_: VariableDefinition) throws -> MooseObject {
@@ -361,7 +378,13 @@ class Interpreter: Visitor {
         }
 
         let callee = try environment.get(function: node.function.value, params: argTypes)
-        return try callFunctionOrOperator(callee: callee, args: args)
+
+        do {
+            return try callFunctionOrOperator(callee: callee, args: args)
+        } catch let panic as Panic {
+            panic.stacktrace.push(node: node)
+            throw panic
+        }
     }
 
     private func callConstructor(className: String, args: [MooseObject]) throws -> MooseObject {
@@ -412,7 +435,8 @@ class Interpreter: Visitor {
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let funcIdent = Identifier(token: node.indexable.token, value: Settings.GET_ITEM_FUNCTIONNAME)
-        let indexCall = CallExpression(token: node.index.token, function: funcIdent, arguments: [node.index])
+        let location = mergeLocations(node.indexable.token, node.index.token)
+        let indexCall = CallExpression(token: node.index.token, location: location, function: funcIdent, arguments: [node.index])
         let dereferer = Dereferer(token: node.token, obj: node.indexable, referer: indexCall)
         return try dereferer.accept(self)
     }
@@ -420,50 +444,5 @@ class Interpreter: Visitor {
     func visit(_: Me) throws -> MooseObject {
         let env = try environment.nearestClass()
         return ClassObject(env: env, name: env.className)
-    }
-
-    func visit(_ node: ForEachStatement) throws -> MooseObject {
-        let indexable = try node.list.accept(self) as! IndexableObject
-
-        pushEnvironment()
-        for i in 0 ... indexable.length() - 1 {
-            _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i), allowDefine: true)
-            _ = try node.body.accept(self)
-        }
-        popEnvironment()
-        return VoidObj()
-    }
-
-    func visit(_ node: ForCStyleStatement) throws -> MooseObject {
-        // First push a new Environment since the variable definitions only
-        // apply here
-        pushEnvironment()
-
-        if let preStmt = node.preStmt {
-            _ = try preStmt.accept(self)
-        }
-
-        while true {
-            // Check condition
-            let condition: Bool? = (try node.condition.accept(self) as! BoolObj).value
-            guard condition != nil else {
-                throw NilUsagePanic()
-            }
-            if condition == false {
-                break
-            }
-
-            // Execute body
-            _ = try node.body.accept(self)
-
-            // Post statement
-            if let postEachStmt = node.postEachStmt {
-                _ = try postEachStmt.accept(self)
-            }
-        }
-
-        // Pop the loop environment
-        popEnvironment()
-        return VoidObj()
     }
 }

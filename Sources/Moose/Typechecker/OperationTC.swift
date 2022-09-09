@@ -47,6 +47,10 @@ extension Typechecker {
 
     func visit(_ node: InfixExpression) throws {
         do {
+            let wasClosed = scope.closed
+            scope.closed = false
+            defer { scope.closed = wasClosed }
+
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.left, node.right], token: node.token)
         } catch let err as ScopeError {
             throw error(message: "Couldn't determine return type of infix operator: \(err.message)", node: node)
@@ -55,6 +59,9 @@ extension Typechecker {
 
     func visit(_ node: PrefixExpression) throws {
         do {
+            let wasClosed = scope.closed
+            scope.closed = false
+            defer { scope.closed = wasClosed }
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.right], token: node.token)
         } catch let err as ScopeError {
             throw error(message: "Couldn't determine return type of prefix operator: \(err.message)", node: node)
@@ -63,6 +70,9 @@ extension Typechecker {
 
     func visit(_ node: PostfixExpression) throws {
         do {
+            let wasClosed = scope.closed
+            scope.closed = false
+            defer { scope.closed = wasClosed }
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.left], token: node.token)
         } catch let err as ScopeError {
             throw error(message: "Couldn't determine return type of postfix operator: \(err.message)", node: node)

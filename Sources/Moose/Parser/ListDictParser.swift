@@ -12,16 +12,19 @@ extension Parser {
         let token = try consume(type: .LBracket, message: "`[` expected as start of List, but got `\(peek().lexeme)` instead.")
 
         let exprs = try parseExpressionList(seperator: .Comma, end: .RBracket)
-        _ = try consume(type: .RBracket, message: "Expected `]` as end of List, but got `\(peek().lexeme)` instead.")
+        let rbracket = try consume(type: .RBracket, message: "Expected `]` as end of List, but got `\(peek().lexeme)` instead.")
 
-        return List(token: token, expressions: exprs)
+        let location = mergeLocations(token, rbracket)
+        return List(token: token, location: location, expressions: exprs)
     }
 
     func parseDictInit() throws -> Dict {
         let token = try consume(type: .LBrace, message: "`{` expected as start of dict.")
         let pairs = try parseDictPairs(end: .RBrace)
-        _ = try consume(type: .RBrace, message: "`}` as end of dict expected, but got `\(peek().lexeme)` instead.")
-        return Dict(token: token, pairs: pairs)
+        let rbrace = try consume(type: .RBrace, message: "`}` as end of dict expected, but got `\(peek().lexeme)` instead.")
+
+        let location = mergeLocations(token, rbrace)
+        return Dict(token: token, location: location, pairs: pairs)
     }
 
     func parseIndex(left: Expression) throws -> Expression {
@@ -29,8 +32,10 @@ extension Parser {
 
         let index = try parseExpression(.Lowest)
 
-        _ = try consume(type: .RBracket, message: "Expected `]` as end of index access, but got `\(peek().lexeme)` instead.")
-        return IndexExpression(token: token, indexable: left, index: index)
+        let rbracket = try consume(type: .RBracket, message: "Expected `]` as end of index access, but got `\(peek().lexeme)` instead.")
+
+        let location = mergeLocations(left.location, locationFromToken(rbracket))
+        return IndexExpression(token: token, location: location, indexable: left, index: index)
     }
 
     private func parseDictPairs(end: TokenType) throws -> [(Expression, Expression)] {

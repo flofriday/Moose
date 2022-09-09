@@ -38,7 +38,7 @@ func == <T: MooseObject>(lhs: T, rhs: T) -> Bool {
 
 protocol HashableObject: Hashable, MooseObject {}
 
-protocol IndexableObject {
+protocol IndexableObject: MooseObject {
     func getAt(index: Int64) -> MooseObject
     func length() -> Int64
 }

@@ -70,13 +70,8 @@ class Cli {
             print(error)
             print(error.message)
             exit(1)
-        } catch _ as OutOfBoundsPanic {
-            print("Out Of Bounds Panic: You tried to access an index out of the bounds of an object")
-            print("Unfortunatly we cannot tell you where it happend, sorry.")
-            exit(1)
-        } catch _ as NilUsagePanic {
-            print("NIL Usage Panic: The program crashed because a nil was dereferenced.")
-            print("Unfortunatly we cannot tell you where it happend, sorry.")
+        } catch let panic as Panic {
+            print(panic.getFullReport(sourcecode: input))
             exit(1)
         } catch {
             print(error)
