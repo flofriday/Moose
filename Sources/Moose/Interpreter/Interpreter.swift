@@ -107,6 +107,13 @@ class Interpreter: Visitor {
                 for (n, expression) in tuple.expressions.enumerated() {
                     try assign(valueType: types[n], dst: expression as! Assignable, value: valueTuple.value![n])
                 }
+            case let clas as ClassType:
+                let props = try clas.inferredClass().classProperties
+                let valueClass = value as! ClassObject
+                for (n, expression) in tuple.expressions.enumerated() {
+                    let prop = try valueClass.classEnv!.get(variable: props[n].name)
+                    try assign(valueType: props[n].type, dst: expression as! Assignable, value: prop)
+                }
             default:
                 throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
             }
