@@ -340,6 +340,7 @@ extension InterpreterTests {
 
             ])
 
+            // as before just with a me.set call
             ("""
             mut a = 0
             A().call()
@@ -355,6 +356,103 @@ extension InterpreterTests {
 
                 func set(b: Int) {
                     a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a A().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    A().set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a objA.set call
+            ("""
+            mut a = 0
+            objA = A()
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    objA.set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a B().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class B < A {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            class A {
+                func call() {
+                    B().set(test())
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a B().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class B {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            class A {
+                func call() {
+                    B().set(test())
                 }
             }
 
