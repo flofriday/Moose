@@ -103,6 +103,51 @@ extension InterpreterTests {
         }
     }
 
+    func test_dict_methods() throws {
+        try runValidTests(name: #function, [
+            ("""
+            a: {Int:String} = {
+                500: "Internal server error",
+                200: "OK",
+                403: "Access forbidden",
+                404: "File not found"
+            }
+
+            str = a.represent()
+            print(str)
+            e500 = a[500]
+            strT = [e500].represent()
+            """, [
+                ("e500", StringObj(value: "Internal server error")),
+                ("strT", StringObj(value: "[\"Internal server error\"]")),
+            ]),
+
+            ("""
+            a: {Int:String} = {
+                500: "Internal server error",
+                200: "OK",
+                403: "Access forbidden",
+                404: "File not found"
+            }
+
+            len = a.length()
+
+            mut lastKey: Int
+            mut lastVal: String
+            for keyValue in a.flat() {
+                (key, value) = keyValue
+                lastKey = key
+                lastVal = value
+            }
+
+            """, [
+                ("len", IntegerObj(value: 4)),
+                ("lastKey", IntegerObj(value: 404)),
+                ("lastVal", StringObj(value: "File not found")),
+            ]),
+        ])
+    }
+
     func test_list() throws {
         try runValidTests(name: #function) {
             ("""
@@ -184,6 +229,83 @@ extension InterpreterTests {
                 ("t2", IntegerObj(value: 2)),
                 ("t4", IntegerObj(value: 4)),
                 ("t12", IntegerObj(value: 12)),
+            ])
+        }
+    }
+
+    func test_list_methods() throws {
+        try runValidTests(name: #function) {
+            ("""
+            a = [1,2,3]
+            b = [5,6,7]
+            l3 = a.length()
+            a.append(4)
+            l4 = a.length()
+            a.append(b)
+            l7 = a.length()
+            """, [
+                ("l3", IntegerObj(value: 3)),
+                ("l4", IntegerObj(value: 4)),
+                ("l7", IntegerObj(value: 7)),
+            ])
+
+            ("""
+            a: [B] = [A(1),A(2),A(3)]
+            b = [B(5),B(6),B(7)]
+            l3 = a.length()
+            a.append(A(4))
+            l4 = a.length()
+            a.append(b)
+            l7 = a.length()
+
+            class A < B {
+                func represent() > String { return String(a) }
+            }
+            class B {
+                a: Int
+            }
+
+            print("")
+            print("Output: " + String(a))
+            print("")
+            """, [
+                ("l3", IntegerObj(value: 3)),
+                ("l4", IntegerObj(value: 4)),
+                ("l7", IntegerObj(value: 7)),
+            ])
+
+            ("""
+            a = [1,2,3]
+
+            mut lastIndex: Int = nil
+            mut lastVal: Int = nil
+            for e in a.enumerated() {
+                (index, value) = e
+                lastIndex = index
+                lastVal = value
+            }
+
+            """, [
+                ("lastIndex", IntegerObj(value: 2)),
+                ("lastVal", IntegerObj(value: 3)),
+            ])
+        }
+    }
+
+    func test_string() throws {
+        try runValidTests(name: #function) {
+            ("""
+            a = "AbC"
+
+            len = a.length()
+            aA = a[0]
+            ab = a[1]
+            aC = a[2]
+
+            """, [
+                ("aA", StringObj(value: "A")),
+                ("ab", StringObj(value: "b")),
+                ("aC", StringObj(value: "C")),
             ])
         }
     }

@@ -174,7 +174,8 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-//        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemStringgetItemString))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: StringType(), function: lengthString))
+        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
         env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
@@ -190,21 +191,30 @@ extension BuiltIns {
         return ndict
     }
 
-//    private static func getItemString(params: [MooseObject], env: Environment) throws -> MooseObject {
-//        let key = params[0] as! IntegerObj
-//        try assertNoNil(params)
-//
-//        let obj: StringObj = try env
-//            .cast(to: BuiltInClassEnvironment.self)
-//            .value.cast()
-//
-//        let value = obj.value!
-//        guard value.count > key.value! else {
-//            throw RuntimeError(message: "Array Access Error: String has a length of \(value.count) but you want to access \(key.value!).")
-//        }
-//
-//        return StringObj(value: value[key])
-//    }
+    private static func lengthString(params _: [MooseObject], env: Environment) throws -> MooseObject {
+        let obj: StringObj = try classEnvToObj(env)
+        try assertNoNil(obj)
+
+        return IntegerObj(value: Int64(obj.value!.count))
+    }
+
+    private static func getItemString(params: [MooseObject], env: Environment) throws -> MooseObject {
+        let key = params[0] as! IntegerObj
+        try assertNoNil(params)
+
+        let obj: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        let value = obj.value!
+        guard value.count > key.value! else {
+            throw RuntimeError(message: "Array Access Error: String has a length of \(value.count) but you want to access \(key.value!).")
+        }
+
+        let index = Int(key.value!)
+        let char = value[index]
+        return StringObj(value: String(char))
+    }
 
     private static func strToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> TupleObj {
         let bool: StringObj = try env
@@ -322,6 +332,7 @@ extension BuiltIns {
 
     private static func createTupleEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representTuple))
         return env
     }
 
@@ -333,6 +344,18 @@ extension BuiltIns {
 
         return ndict
     }
+
+    private static func representTuple(params _: [MooseObject], env: Environment) throws -> StringObj {
+        let obj: TupleObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        let valStrs = try obj.value!.map {
+            try representAny(obj: $0)
+        }.joined(separator: ", ")
+
+        return StringObj(value: "(\(valStrs))")
+    }
 }
 
 /// List Environment Creation
@@ -342,6 +365,10 @@ extension BuiltIns {
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
+        env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ParamType()], returnType: VoidType(), function: appendList))
+        env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ListType(ParamType())], returnType: VoidType(), function: appendList))
+        env.set(function: "enumerated", value: BuiltInFunctionObj(name: "enumerated", params: [], returnType: ParamType(), function: enumeratedList))
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
         env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [IntType(), ParamType()], returnType: VoidType(), function: setItemList))
         return env
@@ -353,6 +380,9 @@ extension BuiltIns {
         }
         let ndict = ClassTypeScope(copy: old)
 
+        try ndict.replace(function: "append", with: [ParamType()], by: FunctionType(params: [type.type], returnType: VoidType()))
+        try ndict.replace(function: "append", with: [ListType(ParamType())], by: FunctionType(params: [ListType(type.type)], returnType: VoidType()))
+        try ndict.replace(function: "enumerated", with: [], by: FunctionType(params: [], returnType: ListType(TupleType([IntType(), type.type]))))
         try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
         try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [IntType(), ParamType()], by: FunctionType(params: [IntType(), type.type], returnType: VoidType()))
 
@@ -365,6 +395,36 @@ extension BuiltIns {
             .value.cast()
 
         return IntegerObj(value: Int64(list.length()))
+    }
+
+    private static func appendList(params: [MooseObject], env: Environment) throws -> MooseObject {
+        let obj: ListObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value
+            .cast()
+
+        try assertNoNil(obj)
+
+        if let list = params[0] as? ListObj {
+            try assertNoNil(list)
+            obj.value!.append(contentsOf: list.value!)
+        } else {
+            obj.value!.append(params[0])
+        }
+
+        return VoidObj()
+    }
+
+    private static func enumeratedList(params _: [MooseObject], env: Environment) throws -> MooseObject {
+        let obj: ListObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value
+            .cast()
+
+        try assertNoNil(obj)
+        let tupleType = TupleType([IntType(), obj.type as! ParamType])
+        let enumList = obj.value!.enumerated().map { TupleObj(type: tupleType, value: [IntegerObj(value: Int64($0.offset)), $0.element]) }
+        return ListObj(type: ListType(tupleType), value: enumList)
     }
 
     private static func getItemList(params: [MooseObject], env: Environment) throws -> MooseObject {
@@ -401,6 +461,18 @@ extension BuiltIns {
         obj.setAt(index: key.value!, value: params[1])
         return VoidObj()
     }
+
+    private static func representList(params _: [MooseObject], env: Environment) throws -> StringObj {
+        let obj: ListObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        let valStrs = try obj.value!.map {
+            try representAny(obj: $0)
+        }.joined(separator: ", ")
+
+        return StringObj(value: "[\(valStrs)]")
+    }
 }
 
 /// Dict Environment Creation
@@ -409,7 +481,9 @@ extension BuiltIns {
 
     private static func createDictEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: represent))
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representDict))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthDict))
+        env.set(function: "flat", value: BuiltInFunctionObj(name: "flat", params: [], returnType: ParamType(), function: flatDict))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [ParamType()], returnType: ParamType(), function: getItemDict))
         env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [ParamType(), ParamType()], returnType: VoidType(), function: setItemDict))
 
@@ -423,17 +497,40 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         // generic indexing
+        try ndict.replace(function: "flat", with: [], by: FunctionType(params: [], returnType: ListType(TupleType([type.keyType, type.valueType]))))
         try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [ParamType()], by: FunctionType(params: [type.keyType], returnType: type.valueType))
         try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [ParamType(), ParamType()], by: FunctionType(params: [type.keyType, type.valueType], returnType: VoidType()))
 
         return ndict
     }
 
-    private static func represent(params _: [MooseObject], env: Environment) throws -> MooseObject {
+    private static func lengthDict(params _: [MooseObject], env: Environment) throws -> IntegerObj {
+        let obj: DictObj = try classEnvToObj(env)
+        try assertNoNil(obj)
+        return IntegerObj(value: Int64(obj.pairs!.count))
+    }
+
+    private static func flatDict(params _: [MooseObject], env: Environment) throws -> ListObj {
+        let obj: DictObj = try classEnvToObj(env)
+        try assertNoNil(obj)
+
+        let dictType = obj.type as! DictType
+
+        let tupleType = TupleType([dictType.keyType, dictType.valueType])
+        let list = obj.pairs!.map { TupleObj(type: tupleType, value: [$0.key, $0.value]) }
+        return ListObj(type: ListType(tupleType), value: list)
+    }
+
+    private static func representDict(params _: [MooseObject], env: Environment) throws -> MooseObject {
         let obj: DictObj = try env
             .cast(to: BuiltInClassEnvironment.self)
             .value.cast()
-        return StringObj(value: obj.description)
+
+        let valStrs = try obj.pairs!.map {
+            "\(try representAny(obj: $0.key)): \(try representAny(obj: $0.value))"
+        }.joined(separator: ", ")
+
+        return StringObj(value: "{\(valStrs)}")
     }
 
     private static func getItemDict(params: [MooseObject], env: Environment) throws -> MooseObject {
@@ -482,6 +579,11 @@ extension BuiltIns {
             fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
         }
         return old
+    }
+
+    static func classEnvToObj<T>(_ env: Environment) throws -> T where T: MooseObject {
+        return try env.cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
     }
 }
 

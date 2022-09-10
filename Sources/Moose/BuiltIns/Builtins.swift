@@ -97,14 +97,47 @@ extension BuiltIns {
         return ListObj(type: type, value: l)
     }
 
+    /// Checks if env has represent function with string as return type
+    /// If so, it calls it and returns the String back
+    ///
+    /// Otherwise return nil
+    static func callRepresent(env: Environment) throws -> StringObj? {
+        guard env.has(function: Settings.REPRESENT_FUNCTIONNAME, params: []) else {
+            return nil
+        }
+
+        let repFun = try env.get(function: Settings.REPRESENT_FUNCTIONNAME, params: [])
+
+        if let repFun = repFun as? BuiltInFunctionObj {
+            guard repFun.returnType is StringType else { return nil }
+        } else if let repFun = repFun as? FunctionObj {
+            guard (repFun.type as? FunctionType)?.returnType is StringType else { return nil }
+        } else {
+            return nil
+        }
+
+        let strObj = try Interpreter(environment: env).callFunctionOrOperator(callee: repFun, args: [])
+        guard let strObj = strObj as? StringObj else { return nil }
+        return strObj
+    }
+
+    static func representAny(obj: MooseObject) throws -> String {
+        guard !obj.isNil else { return "nil" }
+        guard let repObj = try callRepresent(env: obj.env) else {
+            return obj.description
+        }
+
+        return repObj.value!
+    }
+
     /// A generic print function that can print any MooseObject
-    static func printBuiltIn(params: [MooseObject], _: Environment) -> VoidObj {
+    static func printBuiltIn(params: [MooseObject], env _: Environment) throws -> VoidObj {
         if let str = params[0] as? StringObj {
-            print(str.value ?? "nil")
+            print(str.value!)
             return VoidObj()
         }
 
-        print(params[0].description)
+        print(try representAny(obj: params[0]))
         return VoidObj()
     }
 
@@ -165,29 +198,11 @@ extension BuiltIns {
     static func assertNoNil(_ args: [MooseObject]) throws {
         try args.forEach {
             if $0.isNil { throw NilUsagePanic() }
-
-            switch $0 {
-            case let int as IntegerObj:
-                if int.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let float as FloatObj:
-                if float.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let bool as BoolObj:
-                if bool.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let str as StringObj:
-                if str.value == nil {
-                    throw NilUsagePanic()
-                }
-
-            default:
-                throw RuntimeError(message: "Internal Error in assertNoNil")
-            }
         }
+    }
+
+    static func assertNoNil(_ args: MooseObject...) throws {
+        try assertNoNil(args)
     }
 
     // A generic builtin equal operator function that can compare any two

@@ -151,7 +151,9 @@ class StringObj: MooseObject, HashableObject {
 
     var description: String {
         if let description = value?.description {
-            return "\(description)"
+            return """
+            "\(description)"
+            """
         }
         return "nil"
     }
@@ -596,10 +598,12 @@ class NilObj: MooseObject {
             return TupleObj(type: type, value: nil)
         case is ListType:
             return ListObj(type: type, value: nil)
-        case is FunctionType:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
+        case is DictType:
+            return DictObj(type: type, pairs: nil)
+        case is FunctionType, is AnyType, is ParamType:
+            fallthrough
         default:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil to \(type.description)")
+            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
         }
     }
 }

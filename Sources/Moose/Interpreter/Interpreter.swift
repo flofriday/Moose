@@ -20,6 +20,14 @@ class Interpreter: Visitor {
         addBuiltIns()
     }
 
+    /// This init is used to call functions from outside the interpreter
+    ///
+    /// E.g. the builtin functions
+    init(environment: Environment) {
+        self.environment = environment
+        paramEnvironment = (environment, false)
+    }
+
     /// Reset the internal state of the interpreter.
     func reset() {
         errors = []
