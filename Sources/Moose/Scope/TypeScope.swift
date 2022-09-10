@@ -10,6 +10,13 @@ import Foundation
 class TypeScope: Scope {
     static var global = TypeScope()
 
+    /// Since arguments are never checked withing a closed environment,  we don't want
+    /// the scopes to check against closed scopes. More info in github issue #31.
+    ///
+    ///
+    /// This is toggled by the argument checking.
+    static var argumentCheck = false
+
     typealias rateType = (rate: Int, extendStep: Int)
     internal var variables: [String: (type: MooseType, mut: Bool)] = [:]
     internal var funcs: [String: [FunctionType]] = [:]
@@ -18,7 +25,11 @@ class TypeScope: Scope {
     private var classes: [String: ClassTypeScope] = [:]
 
     let enclosing: TypeScope?
-    var closed: Bool = false
+    var _closed: Bool = false
+    var closed: Bool {
+        get { _closed && !TypeScope.argumentCheck }
+        set(value) { _closed = value }
+    }
 
     init(enclosing: TypeScope? = nil) {
         self.enclosing = enclosing

@@ -74,8 +74,15 @@ extension Typechecker {
         // when derefering multiple times, only the first deref should change paramScope
         paramScope = paramScope == nil ? scope : paramScope
 
+        // We do this since in case of
+        // me.call( a.set(x), b) we want that a.set is closed, so we have to disable the
+        // argumentCheck
+        let prevArgCheck = TypeScope.argumentCheck
+        TypeScope.argumentCheck = false
+
         let prevScope = scope
         scope = classScope
+
         wasClosed = scope.closed
         scope.closed = true
 
@@ -84,6 +91,8 @@ extension Typechecker {
 
         scope.closed = wasClosed
         scope = prevScope
+
+        TypeScope.argumentCheck = prevArgCheck
 
         paramScope = prevParamScope
     }

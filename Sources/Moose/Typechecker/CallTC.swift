@@ -14,10 +14,14 @@ extension Typechecker {
         let normalScope = scope
         scope = paramScope ?? scope
 
+        // Toggles the argumentCheck. See github issue #31 for more info.
+        let prevArgCheck = TypeScope.argumentCheck
+        TypeScope.argumentCheck = true
         // Calculate the arguments
         for arg in node.arguments {
             try arg.accept(self)
         }
+        TypeScope.argumentCheck = prevArgCheck
         scope = normalScope
 
         let paramTypes = node.arguments.map { param in

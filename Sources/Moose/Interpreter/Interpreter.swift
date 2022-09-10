@@ -98,8 +98,7 @@ class Interpreter: Visitor {
             _ = environment.update(variable: id.value, value: newValue, allowDefine: true)
 
         case let tuple as Tuple:
-            // TODO: many things can be unwrapped into tuples, like classes
-            // and lists.
+            // TODO: many things can be unwrapped into tuples, like lists
             switch valueType {
             case let t as TupleType:
                 let types = t.entries

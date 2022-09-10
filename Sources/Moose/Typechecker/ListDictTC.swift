@@ -92,7 +92,14 @@ extension Typechecker {
 
         let normalScope = scope
         scope = paramScope ?? scope
+
+        let prevArgCheck = TypeScope.argumentCheck
+        TypeScope.argumentCheck = true
+
         try node.index.accept(self)
+
+        TypeScope.argumentCheck = prevArgCheck
+
         scope = normalScope
 
         do {
