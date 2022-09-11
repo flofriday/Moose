@@ -422,7 +422,7 @@ extension BuiltIns {
             .cast()
 
         try assertNoNil(obj)
-        let tupleType = TupleType([IntType(), obj.type as! ParamType])
+        let tupleType = TupleType([IntType(), (obj.type as! ListType).type])
         let enumList = obj.value!.enumerated().map { TupleObj(type: tupleType, value: [IntegerObj(value: Int64($0.offset)), $0.element]) }
         return ListObj(type: ListType(tupleType), value: enumList)
     }

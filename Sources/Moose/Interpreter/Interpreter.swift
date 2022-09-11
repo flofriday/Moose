@@ -96,7 +96,7 @@ class Interpreter: Visitor {
         environment = prevEnv
     }
 
-    private func assign(valueType: MooseType, dst: Assignable, value: MooseObject) throws {
+    func assign(valueType: MooseType, dst: Assignable, value: MooseObject) throws {
         switch dst {
         case let id as Identifier:
             var newValue = value

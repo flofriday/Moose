@@ -11,7 +11,8 @@ extension Interpreter {
 
         for i in 0 ... indexable.length() - 1 {
             do {
-                _ = environment.update(variable: node.variable.value, value: indexable.getAt(index: i), allowDefine: true)
+                let value = indexable.getAt(index: i)
+                try assign(valueType: value.type, dst: node.variable, value: value)
                 _ = try node.body.accept(self)
             } catch is BreakSignal {
                 break

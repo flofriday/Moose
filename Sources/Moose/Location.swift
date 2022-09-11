@@ -12,6 +12,10 @@ struct Location {
     var endCol: Int
     var line: Int
     var endLine: Int
+
+    func mergeLocations(_ other: Location) -> Location {
+        return Moose.mergeLocations(self, other)
+    }
 }
 
 func mergeLocations(_ a: Location, _ b: Location) -> Location {

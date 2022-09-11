@@ -610,6 +610,15 @@ extension Parser {
         peek().type == .EOF
     }
 
+    func tokenIsBefore(toFind first: TokenType, isBefore second: TokenType, offset: Int = 0) -> Bool {
+        guard (current + offset) < tokens.count else {
+            return false
+        }
+        guard tokens[current + offset].type != second else { return false }
+        if tokens[current + offset].type == first { return true }
+        return tokenIsBefore(toFind: first, isBefore: second, offset: offset + 1)
+    }
+
     func advance() -> Token {
         if !isAtEnd() {
             current += 1

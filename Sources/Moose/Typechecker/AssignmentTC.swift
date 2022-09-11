@@ -24,7 +24,7 @@ extension Typechecker {
         try assign(valueType: node.value.mooseType!, to: node.assignable, with: node.declaredType, on: node)
     }
 
-    private func assign(valueType: MooseType, to assignable: Expression, with declaredType: MooseType?, on node: AssignStatement) throws {
+    func assign(valueType: MooseType, to assignable: Expression, with declaredType: MooseType?, on node: AssignStatement) throws {
         switch assignable {
         // if expression is identifier than assign
         case let ident as Identifier:
