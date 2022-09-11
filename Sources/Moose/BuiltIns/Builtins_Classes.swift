@@ -379,6 +379,7 @@ extension BuiltIns {
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ParamType()], returnType: VoidType(), function: appendList))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ListType(ParamType())], returnType: VoidType(), function: appendList))
+        env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: ParamType(), function: reverseList))
         env.set(function: "enumerated", value: BuiltInFunctionObj(name: "enumerated", params: [], returnType: ParamType(), function: enumeratedList))
         env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
@@ -397,6 +398,7 @@ extension BuiltIns {
 
         try ndict.replace(function: "append", with: [ParamType()], by: FunctionType(params: [type.type], returnType: VoidType()))
         try ndict.replace(function: "append", with: [ListType(ParamType())], by: FunctionType(params: [ListType(type.type)], returnType: VoidType()))
+        try ndict.replace(function: "reverse", with: [], by: FunctionType(params: [], returnType: type))
         try ndict.replace(function: "enumerated", with: [], by: FunctionType(params: [], returnType: ListType(TupleType([IntType(), type.type]))))
         try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
         try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [IntType(), ParamType()], by: FunctionType(params: [IntType(), type.type], returnType: VoidType()))
@@ -431,6 +433,13 @@ extension BuiltIns {
         }
 
         return VoidObj()
+    }
+
+    private static func reverseList(params _: [MooseObject], env: Environment) throws -> ListObj {
+        let obj: ListObj = try classEnvToObj(env)
+        try assertNoNil(obj)
+        obj.value?.reverse()
+        return obj
     }
 
     private static func enumeratedList(params _: [MooseObject], env: Environment) throws -> MooseObject {

@@ -236,7 +236,7 @@ extension InterpreterTests {
     }
 
     func test_list_methods() throws {
-        try runValidTests(name: #function) {
+        try runValidTests(name: #function, [
             ("""
             a = [1,2,3]
             b = [5,6,7]
@@ -249,7 +249,7 @@ extension InterpreterTests {
                 ("l3", IntegerObj(value: 3)),
                 ("l4", IntegerObj(value: 4)),
                 ("l7", IntegerObj(value: 7)),
-            ])
+            ]),
 
             ("""
             a: [B] = [A(1),A(2),A(3)]
@@ -274,7 +274,7 @@ extension InterpreterTests {
                 ("l3", IntegerObj(value: 3)),
                 ("l4", IntegerObj(value: 4)),
                 ("l7", IntegerObj(value: 7)),
-            ])
+            ]),
 
             ("""
             a = [1,2,3]
@@ -289,7 +289,7 @@ extension InterpreterTests {
             """, [
                 ("lastIndex", IntegerObj(value: 2)),
                 ("lastVal", IntegerObj(value: 3)),
-            ])
+            ]),
 
             (
                 """
@@ -303,8 +303,24 @@ extension InterpreterTests {
                 """, [
                     ("a", StringObj(value: "12")),
                 ]
-            )
-        }
+            ),
+
+            (
+                """
+                list = [1,2,3,4]
+                same = list.reverse()
+
+                t1 = list[0]
+                t2 = same[0]
+
+                t3 = t1 == t2
+                """, [
+                    ("t1", IntegerObj(value: 4)),
+                    ("t2", IntegerObj(value: 4)),
+                    ("t3", BoolObj(value: true)),
+                ]
+            ),
+        ])
     }
 
     func test_string() throws {
