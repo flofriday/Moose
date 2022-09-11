@@ -300,14 +300,14 @@ extension InterpreterTests {
             c1 = C(1)
             c2 = C(2)
 
-            t1 = c1.b
-            t2 = c1.num()
-            t3 = c2.b
-            t4 = c2.num()
+            t1 = c1.b       // is 1
+            t2 = c1.num()   // is 2, should be 1
+            t3 = c2.b       // is 2
+            t4 = c2.num()   // is 2
 
-            b1true = t1 == t2
-            b2false = t2 == t3
-            b3true = t3 == t4
+            b1true = t1 == t2   // is false, should be true
+            b2false = t2 == t3  // is true, should be false
+            b3true = t3 == t4   // is true
 
             class C { b: Int; func num() > Int { return b } }
             """, [

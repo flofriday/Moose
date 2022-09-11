@@ -12,6 +12,14 @@ class BuiltIns {
         // Mini stdlib
         BuiltInFunctionObj(name: "range", params: [IntType()], returnType: ListType(IntType()), function: rangeBuiltIn),
 
+        // Math functions
+        BuiltInFunctionObj(name: "min", params: [IntType(), IntType()], returnType: IntType(), function: minBuiltIn),
+        BuiltInFunctionObj(name: "min", params: [FloatType(), FloatType()], returnType: FloatType(), function: minBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [IntType(), IntType()], returnType: IntType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [FloatType(), FloatType()], returnType: FloatType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "abs", params: [IntType()], returnType: IntType(), function: absBuiltIn),
+        BuiltInFunctionObj(name: "abs", params: [FloatType()], returnType: FloatType(), function: absBuiltIn),
+
         // IO Functions
         BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),
 
@@ -45,6 +53,7 @@ extension BuiltIns {
         BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerGreaterEqualBuiltIn),
 
         // Float calculations
+        BuiltInOperatorObj(name: "-", opPos: .Prefix, params: [FloatType()], returnType: FloatType(), function: floatNegBuiltIn),
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatAddBuiltIn),
         BuiltInOperatorObj(name: "-", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatSubBuiltIn),
         BuiltInOperatorObj(name: "*", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatMulBuiltIn),
@@ -291,6 +300,14 @@ extension BuiltIns {
         try integerComparison(args: args, env, operation: <=)
     }
 
+    /// Negate an float by writing a minus in front of it
+    static func floatNegBuiltIn(_ args: [MooseObject], _: Environment) throws -> FloatObj {
+        try assertNoNil(args)
+
+        let value = (args[0] as! FloatObj).value!
+        return FloatObj(value: value * -1)
+    }
+
     /// Add two integer floats with an infix operation
     static func floatAddBuiltIn(_ args: [MooseObject], _: Environment) throws -> FloatObj {
         try assertNoNil(args)
@@ -382,5 +399,40 @@ extension BuiltIns {
         let a = (args[0] as! StringObj).value!
         let b = (args[1] as! StringObj).value!
         return StringObj(value: a + b)
+    }
+
+    // min function int and float
+    static func minBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if args[0].type is IntType {
+            return (args as! [IntegerObj]).sorted { $0.value! < $1.value! }[0]
+        } else {
+            return (args as! [FloatObj]).sorted { $0.value! < $1.value! }[0]
+        }
+    }
+
+    // max function int and float
+    static func maxBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if args[0].type is IntType {
+            return (args as! [IntegerObj]).sorted { $0.value! > $1.value! }[0]
+        } else {
+            return (args as! [FloatObj]).sorted { $0.value! > $1.value! }[0]
+        }
+    }
+
+    // abs function int and float
+    static func absBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if let i = args[0] as? IntegerObj {
+            return IntegerObj(value: Int64(abs(i.value!)))
+        } else if let f = args[0] as? FloatObj {
+            return FloatObj(value: Float64(abs(f.value!)))
+        }
+
+        fatalError("Function \(#function) does not support type \(args[0].type)!")
     }
 }

@@ -674,7 +674,7 @@ extension Parser {
     }
 
     func noPrefixParseFnError(t: Token) -> CompileErrorMessage {
-        let msg = "I couldn't find any prefix parse function for \(t.type)"
+        let msg = "I couldn't find any prefix parse function `\(t.lexeme)` of token type \(t.type)"
         return error(message: msg, token: peek())
     }
 

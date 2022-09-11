@@ -13,6 +13,7 @@ extension BuiltIns {
 
     private static func createIntegerEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: "abs", value: BuiltInFunctionObj(name: "abs", params: [], returnType: IntType(), function: absIntegerMethod))
         env.set(function: "toBool", value: BuiltInFunctionObj(name: "toBool", params: [], returnType: BoolType(), function: intToBoolBuiltIn))
         env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: intToFloatBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: intToStrBuiltIn))
@@ -26,6 +27,11 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func absIntegerMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let int: IntegerObj = try classEnvToObj(env)
+        return try absBuiltIn([int], env)
     }
 
     private static func intToBoolBuiltIn(params _: [MooseObject], _ env: Environment) throws -> BoolObj {
@@ -71,6 +77,7 @@ extension BuiltIns {
 
     private static func createFloatEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: "abs", value: BuiltInFunctionObj(name: "abs", params: [], returnType: FloatType(), function: absFloatMethod))
         env.set(function: "toInt", value: BuiltInFunctionObj(name: "toInt", params: [], returnType: IntType(), function: floatToIntBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: floatToStrBuiltIn))
         return env
@@ -83,6 +90,11 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func absFloatMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let float: FloatObj = try classEnvToObj(env)
+        return try absBuiltIn([float], env)
     }
 
     private static func floatToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> IntegerObj {
@@ -371,6 +383,9 @@ extension BuiltIns {
         env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
         env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [IntType(), ParamType()], returnType: VoidType(), function: setItemList))
+
+        env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
+        env.set(function: "max", value: BuiltInFunctionObj(name: "max", params: [], returnType: NumericType(), function: maxList))
         return env
     }
 
@@ -385,6 +400,9 @@ extension BuiltIns {
         try ndict.replace(function: "enumerated", with: [], by: FunctionType(params: [], returnType: ListType(TupleType([IntType(), type.type]))))
         try ndict.replace(function: Settings.GET_ITEM_FUNCTIONNAME, with: [IntType()], by: FunctionType(params: [IntType()], returnType: type.type))
         try ndict.replace(function: Settings.SET_ITEM_FUNCTIONNAME, with: [IntType(), ParamType()], by: FunctionType(params: [IntType(), type.type], returnType: VoidType()))
+
+        try ndict.replace(function: "min", with: [], by: FunctionType(params: [], returnType: type.type))
+        try ndict.replace(function: "max", with: [], by: FunctionType(params: [], returnType: type.type))
 
         return ndict
     }
@@ -472,6 +490,18 @@ extension BuiltIns {
         }.joined(separator: ", ")
 
         return StringObj(value: "[\(valStrs)]")
+    }
+
+    private static func minList(params: [MooseObject], env: Environment) throws -> MooseObject {
+        try assertNoNil(params)
+        let obj: ListObj = try classEnvToObj(env)
+        return try minBuiltIn(obj.value!, env)
+    }
+
+    private static func maxList(params: [MooseObject], env: Environment) throws -> MooseObject {
+        try assertNoNil(params)
+        let obj: ListObj = try classEnvToObj(env)
+        return try maxBuiltIn(obj.value!, env)
     }
 }
 

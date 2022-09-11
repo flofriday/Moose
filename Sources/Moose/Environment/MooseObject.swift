@@ -47,7 +47,12 @@ protocol IndexWriteableObject: IndexableObject {
     func setAt(index: Int64, value: MooseObject)
 }
 
-class IntegerObj: MooseObject, HashableObject {
+protocol NumericObj: HashableObject {
+    associatedtype T where T: Comparable
+    var value: T? { get }
+}
+
+class IntegerObj: NumericObj {
     let type: MooseType = IntType()
     let value: Int64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Integer_Env)
@@ -75,7 +80,7 @@ class IntegerObj: MooseObject, HashableObject {
     }
 }
 
-class FloatObj: MooseObject, HashableObject {
+class FloatObj: NumericObj {
     let type: MooseType = FloatType()
     let value: Float64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Float_Env)

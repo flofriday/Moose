@@ -44,7 +44,16 @@ class ParamType: AnyType {
     override func superOf(type other: MooseType) -> Bool { other is ParamType }
 }
 
-class IntType: ParamType {
+class NumericType: ParamType {
+    override var asClass: ClassType? { nil }
+
+    override var description: String { "NumericType" }
+
+    override func inferredClass() throws -> ClassTypeScope { fatalError("INTERNAL ERROR: NumericType does not exist as class!") }
+    override func superOf(type other: MooseType) -> Bool { other is NumericType }
+}
+
+class IntType: NumericType {
     override var asClass: ClassType? { ClassType("Int") }
     override var description: String { "Int" }
 
@@ -66,7 +75,7 @@ class StringType: ParamType {
     override func superOf(type other: MooseType) -> Bool { other is StringType }
 }
 
-class FloatType: ParamType {
+class FloatType: NumericType {
     override var asClass: ClassType? { ClassType("Float") }
     override var description: String { "Float" }
 
