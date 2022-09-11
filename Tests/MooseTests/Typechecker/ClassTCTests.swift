@@ -11,6 +11,9 @@ extension TypecheckerTests {
     func test_derefering_ok() throws {
         try runValidTests(name: #function) {
             """
+            print(2.toString() + " two")
+            """
+            """
             class A { a:Int }
             b: Int = A(1).a
             """
@@ -49,6 +52,15 @@ extension TypecheckerTests {
                 func a(b: String) > Int { return me.b }
             }
             b: Int = A(2).a("Test")
+            """
+
+            """
+            [A(2)][0].a()
+
+            class A {
+                b: Int;
+                func a() {}
+            }
             """
         }
     }

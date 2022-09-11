@@ -294,6 +294,34 @@ extension InterpreterTests {
         }
     }
 
+    func test_objectSeparation() throws {
+        try runValidTests(name: #function, [
+            ("""
+            c1 = C(1)
+            c2 = C(2)
+
+            t1 = c1.b
+            t2 = c1.num()
+            t3 = c2.b
+            t4 = c2.num()
+
+            b1true = t1 == t2
+            b2false = t2 == t3
+            b3true = t3 == t4
+
+            class C { b: Int; func num() > Int { return b } }
+            """, [
+                ("t1", IntegerObj(value: 1)),
+                ("t2", IntegerObj(value: 1)),
+                ("t3", IntegerObj(value: 2)),
+                ("t4", IntegerObj(value: 2)),
+                ("b1true", BoolObj(value: true)),
+                ("b2false", BoolObj(value: false)),
+                ("b3true", BoolObj(value: true)),
+            ]),
+        ])
+    }
+
     func test_environment() throws {
         try runValidTests(name: #function) {
             ("""

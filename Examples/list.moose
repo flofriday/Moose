@@ -1,6 +1,3 @@
 
-a = { 200: "OK",
-             403: "Access forbidden",
-             404: "File not found",
-             500: "Internal server error" }
-print(a)
+
+print(2.toString() + " two")
