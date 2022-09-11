@@ -36,6 +36,8 @@ func == <T: MooseObject>(lhs: T, rhs: T) -> Bool {
     return lhs.equals(other: rhs)
 }
 
+protocol HashableObject: Hashable, MooseObject {}
+
 protocol IndexableObject: MooseObject {
     func getAt(index: Int64) -> MooseObject
     func length() -> Int64
@@ -45,7 +47,12 @@ protocol IndexWriteableObject: IndexableObject {
     func setAt(index: Int64, value: MooseObject)
 }
 
-class IntegerObj: MooseObject {
+protocol NumericObj: HashableObject {
+    associatedtype T where T: Comparable
+    var value: T? { get }
+}
+
+class IntegerObj: NumericObj {
     let type: MooseType = IntType()
     let value: Int64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Integer_Env)
@@ -63,12 +70,17 @@ class IntegerObj: MooseObject {
         return value == other.value
     }
 
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        hasher.combine(value)
+    }
+
     var description: String {
         "\(value?.description ?? "nil")"
     }
 }
 
-class FloatObj: MooseObject {
+class FloatObj: NumericObj {
     let type: MooseType = FloatType()
     let value: Float64?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Float_Env)
@@ -89,9 +101,14 @@ class FloatObj: MooseObject {
     var description: String {
         "\(value?.description ?? "nil")"
     }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        hasher.combine(value)
+    }
 }
 
-class BoolObj: MooseObject {
+class BoolObj: MooseObject, HashableObject {
     let type: MooseType = BoolType()
     let value: Bool?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Bool_Env)
@@ -112,9 +129,14 @@ class BoolObj: MooseObject {
     var description: String {
         "\(value?.description ?? "nil")"
     }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        hasher.combine(value)
+    }
 }
 
-class StringObj: MooseObject {
+class StringObj: MooseObject, HashableObject {
     let type: MooseType = StringType()
     let value: String?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_String_Env)
@@ -134,9 +156,16 @@ class StringObj: MooseObject {
 
     var description: String {
         if let description = value?.description {
-            return "\(description)"
+            return """
+            "\(description)"
+            """
         }
         return "nil"
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        hasher.combine(value)
     }
 }
 
@@ -228,7 +257,7 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
     }
 }
 
-class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
+class TupleObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObject {
     let type: MooseType
     var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Tuple_Env)
@@ -249,6 +278,11 @@ class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
 
     func length() -> Int64 {
         return Int64(value?.count ?? 0)
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        value?.forEach { ($0 as! HashableObject).hash(into: &hasher) }
     }
 
     var isNil: Bool { value == nil }
@@ -291,7 +325,7 @@ class TupleObj: MooseObject, IndexableObject, IndexWriteableObject {
     }
 }
 
-class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
+class ListObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObject {
     let type: MooseType
     var value: [MooseObject]?
     var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_List_Env)
@@ -312,6 +346,11 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
 
     func length() -> Int64 {
         return Int64(value?.count ?? 0)
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        value?.forEach { ($0 as! HashableObject).hash(into: &hasher) }
     }
 
     var isNil: Bool { value == nil }
@@ -355,8 +394,85 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject {
     }
 }
 
+class DictObj: MooseObject, HashableObject {
+    var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Dict_Env)
+    let type: MooseType
+
+    // this implmentation is crap af, but since MooseObject does not confirm Hashable we cannot
+    // use the MooseObject as key...
+    var pairs: [(key: MooseObject, value: MooseObject)]?
+
+    init(type: MooseType, pairs: [(MooseObject, MooseObject)]?) {
+        self.type = type
+        env.value = self
+
+        guard let pairs = pairs else { return }
+        self.pairs = []
+        pairs.forEach {
+            setAt(key: $0.0, val: $0.1)
+        }
+    }
+
+    var description: String {
+        let pairs = pairs?.map { "\($0.key):\($0.value)" }
+        guard let pairs = pairs else { return "nil" }
+        return "{\(pairs.joined(separator: ", "))}"
+    }
+
+    // TODO: right implementation
+    var isNil: Bool {
+        return pairs == nil
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        // smh it is not possible to force cast value and key to Hashable object in the same iteration
+        // so we have to do it worse
+        pairs?.forEach { ($0.value as! HashableObject).hash(into: &hasher) }
+        pairs?.forEach { ($0.key as! HashableObject).hash(into: &hasher) }
+    }
+
+    private var dictType: DictType {
+        return (type as! DictType)
+    }
+
+    func getAt(key: MooseObject) -> MooseObject {
+        pairs?.first(where: { $0.key.equals(other: key) })?.value ?? NilObj()
+    }
+
+    func setAt(key: MooseObject, val: MooseObject) {
+        let index = pairs?.firstIndex(where: { $0.key.equals(other: key) })
+        guard let index = index else {
+            pairs?.append((key, val))
+            return
+        }
+        pairs?[index].value = val
+    }
+
+    func equals(other: MooseObject) -> Bool {
+        guard let other = other as? DictObj else { return false }
+        guard other.isNil == other.isNil else { return false }
+        guard let pairs = pairs else { return true }
+
+        guard
+            (TypeScope.rate(subtype: other.dictType, ofSuper: dictType, classExtends: env.global().doesEnvironmentExtend) != nil) ||
+            (TypeScope.rate(subtype: dictType, ofSuper: other.dictType, classExtends: env.global().doesEnvironmentExtend) != nil)
+        else {
+            return false
+        }
+
+        guard pairs.count == other.pairs?.count else { return false }
+
+        for (key, value) in pairs {
+            let otherVal = other.getAt(key: key)
+            guard !(otherVal is NilObj), otherVal.equals(other: value) else { return false }
+        }
+        return true
+    }
+}
+
 // TODO: make classes indexable
-class ClassObject: MooseObject {
+class ClassObject: MooseObject, HashableObject {
     let classEnv: ClassEnvironment?
     var env: BuiltInClassEnvironment {
         guard let classEnv = classEnv else {
@@ -370,6 +486,13 @@ class ClassObject: MooseObject {
     init(env: ClassEnvironment?, name: String) {
         classEnv = env
         type = ClassType(name)
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(type.description)
+        env.getAllVariables().forEach {
+            ($0 as! HashableObject).hash(into: &hasher)
+        }
     }
 
     var isNil: Bool { classEnv == nil }
@@ -480,10 +603,12 @@ class NilObj: MooseObject {
             return TupleObj(type: type, value: nil)
         case is ListType:
             return ListObj(type: type, value: nil)
-        case is FunctionType:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
+        case is DictType:
+            return DictObj(type: type, pairs: nil)
+        case is FunctionType, is AnyType, is ParamType:
+            fallthrough
         default:
-            throw RuntimeError(message: "Internal Error: Cannot convert nil to \(type.description)")
+            throw RuntimeError(message: "Internal Error: Cannot convert nil literal to funciton")
         }
     }
 }

@@ -28,6 +28,8 @@ class MooseType: Equatable, CustomStringConvertible {
 class AnyType: MooseType {
     var asClass: ClassType? { nil }
 
+    /// This function replaces all generic types by their actual types
+    func inferredClass() throws -> ClassTypeScope { fatalError("INTERNAL ERROR: AnyType does not exist as class!") }
     override var description: String { "Any" }
     override func superOf(type other: MooseType) -> Bool { other is AnyType }
 }
@@ -38,12 +40,26 @@ class ParamType: AnyType {
 
     override var description: String { "ParamType" }
 
+    override func inferredClass() throws -> ClassTypeScope { fatalError("INTERNAL ERROR: ParamType does not exist as class!") }
     override func superOf(type other: MooseType) -> Bool { other is ParamType }
 }
 
-class IntType: ParamType {
+class NumericType: ParamType {
+    override var asClass: ClassType? { nil }
+
+    override var description: String { "NumericType" }
+
+    override func inferredClass() throws -> ClassTypeScope { fatalError("INTERNAL ERROR: NumericType does not exist as class!") }
+    override func superOf(type other: MooseType) -> Bool { other is NumericType }
+}
+
+class IntType: NumericType {
     override var asClass: ClassType? { ClassType("Int") }
     override var description: String { "Int" }
+
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
 
     override func superOf(type other: MooseType) -> Bool { other is IntType }
 }
@@ -52,12 +68,20 @@ class StringType: ParamType {
     override var asClass: ClassType? { ClassType("String") }
     override var description: String { "String" }
 
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
+
     override func superOf(type other: MooseType) -> Bool { other is StringType }
 }
 
-class FloatType: ParamType {
+class FloatType: NumericType {
     override var asClass: ClassType? { ClassType("Float") }
     override var description: String { "Float" }
+
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
 
     override func superOf(type other: MooseType) -> Bool { other is FloatType }
 }
@@ -65,6 +89,11 @@ class FloatType: ParamType {
 class BoolType: ParamType {
     override var asClass: ClassType? { ClassType("Bool") }
     override var description: String { "Bool" }
+
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
+
     override func superOf(type other: MooseType) -> Bool { other is BoolType }
 }
 
@@ -78,6 +107,13 @@ class ClassType: ParamType {
         self.name = name
     }
 
+    override func inferredClass() throws -> ClassTypeScope {
+        guard let scope = TypeScope.global.getScope(clas: name) else {
+            throw ScopeError(message: "Class \(name) does not exist.")
+        }
+        return scope
+    }
+
     override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? ClassType else { return false }
         return name == other.name
@@ -89,6 +125,10 @@ class TupleType: ParamType {
 
     init(_ entries: [ParamType]) {
         self.entries = entries
+    }
+
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
     }
 
     override func superOf(type other: MooseType) -> Bool {
@@ -106,6 +146,10 @@ class ListType: ParamType {
 
     init(_ type: ParamType) {
         self.type = type
+    }
+
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
     }
 
     override func superOf(type other: MooseType) -> Bool {
@@ -126,6 +170,10 @@ class DictType: ParamType {
         valueType = value
     }
 
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
+
     override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? DictType else { return false }
         return keyType.superOf(type: other.keyType) && valueType.superOf(type: other.valueType)
@@ -144,6 +192,10 @@ class FunctionType: ParamType {
         self.returnType = returnType
     }
 
+    override func inferredClass() throws -> ClassTypeScope {
+        try BuiltIns.getGenericEnv(type: self)
+    }
+
     override func superOf(type other: MooseType) -> Bool {
         guard let other = other as? FunctionType else { return false }
         return params.count == other.params.count &&
@@ -156,6 +208,10 @@ class FunctionType: ParamType {
 }
 
 class NilType: AnyType {
+    override func inferredClass() throws -> ClassTypeScope {
+        throw ScopeError(message: "Nil is not an object.")
+    }
+
     override var description: String { "Nil" }
     override func superOf(type other: MooseType) -> Bool { other is NilType }
 }

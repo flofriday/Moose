@@ -28,6 +28,10 @@ extension TypecheckerTests {
             func a(i: Int) {}
             func b() > [Int] { return [1,2,3] }
             """
+
+            """
+            for (i, (j, y)) in [(2, [(2,2)])] {}
+            """
         }
     }
 
@@ -46,6 +50,23 @@ extension TypecheckerTests {
 
             """
             for i in [[1],[2]] {a(i[0])}
+            func a(i: Int) {}
+            """
+
+            """
+            for (i, j) in [(1,"String"), (2, "Test")] {
+                a(i)
+            }
+            func a(i: Int) {}
+            """
+
+            """
+            list = [("1", true), ("2", false)]
+            mut a = ""
+            for (key, (val, b)) in list.enumerated() {
+                a +: val
+                a(key)
+            }
             func a(i: Int) {}
             """
         }
@@ -84,6 +105,14 @@ extension TypecheckerTests {
 
             """
             for 2+32 {}
+            """
+
+            """
+            mut b = "Test"
+            for (i, (j, b)) in [(1,"String"), (2, "Test")].enumerated() {
+                a(i)
+            }
+            func a(i: Int) {}
             """
         }
     }

@@ -10,9 +10,22 @@ class Interpreter: Visitor {
     var errors: [RuntimeError] = []
     var environment: Environment
 
+    /// We set the param environment since params have to be in current scope not in class scope.
+    /// E.g.: `func a() { b = 2; obj.call(b) }` would not find b
+    var paramEnvironment: (env: Environment, alreadySet: Bool)
+
     private init() {
         environment = BaseEnvironment(enclosing: nil)
+        paramEnvironment = (environment, false)
         addBuiltIns()
+    }
+
+    /// This init is used to call functions from outside the interpreter
+    ///
+    /// E.g. the builtin functions
+    init(environment: Environment) {
+        self.environment = environment
+        paramEnvironment = (environment, false)
     }
 
     /// Reset the internal state of the interpreter.
@@ -57,7 +70,33 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
-    private func assign(valueType: MooseType, dst: Assignable, value: MooseObject) throws {
+    /// This assignes the value to an indexExpression.
+    ///
+    /// The plan was to built an artifical derefe->ident->setItemCall ast, but since the assign function only provides
+    /// the MooeObject value and not its ast node, we cannot create a CallExpression Node.
+    /// This means we have to rewrite the whole derefer and callexpression interpreter stuff in one function for index exprssions
+    private func assign(valueType: MooseType, indexExpr: IndexExpression, value: MooseObject) throws {
+        let obj = try indexExpr.indexable.accept(self)
+        guard !obj.isNil else { throw NilUsagePanic() }
+
+        // Evaluate the arguments
+        // Since we are doing this before the derefering
+        // we have no logic with the paramEnvironment in the next step (derefering)
+        let (index, indexType) = try evaluateArgs(exprs: [indexExpr.index])
+
+        // Now we are derefering to the object environment
+        let prevEnv = environment
+        environment = obj.env
+
+        // -- Now we have to call the setItem function
+        let callee = try environment.get(function: Settings.SET_ITEM_FUNCTIONNAME, params: [indexType[0], valueType])
+        let _ = try callFunctionOrOperator(callee: callee, args: [index[0], value])
+
+        // Set environment back to normal
+        environment = prevEnv
+    }
+
+    func assign(valueType: MooseType, dst: Assignable, value: MooseObject) throws {
         switch dst {
         case let id as Identifier:
             var newValue = value
@@ -67,52 +106,41 @@ class Interpreter: Visitor {
             _ = environment.update(variable: id.value, value: newValue, allowDefine: true)
 
         case let tuple as Tuple:
-            // TODO: many things can be unwrapped into tuples, like classes
-            // and lists.
+            // TODO: many things can be unwrapped into tuples, like lists
             switch valueType {
             case let t as TupleType:
                 let types = t.entries
                 let valueTuple = value as! TupleObj
-                for (n, assignable) in tuple.assignables.enumerated() {
-                    try assign(valueType: types[n], dst: assignable, value: valueTuple.value![n])
+                for (n, expression) in tuple.expressions.enumerated() {
+                    try assign(valueType: types[n], dst: expression as! Assignable, value: valueTuple.value![n])
+                }
+            case let clas as ClassType:
+                let props = try clas.inferredClass().classProperties
+                let valueClass = value as! ClassObject
+                for (n, expression) in tuple.expressions.enumerated() {
+                    let prop = try valueClass.classEnv!.get(variable: props[n].name)
+                    try assign(valueType: props[n].type, dst: expression as! Assignable, value: prop)
                 }
             default:
                 throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
             }
 
         case let indexExpr as IndexExpression:
-            let index = (try indexExpr.index.accept(self) as! IntegerObj).value
-            guard var index = index else {
-                throw NilUsagePanic(node: indexExpr.index)
-            }
-
-            let target = try indexExpr.indexable.accept(self) as! IndexWriteableObject
-
-            // Negative index start counting form the back, just like Python
-            if index < 0 {
-                // this really is a substraction cause the index is negative
-                index = target.length() + index
-            }
-
-            guard index >= 0, index < target.length() else {
-                throw OutOfBoundsPanic(length: target.length(), attemptedIndex: index, node: indexExpr)
-            }
-
-            target.setAt(index: index, value: value)
+            try assign(valueType: valueType, indexExpr: indexExpr, value: value)
 
         case let dereferExpr as Dereferer:
             let obj = try dereferExpr.obj.accept(self)
 
+            let prevParamEnv = paramEnvironment
+            paramEnvironment = !paramEnvironment.alreadySet ? (environment, true) : paramEnvironment
             let prevEnv = environment
             environment = obj.env
-            let wasClosed = environment.closed
-            environment.closed = true
 
             let val = try dereferExpr.referer.accept(self)
             try assign(valueType: val.type, dst: dereferExpr.referer as! Assignable, value: value)
 
-            environment.closed = wasClosed
             environment = prevEnv
+            paramEnvironment = prevParamEnv
 
         default:
             throw RuntimeError(message: "NOT IMPLEMENTED: can only parse identifiers and tuples for assign")
@@ -246,8 +274,9 @@ class Interpreter: Visitor {
         return ListObj(type: node.mooseType!, value: args)
     }
 
-    func visit(_: Dict) throws -> MooseObject {
-        fatalError("Not implemented")
+    func visit(_ node: Dict) throws -> MooseObject {
+        let pairs = try node.pairs.map { (key: try $0.key.accept(self), value: try $0.value.accept(self)) }
+        return DictObj(type: node.mooseType!, pairs: pairs)
     }
 
     func visit(_ node: Is) throws -> MooseObject {
@@ -268,35 +297,21 @@ class Interpreter: Visitor {
                 environment = environment.global()
             }
 
-            // If the environment was previously closed we need to reopen it,
-            // since functions can access variables in the enclosing scopes
-            let wasClosed = environment.closed
-            environment.closed = false
-
-            // Restore the environments when at the end
             defer {
-                environment.closed = wasClosed
                 environment = oldEnv
             }
-
             // Execute the function
             return try callee.function(args, environment)
-
         } else if let callee = callee as? FunctionObj {
             // Activate the  environment in which the function was defined
             let oldEnv = environment
             environment = callee.closure
 
-            // Open the environment, because it needs to access variables in the
-            // enclosing scopes
-            let wasClosed = environment.closed
-            environment.closed = false
             pushEnvironment()
 
             // Reactivate the original environment at the end
             defer {
                 popEnvironment()
-                environment.closed = wasClosed
                 environment = oldEnv
             }
 
@@ -320,12 +335,20 @@ class Interpreter: Visitor {
         }
     }
 
+    /// This function evaluates arguments for a function call.
+    /// Since the environment could be an enclosed environment (because of derefering before calling e.g. `classObj.call(a)`)
+    /// We use the paramEnvironment, since it is the last environment before the dereference
     func evaluateArgs(exprs: [Expression]) throws -> ([MooseObject], [MooseType]) {
-        let wasClosed = environment.closed
-        environment.closed = false
+        // use paramEnvironment
+        let normalEnv = environment
+        environment = paramEnvironment.alreadySet ? paramEnvironment.env : environment
+
         let args = try exprs.map { try $0.accept(self) }
         let argTypes = exprs.map { $0.mooseType! }
-        environment.closed = wasClosed
+
+        environment = normalEnv
+        paramEnvironment.alreadySet = false
+
         return (args, argTypes)
     }
 
@@ -417,42 +440,33 @@ class Interpreter: Visitor {
         let obj = try node.obj.accept(self)
 
         guard !obj.isNil else {
-            throw RuntimeError(message: "Nullpointer Exception.")
+            throw NilUsagePanic()
         }
+
+        // set environment to paramEnvironment accept if the paramEnvironment was already set before used
+        // for example we are at `objB` in `objA.objB.call(a)`
+        // here we want to use the environemnt before derefering `objA` which is already set
+        // by the first dereference
+        let prevParamEnv = paramEnvironment
+        paramEnvironment = !paramEnvironment.alreadySet ? (environment, true) : paramEnvironment
 
         let prevEnv = environment
         environment = obj.env
-        let wasClosed = environment.closed
-        environment.closed = true
 
         let val = try node.referer.accept(self)
-        environment.closed = wasClosed
+
         environment = prevEnv
+        paramEnvironment = prevParamEnv
+
         return val
     }
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
-        let index = (try node.index.accept(self) as! IntegerObj).value
-        guard var index = index else {
-            throw NilUsagePanic(node: node.index)
-        }
-
-        let indexable = (try node.indexable.accept(self)) as! IndexableObject
-
-        guard !indexable.isNil else {
-            throw NilUsagePanic(node: node)
-        }
-
-        // Negative index start counting form the back, just like Python
-        if index < 0 {
-            // this really is a substraction cause the index is negative
-            index = indexable.length() + index
-        }
-
-        guard index >= 0, index < indexable.length() else {
-            throw OutOfBoundsPanic(length: indexable.length(), attemptedIndex: index, node: node)
-        }
-        return indexable.getAt(index: index)
+        let funcIdent = Identifier(token: node.indexable.token, value: Settings.GET_ITEM_FUNCTIONNAME)
+        let location = mergeLocations(node.indexable.token, node.index.token)
+        let indexCall = CallExpression(token: node.index.token, location: location, function: funcIdent, arguments: [node.index])
+        let dereferer = Dereferer(token: node.token, obj: node.indexable, referer: indexCall)
+        return try dereferer.accept(self)
     }
 
     func visit(_: Me) throws -> MooseObject {

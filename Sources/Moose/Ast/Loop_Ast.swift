@@ -11,12 +11,14 @@ import Foundation
 class ForEachStatement: Statement {
     let token: Token
     let list: Expression
-    let variable: Identifier
+    // the variable could be a simple variable or an tuple.
+    // We need to check that the tuple only contains variables
+    let variable: Assignable
     let body: BlockStatement
 
     var returnDeclarations: ReturnDec = nil
 
-    init(token: Token, variable: Identifier, list: Expression, body: BlockStatement) {
+    init(token: Token, variable: Assignable, list: Expression, body: BlockStatement) {
         self.token = token
         self.list = list
         self.variable = variable

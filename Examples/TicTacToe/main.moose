@@ -1,0 +1,72 @@
+
+class Field {
+  number: Int
+
+  func num() > Int { return number }
+  func represent() > String { return String(number) }
+}
+
+class FilledField < Field {
+  filledWith: String
+  
+  func represent() > String { return filledWith }
+}
+
+class Board {
+  row1: (Field, Field, Field)
+  row2: (Field, Field, Field)
+  row3: (Field, Field, Field)
+  
+  func getItem(i: Int) > (Field, Field, Field) {
+    if i == 0 { 
+      return row1 
+    } else if  i == 1  { 
+      return row2 
+    } else { return row3 }
+  }
+
+  func length() > Int { return 3 }
+
+  func represent() > String { 
+    mut str = ""
+    for (f1, f2, f3) in [row1, row2, row3] {
+      str +: String(f1)
+      str +: String(f2)
+      str +: String(f3)
+      str +: "\n"
+    }
+    return str
+  }
+}
+
+board = Board(
+  (Field(1), Field(2), Field(3)),
+  (Field(4), Field(5), Field(6)),
+  (Field(7), Field(8), Field(9))
+)
+
+t = Field(10)
+
+(a,b,c) = board.row1
+print(a.number)
+print(a.num())
+print(b.number)
+print(c.number)
+
+// //print(board)
+// (a,b) = board[0]
+
+
+// class T { a: Int }
+// class D < T { b: String }
+// class B { 
+//   row1: (Field, Field, Field)
+//   row2: (Field, Field, Field)
+//   row3: (Field, Field, Field)
+// }
+
+// (t1, t2, t3) = B((T(1), T(2), T(3)), (T(4), T(5), T(6))).a1
+
+// print(t1.a)
+// print(t2.a)
+// print(t3.a)

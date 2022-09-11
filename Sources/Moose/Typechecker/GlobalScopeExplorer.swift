@@ -71,7 +71,7 @@ class GlobalScopeExplorer: BaseVisitor {
         let paramTypes = node.params.map {
             $0.declaredType
         }
-        guard !scope.has(op: node.name, opPos: node.position, params: paramTypes, includeEnclosing: false) else {
+        guard !scope.has(op: node.name, opPos: node.position, params: paramTypes) else {
             throw error(message: "Operation is already defined with the same signature", token: node.token)
         }
         do {

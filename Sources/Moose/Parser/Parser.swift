@@ -16,9 +16,9 @@ enum Precendence: Int {
     case Product
     case Prefix
     case Postfix
+    case Reference // obj dereference with .
     case Call
     case Index
-    case Reference // obj dereference with .
 }
 
 class Parser {
@@ -406,11 +406,12 @@ class Parser {
 
     func parseDereferer(_ lhs: Expression) throws -> Dereferer {
         let obj = lhs
+        let prec = curPrecedence
         let token = try consume(type: .Dot, message: ". was expected, got '\(peek().lexeme)' instead.")
         guard check(type: .Identifier) else {
             throw error(message: "Identifier was expected for reference, got `\(peek().lexeme)` instead.", token: peek())
         }
-        let ref = try parseExpression(curPrecedence)
+        let ref = try parseExpression(prec)
         return Dereferer(token: token, obj: obj, referer: ref)
     }
 
@@ -552,6 +553,7 @@ class Parser {
     /// So it assumes that `(` is already consumed and does not consume nor check `)` at the end (taken on the example `(1, 2)`.
     func parseExpressionList(seperator: TokenType, end: TokenType) throws -> [Expression] {
         var list = [Expression]()
+        skip(all: .NLine)
 
         guard !check(type: end) else {
             return list
@@ -560,9 +562,10 @@ class Parser {
         list.append(try parseExpression(.Lowest))
 
         while match(types: seperator) {
+            skip(all: .NLine)
             list.append(try parseExpression(.Lowest))
         }
-
+        skip(all: .NLine)
         return list
     }
 }
@@ -629,6 +632,15 @@ extension Parser {
         peek().type == .EOF
     }
 
+    func tokenIsBefore(toFind first: TokenType, isBefore second: TokenType, offset: Int = 0) -> Bool {
+        guard (current + offset) < tokens.count else {
+            return false
+        }
+        guard tokens[current + offset].type != second else { return false }
+        if tokens[current + offset].type == first { return true }
+        return tokenIsBefore(toFind: first, isBefore: second, offset: offset + 1)
+    }
+
     func advance() -> Token {
         if !isAtEnd() {
             current += 1
@@ -681,7 +693,7 @@ extension Parser {
     }
 
     func noPrefixParseFnError(t: Token) -> CompileErrorMessage {
-        let msg = "I couldn't find any prefix parse function for \(t.type)"
+        let msg = "I couldn't find any prefix parse function `\(t.lexeme)` of token type \(t.type)"
         return error(message: msg, token: peek())
     }
 

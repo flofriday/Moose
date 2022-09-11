@@ -67,6 +67,43 @@ class InterpreterBaseClass: XCTestCase {
         }
     }
 
+    func runInValidTests(name: String, checkFor allowedErrors: Error.Type..., @InterpreterTestBuilder tests: () -> [(String, [(String, MooseObject)])]) throws {
+        print("--- \(name)")
+        for (i, t) in tests().enumerated() {
+            let (source, promises) = t
+            print("------\nStart Invalid \(i): \n\(source)")
+
+            do {
+                let prog = try parseAndCheckProgram(source)
+                let i = Interpreter.shared
+                i.reset()
+                XCTAssertThrowsError(try i.run(program: prog)) { err in
+                    if !allowedErrors.contains(where: { t in type(of: err) == t }) {
+                        XCTFail(err.localizedDescription)
+                    }
+                }
+                try validatePromises(env: i.environment, promises: promises)
+            } catch let error as CompileError {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as CompileErrorMessage {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as EnvironmentError {
+                // So it might be that we want to access a variable but a
+                // bug in the environment already deleted it.
+                XCTFail(error.message)
+            } catch let error as InterpreterTestError {
+                // This are the errors we are interested in.
+                XCTFail(error.message + "\n\nCode:\n" + source)
+            } catch let error as RuntimeError {
+                XCTFail(error.message)
+            }
+        }
+    }
+
     func runValidTests(name: String, @InterpreterTestBuilder _ tests: () -> [(String, [(String, MooseObject)])]) throws {
         try runValidTests(name: name, tests())
     }
