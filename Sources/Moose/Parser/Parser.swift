@@ -77,6 +77,8 @@ class Parser {
         prefixParseFns[.Nil] = parseNil
         prefixParseFns[.Me] = parseMe
 
+        infixParseFns[.QuestionMark] = parseTernaryOperator
+        infixParseFns[.DoubleQuestionMark] = parseDoubleQuestionMarkOperator
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
         infixParseFns[.LParen] = parseCallExpression
         infixParseFns[.LBracket] = parseIndex
@@ -502,6 +504,23 @@ class Parser {
         let token = advance()
         let rightExpr = try parseExpression(.Prefix)
         return PrefixExpression(token: token, op: token.lexeme, right: rightExpr)
+    }
+
+    func parseTernaryOperator(left: Expression) throws -> Expression {
+        let condition = left
+        let token = try consume(type: .QuestionMark, message: "expected ? , got '\(peek().lexeme)'")
+        let consequence = try parseExpression(curPrecedence)
+        _ = try consume(type: .Colon, message: "expected : , got '\(peek().lexeme)'")
+        let alternative = try parseExpression(curPrecedence)
+        return TernaryExpression(token: token, condition: condition, consequence: consequence, alternative: alternative)
+    }
+
+    func parseDoubleQuestionMarkOperator(left _: Expression) throws -> Expression {
+        let token = try consume(type: .DoubleQuestionMark, message: "expected ?? , got '\(peek().lexeme)'")
+        let right = try parseExpression(curPrecedence)
+        return right
+        // Rewrite to a ternary expression
+        // TODO: I don't know we can do this without destroying the error messages
     }
 
     func parseInfixExpression(left: Expression) throws -> Expression {

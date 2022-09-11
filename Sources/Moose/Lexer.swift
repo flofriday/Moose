@@ -78,6 +78,13 @@ extension Lexer {
         case (".", _):
             readChar()
             tok = genToken(.Dot)
+        case let ("?", peek) where !isOpChar(char: peek):
+            readChar()
+            tok = genToken(.QuestionMark)
+        case ("?", "?"):
+            readChar()
+            readChar()
+            tok = genToken(.DoubleQuestionMark, "??")
         default:
             guard let unwrappedChar = char else {
                 return genToken(.EOF)
@@ -248,7 +255,7 @@ extension Lexer {
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
         let lastChar = input[readPosition - 2]
-        return genToken(type, nil, "\(lastChar ?? " ")")
+        return genToken(type, nil, "\(lastChar)")
     }
 
     /// genToken with lexeme and literal nil

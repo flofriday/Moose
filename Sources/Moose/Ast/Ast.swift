@@ -233,6 +233,21 @@ class PostfixExpression {
     var mooseType: MooseType?
 }
 
+class TernaryExpression {
+    let token: Token
+    let condition: Expression
+    let consequence: Expression
+    let alternative: Expression
+    var mooseType: MooseType?
+
+    init(token: Token, condition: Expression, consequence: Expression, alternative: Expression) {
+        self.token = token
+        self.condition = condition
+        self.consequence = consequence
+        self.alternative = alternative
+    }
+}
+
 class VariableDefinition {
     init(token: Token, location: Location, mutable: Bool, name: Identifier, type: ParamType) {
         self.token = token
@@ -620,6 +635,16 @@ extension InfixExpression: Expression {
 extension PostfixExpression: Expression {
     var description: String { "(\(left.description)\(op))" }
     var location: Location { mergeLocations(left.location, locationFromToken(token)) }
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        try visitor.visit(self)
+    }
+}
+
+extension TernaryExpression: Expression {
+    var description: String { "\(condition.description) ? \(consequence.description) : \(alternative.description)" }
+
+    var location: Location { mergeLocations(condition.location, alternative.location) }
+
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
         try visitor.visit(self)
     }
