@@ -308,6 +308,18 @@ extension InterpreterTests {
                 ]
             ),
 
+            (
+                // abs float and integer
+                """
+                i1 = 2%3
+                i2 = 5 % 1
+
+                """, [
+                    ("i1", IntegerObj(value: 2)),
+                    ("i2", IntegerObj(value: 0)),
+                ]
+            ),
+
         ])
     }
 

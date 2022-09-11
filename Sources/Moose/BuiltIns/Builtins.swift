@@ -45,6 +45,7 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "-", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerSubBuiltIn),
         BuiltInOperatorObj(name: "*", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerMulBuiltIn),
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerDivBuiltIn),
+        BuiltInOperatorObj(name: "%", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerModuloBuiltIn),
 
         // Integer comparisons
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessBuiltIn),
@@ -268,6 +269,15 @@ extension BuiltIns {
         let a = (args[0] as! IntegerObj).value!
         let b = (args[1] as! IntegerObj).value!
         return IntegerObj(value: a / b)
+    }
+
+    /// Modulo of two integers with an infix operation
+    static func integerModuloBuiltIn(_ args: [MooseObject], _: Environment) throws -> IntegerObj {
+        try assertNoNil(args)
+
+        let a = (args[0] as! IntegerObj).value!
+        let b = (args[1] as! IntegerObj).value!
+        return IntegerObj(value: a % b)
     }
 
     /// A helper to make comparing functions (requiring arguments to be not nil)
