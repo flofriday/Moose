@@ -308,16 +308,26 @@ extension InterpreterTests {
             (
                 """
                 list = [1,2,3,4]
-                same = list.reverse()
+                same = list.reversed()
 
                 t1 = list[0]
                 t2 = same[0]
 
-                t3 = t1 == t2
+                t3 = t1 != t2
                 """, [
-                    ("t1", IntegerObj(value: 4)),
+                    ("t1", IntegerObj(value: 1)),
                     ("t2", IntegerObj(value: 4)),
                     ("t3", BoolObj(value: true)),
+                ]
+            ),
+
+            (
+                """
+                list = [1,2,3,4]
+                same = list.reverse()
+                t1 = list[0]
+                """, [
+                    ("t1", IntegerObj(value: 4)),
                 ]
             ),
         ])
