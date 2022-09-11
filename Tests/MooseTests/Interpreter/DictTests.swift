@@ -134,30 +134,19 @@ extension InterpreterTests {
 
             mut lastKey: Int
             mut lastVal: String
-            for (key, value) in a.flat() {
+            mut lastIndex: Int
+            for (i, (key, value)) in a.flat().enumerated() {
                 lastKey = key
                 lastVal = value
+                lastIndex = i
             }
 
             """, [
                 ("len", IntegerObj(value: 4)),
                 ("lastKey", IntegerObj(value: 404)),
+                ("lastIndex", IntegerObj(value: 3)),
                 ("lastVal", StringObj(value: "File not found")),
             ]),
-
-            (
-                """
-                list = [("1", true), ("2", false)]
-                mut a = ""
-                for (key, (val, b)) in list.enumerated() {
-                    a +: val
-                    a(key)
-                }
-                func a(i: Int) {}
-                """, [
-                    ("a", StringObj(value: "12")),
-                ]
-            ),
         ])
     }
 
@@ -301,6 +290,20 @@ extension InterpreterTests {
                 ("lastIndex", IntegerObj(value: 2)),
                 ("lastVal", IntegerObj(value: 3)),
             ])
+
+            (
+                """
+                list = [("1", true), ("2", false)]
+                mut a = ""
+                for (key, (val, b)) in list.enumerated() {
+                    a +: val
+                    a(key)
+                }
+                func a(i: Int) {}
+                """, [
+                    ("a", StringObj(value: "12")),
+                ]
+            )
         }
     }
 

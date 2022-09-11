@@ -10,6 +10,7 @@ class Typechecker: Visitor {
     typealias ReturnDec = (MooseType, Bool)?
 
     var isFunction = false
+    var isLoop = false
     var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
     var scope: TypeScope

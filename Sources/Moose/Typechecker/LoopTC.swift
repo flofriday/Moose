@@ -9,6 +9,7 @@ import Foundation
 
 extension Typechecker {
     func visit(_ node: ForEachStatement) throws {
+        isLoop = true
         try node.list.accept(self)
 
         guard let typ = (node.list.mooseType as? ListType)?.type else {
@@ -37,6 +38,7 @@ extension Typechecker {
         try node.body.accept(self)
         try popScope()
         node.returnDeclarations = node.body.returnDeclarations
+        isLoop = false
     }
 
     private func validLoopVar(variable: Assignable) -> (valid: Bool, vars: [Identifier]) {
@@ -49,6 +51,7 @@ extension Typechecker {
     }
 
     func visit(_ node: ForCStyleStatement) throws {
+        isLoop = true
         pushNewScope()
         try node.preStmt?.accept(self)
         try node.condition.accept(self)
@@ -61,13 +64,14 @@ extension Typechecker {
         try node.body.accept(self)
         node.returnDeclarations = node.body.returnDeclarations
         try popScope()
+        isLoop = false
     }
 
-    func visit(_: Break) throws {
-        // TODO: check that we are inside a loop
+    func visit(_ node: Break) throws {
+        guard isLoop else { throw error(message: "`break` is only allowed inside of loop body.", node: node) }
     }
 
-    func visit(_: Continue) throws {
-        // TODO: check that we are inside a loop
+    func visit(_ node: Continue) throws {
+        guard isLoop else { throw error(message: "`continue` is only allowed inside of loop body.", node: node) }
     }
 }
