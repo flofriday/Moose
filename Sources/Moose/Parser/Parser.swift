@@ -514,9 +514,9 @@ class Parser {
     func parseTernaryOperator(left: Expression) throws -> Expression {
         let condition = left
         let token = try consume(type: .QuestionMark, message: "expected ? , got '\(peek().lexeme)'")
-        let consequence = try parseExpression(curPrecedence)
+        let consequence = try parseExpression(.Lowest)
         _ = try consume(type: .Colon, message: "expected : , got '\(peek().lexeme)'")
-        let alternative = try parseExpression(curPrecedence)
+        let alternative = try parseExpression(.Lowest)
         return TernaryExpression(token: token, condition: condition, consequence: consequence, alternative: alternative)
     }
 

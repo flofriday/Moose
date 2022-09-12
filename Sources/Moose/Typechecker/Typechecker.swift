@@ -191,7 +191,7 @@ class Typechecker: Visitor {
         try node.condition.accept(self)
         guard node.condition.mooseType == BoolType() else {
             // TODO: the Error highlights the wrong character here
-            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", node: node.condition)
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(node.condition.mooseType!) but if-conditions need to evaluate to Bool.", node: node.condition)
         }
 
         try node.consequence.accept(self)
@@ -202,7 +202,7 @@ class Typechecker: Visitor {
         let conType = node.consequence.mooseType
         let altType = node.alternative.mooseType
         guard conType == altType else {
-            throw error(message: "Both branches need to return the same but the consequence returns \(conType), while the alternativereturns \(altType).", node: node)
+            throw error(message: "Both branches need to return the same but the consequence returns \(conType!), while the alternativereturns \(altType!).", node: node)
         }
 
         node.mooseType = conType
