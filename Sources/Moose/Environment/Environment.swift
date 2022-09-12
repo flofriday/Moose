@@ -59,10 +59,18 @@ class BaseEnvironment: Environment {
 
     init(copy: BaseEnvironment) {
         variables = copy.variables
-        funcs = copy.funcs
         ops = copy.ops
         classDefinitions = copy.classDefinitions
         enclosing = copy.enclosing
+
+        for fs in copy.funcs {
+            var nfs = [MooseObject]()
+            for f in fs.value {
+                if let fObj = f as? FunctionObj { nfs.append(FunctionObj(copy: fObj)) }
+                else { nfs.append(f) }
+            }
+            funcs[fs.key] = nfs
+        }
     }
 }
 
