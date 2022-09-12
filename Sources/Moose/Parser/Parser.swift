@@ -8,6 +8,8 @@ enum Precendence: Int {
     case Lowest
     case IsOperator
     case OpDefault
+    case Trenary
+    case DoubleQuestionMark
     case LogicalOR
     case LogicalAND
     case Equals
@@ -42,6 +44,8 @@ class Parser {
         .LParen: .Call,
         .LBracket: .Index,
         .Dot: .Reference,
+        .QuestionMark: .Trenary,
+        .DoubleQuestionMark: .DoubleQuestionMark,
     ]
 
     let opPrecendences: [String: Precendence] = [
@@ -516,12 +520,17 @@ class Parser {
         return TernaryExpression(token: token, condition: condition, consequence: consequence, alternative: alternative)
     }
 
-    func parseDoubleQuestionMarkOperator(left _: Expression) throws -> Expression {
+    func parseDoubleQuestionMarkOperator(left: Expression) throws -> Expression {
         let token = try consume(type: .DoubleQuestionMark, message: "expected ?? , got '\(peek().lexeme)'")
         let right = try parseExpression(curPrecedence)
-        return right
+
         // Rewrite to a ternary expression
-        // TODO: I don't know we can do this without destroying the error messages
+        // Example: `a ?? b`  -> `a != nil ? a : b`
+        let nilToken = Token(type: .Nil, lexeme: "nil", line: token.line, column: token.column)
+        let notEqToken = Token(type: .Operator(pos: .Infix, assign: false), lexeme: "!=", line: token.line, column: token.column)
+        let condition = InfixExpression(token: notEqToken, left: left, op: notEqToken.lexeme, right: Nil(token: nilToken))
+
+        return TernaryExpression(token: token, condition: condition, consequence: left, alternative: right)
     }
 
     func parseInfixExpression(left: Expression) throws -> Expression {
