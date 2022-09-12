@@ -96,7 +96,7 @@ extension InterpreterTests {
                 age = 23
                 if age > 18 {
                     print("Please enter")
-                // TODO: implement else if 
+                // TODO: implement else if
                 //} else if age == 18 {
                 //    print("Finally you can enter")
                 } else {
@@ -130,12 +130,12 @@ extension InterpreterTests {
                     cnt2 +: 1
                 }
 
-                // TODO: So since there is no break, we cannot test this in 
+                // TODO: So since there is no break, we cannot test this in
                 // finite time.
                 // while style loop
                 // for true {
                 //    print("I will never terminate")
-                // } 
+                // }
                 """,
                 [
                     ("cnt1", IntegerObj(value: 10)),
@@ -149,7 +149,7 @@ extension InterpreterTests {
                     return "Hi I am " + name + " " + age.toString()
                 }
 
-                p = myFunction(42, "Alan Turing") 
+                p = myFunction(42, "Alan Turing")
                 """,
                 [
                     ("p", StringObj(value: "Hi I am Alan Turing 42")),
@@ -189,5 +189,27 @@ extension InterpreterTests {
         ]
 
         try runValidTests(name: #function, tests)
+    }
+
+    func test_stringEscapes() throws {
+        try runValidTests(name: #function) {
+            (
+                """
+                a1 = "new\\nline"
+                a2 = "new\\"line"
+                a3 = "new\\rline"
+                a4 = "new\\0line"
+                a5 = "new\\tline"
+                a6 = "new\\\\line"
+                """, [
+                    ("a1", StringObj(value: "new\nline")),
+                    ("a2", StringObj(value: "new\"line")),
+                    ("a3", StringObj(value: "new\rline")),
+                    ("a4", StringObj(value: "new\0line")),
+                    ("a5", StringObj(value: "new\tline")),
+                    ("a6", StringObj(value: "new\\line")),
+                ]
+            )
+        }
     }
 }
