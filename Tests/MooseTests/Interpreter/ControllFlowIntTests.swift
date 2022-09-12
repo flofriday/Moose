@@ -226,8 +226,6 @@ extension InterpreterTests {
                 a1 = true ? 1 : 2
                 a2 = false ? 1 : 2
                 a3 = 3 + 2 == 1 ? 1 * 3 + 12 : 2 * 3 / 2
-
-                nil ? 2 : 3
                 """,
                 [
                     ("a1", IntegerObj(value: 1)),
