@@ -123,6 +123,7 @@ class TypecheckerTests: TypecheckerBaseClass {
 
             }
             """,
+
             """
             func a() > Int {
                 return 2

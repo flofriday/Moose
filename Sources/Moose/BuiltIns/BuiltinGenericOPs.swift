@@ -11,12 +11,15 @@ extension BuiltIns {
     static func equalGeneric(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
         let lhs = params[0]
         let rhs = params[1]
+        if lhs.isNil, rhs.isNil { return BoolObj(value: true) }
         return BoolObj(value: lhs.equals(other: rhs))
     }
 
     static func notEqualGeneric(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
         let lhs = params[0]
         let rhs = params[1]
+
+        if rhs.isNil, lhs.isNil { return BoolObj(value: false) }
         return BoolObj(value: !lhs.equals(other: rhs))
     }
 
