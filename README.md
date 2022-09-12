@@ -99,9 +99,9 @@ Dictionaries (aka Hashtables or Hashmaps) are also build in.
 
 ```tsx
 ages: {Str:Int} = {
-	"Flo": 23,
-  "Paul": 24,
-  "Clemens": 7,
+    "Flo": 23,
+    "Paul": 24,
+    "Clemens": 7,
 }
 
 print(ages["Paul"]) // 24
@@ -118,17 +118,17 @@ Like go and rust we don’t require Parenteses around the condition but do requi
 ```tsx
 age = 23
 if age > 18 {
-	print("Please enter")
+    print("Please enter")
 } else if age == 18 {
-	print("Finally you can enter")
+    print("Finally you can enter")
 } else {
-  print("I am sorry come back in a year")
+    print("I am sorry come back in a year")
 }
 
 // Sometimes you need to discriminate against Pauls
 name = "Paul"
 if (age > 12) && (name != "Paul") {
-	print("Welcome to the waterpark")
+    print("Welcome to the waterpark")
 }
 
 ```
@@ -140,17 +140,17 @@ if (age > 12) && (name != "Paul") {
 ```tsx
 // For-each style
 for i in range(10) {
-	print("I was here")
+    print("I was here")
 }
 
 // C-style loop
 for i = 0; i < 100; i +: 3 {
-	print(i)
+    print(i)
 }
 
 // while style loop
 for true {
-	print("I will never terminate")
+    print("I will never terminate")
 }
 ```
 
@@ -168,7 +168,7 @@ a = 3; // this is a comment
 
 ```jsx
 func myFunction(age: Int, name: String) > String {
-	return "Hi I am " + name + age.toString()
+    return "Hi I am " + name + age.toString()
 }
 
 print(myFunction(42, "Alan Turing"))
@@ -181,15 +181,15 @@ Beside classic functions, Moose provides the possibility to write own operators 
 ```jsx
 // What if JS was right with adding numbers to strings?
 infix + (a: String, b: Int) > String {
-	return a + b.toString()
+    return a + b.toString()
 }
 
 // A prefix + makes numbers positive
 prefix + (a: Int) > Int {
-	if a < 0 {
-		return a * -1
-	}
-	return a
+    if a < 0 {
+        return a * -1
+    }
+    return a
 }
 
 a = "4"
@@ -219,19 +219,18 @@ print(p.represent())
 
 ```tsx
 class Person {
-	name: Str
-  	age: Int
+    name: Str
+    age: Int
 
-  	func hello() {
-		// Instead of this, Moose uses me
-    	print("Hey I am " + me.name)
-  	}
+    func hello() {
+        // Instead of this, Moose uses me
+        print("Hey I am " + me.name)
+    }
 }
 
 // Classes have a default constructor in which all all fields have to be filled out
 anna = Person("Anna", 74)
 anna.hello()
-
 ```
 
 ## Inheritance
@@ -240,75 +239,44 @@ Moose supports single class inheritance.
 
 ```tsx
 class Employee < Person {
-	work: Str
+    work: Str
 
-	func hello() {
-    	super.hello()
-    	print("And I work at " + me.work)
-  	}
+    func hello() {
+        super.hello()
+        print("And I work at " + me.work)
+    }
 }
 
 catrin = Employee("Catrin", 56, "Google")
 ```
 
-<!-- TODO: we don't implement this and even if the example doesn't work
 ## Extending Classes
 
 You extend existing classes by using the `extend` construct.
 
 ```tsx
 extend Person {
-	friend: Person
-	func add(friend: Person) {
-		me.friend = friend
-	}
+    friend: Person
+    func add(friend: Person) {
+        me.friend = friend
+    }
 }
 
 a = "Hello"
 str.add(" World")
 
 print(str) // "Hello World"
-```
--->
 
-<!-- We dont to this anymore
-## Copy by reference or value
-
-As described before, Moose only has class object types without primitive types. In addition, all assignments are made by reference.
-
-```jsx
-infix func (&) (a: Person, b: Int) {
-	a.age +: b
-}
-
-p1 = Person("Alan Turing", 41)
-p2 = p1
-
-p1 & 4
-
-print(p2.age) // 45
-```
-
-In order to assigning a variable by value, you have to use the copy by value operator `*`.
-
-```jsx
-print(p1.age) // 41
-p2 = *p1
-p1 & 4
-print(p1.age) // 45
-print(p2.age) // 41
-```
--->
 
 ## Tuple
 
 In Moose, tuples are a standard data type, like Int, String and others. It allows the programmer to return multiple values from a function and also offers the possibility of destructuring.
 
 ```jsx
-postfix func (/) (a: [Int]) > ([Int], [Int]) {
-	firstHalf = a[0:(a.len/2)]
-	secondHalf = a[(a.len/2):a.len-1)]
-	return (first, second)
+postfix / (a: [Int]) > ([Int], [Int]) {
+    firstHalf = a[0:(a.len/2)]
+    secondHalf = a[(a.len/2):a.len-1)]
+    return (first, second)
 }
 
 l = [1,2,3,4]
@@ -333,11 +301,11 @@ Accessing data of an object is not only possible for `List` s, but for all datat
 
 ```jsx
 class Person {
-	name: Str
+    name: String
 
-	func indexing(i: Int) > (Char) {
-		return name[i]
-	}
+    func getItem(i: Int) > (String) {
+        return name[i]
+    }
 }
 
 p = Person("Alan Turing")
@@ -352,9 +320,9 @@ It is also possible to unpack the rest of an indexed object by providing the `le
 
 ```c
 extend Person {
-	func len() > Int {
-		return self.name.len()
-	}
+    func len() > Int {
+        return self.name.len()
+    }
 }
 
 [a, rest..] = p
