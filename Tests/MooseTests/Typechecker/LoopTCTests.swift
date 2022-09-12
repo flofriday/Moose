@@ -154,4 +154,38 @@ extension TypecheckerTests {
             """
         }
     }
+
+    func test_breakContinue_fails() throws {
+        try runInvalidTests(name: #function) {
+            """
+            break
+            """
+
+            """
+            continue
+            """
+
+            """
+            if true {
+                continue
+            }
+            """
+
+            """
+            if false {
+                break
+            }
+            """
+
+            """
+            for mut i = 0; i < 100; i+:1 {
+                f()
+            }
+
+            func f() {
+                continue
+            }
+            """
+        }
+    }
 }

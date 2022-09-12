@@ -68,10 +68,10 @@ extension Typechecker {
     }
 
     func visit(_ node: Break) throws {
-        guard isLoop else { throw error(message: "`break` is only allowed inside of loop body.", node: node) }
+        guard isLoop else { throw error(message: "`break` is only allowed inside a loop body.", node: node) }
     }
 
     func visit(_ node: Continue) throws {
-        guard isLoop else { throw error(message: "`continue` is only allowed inside of loop body.", node: node) }
+        guard isLoop else { throw error(message: "`continue` is only allowed inside a loop body.", node: node) }
     }
 }

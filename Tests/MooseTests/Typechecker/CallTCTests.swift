@@ -42,6 +42,14 @@ extension TypecheckerTests {
                 func call(a: Int, b: Int) { print((a, b)) }
             }
             """
+
+            """
+            func three() > Int {
+                return 3
+            }
+
+            return
+            """
         }
     }
 

@@ -240,7 +240,7 @@ class Typechecker: Visitor {
         var retType: MooseType = VoidType()
 
         guard isFunction else {
-            throw error(message: "A return is only possible inside a function.", node: node)
+            throw error(message: "You can only return inside a functions.", node: node)
         }
 
         if let expr = node.returnValue {
