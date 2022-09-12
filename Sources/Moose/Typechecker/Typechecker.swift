@@ -187,6 +187,27 @@ class Typechecker: Visitor {
         node.returnDeclarations = (conTyp, conStatus && altStatus)
     }
 
+    func visit(_ node: TernaryExpression) throws {
+        try node.condition.accept(self)
+        guard node.condition.mooseType == BoolType() else {
+            // TODO: the Error highlights the wrong character here
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(node.condition.mooseType!) but if-conditions need to evaluate to Bool.", node: node.condition)
+        }
+
+        try node.consequence.accept(self)
+        try node.alternative.accept(self)
+
+        // Verify that both branches return the same type
+
+        let conType = node.consequence.mooseType
+        let altType = node.alternative.mooseType
+        guard conType == altType else {
+            throw error(message: "Both branches need to return the same but the consequence returns \(conType!), while the alternativereturns \(altType!).", node: node)
+        }
+
+        node.mooseType = conType
+    }
+
     func visit(_ node: Tuple) throws {
         var types: [ParamType] = []
 
@@ -219,7 +240,7 @@ class Typechecker: Visitor {
         var retType: MooseType = VoidType()
 
         guard isFunction else {
-            throw error(message: "A return is only possible inside a function.", node: node)
+            throw error(message: "You can only return inside a functions.", node: node)
         }
 
         if let expr = node.returnValue {

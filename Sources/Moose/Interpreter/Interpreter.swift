@@ -234,6 +234,20 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
+    func visit(_ node: TernaryExpression) throws -> MooseObject {
+        let conditionResult = try node.condition.accept(self) as! BoolObj
+
+        guard let value = conditionResult.value else {
+            throw NilUsagePanic(node: node.condition)
+        }
+
+        if value {
+            return try node.consequence.accept(self)
+        } else {
+            return try node.alternative.accept(self)
+        }
+    }
+
     func visit(_ node: Identifier) throws -> MooseObject {
         return try environment.get(variable: node.value)
     }

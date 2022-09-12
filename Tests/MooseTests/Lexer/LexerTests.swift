@@ -110,13 +110,13 @@ class LexerTests: XCTestCase {
             (TokenType.Mut, "mut")
             (TokenType.Identifier, "a")
             (TokenType.Assign, "=")
-            (TokenType.String, "this is a String")
+            (TokenType.String, "\"this is a String\"")
             (TokenType.NLine, "\n")
-            (TokenType.String, "this // as well")
+            (TokenType.String, "\"this // as well\"")
             (TokenType.NLine, "\n")
-            (TokenType.String, "let b = this as well")
+            (TokenType.String, "\"let b = this as well\"")
             (TokenType.NLine, "\n")
-            (TokenType.String, "with new line\nlol")
+            (TokenType.String, "\"with new line\nlol\"")
             (TokenType.NLine, "\n")
         }
 

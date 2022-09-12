@@ -65,6 +65,9 @@ enum TokenType: Equatable, Hashable {
 
     case Dot
 
+    case QuestionMark
+    case DoubleQuestionMark
+
     // Keywords
     case Mut
     case Func

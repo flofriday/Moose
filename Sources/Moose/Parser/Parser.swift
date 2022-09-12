@@ -8,6 +8,8 @@ enum Precendence: Int {
     case Lowest
     case IsOperator
     case OpDefault
+    case Trenary
+    case DoubleQuestionMark
     case LogicalOR
     case LogicalAND
     case Equals
@@ -42,6 +44,8 @@ class Parser {
         .LParen: .Call,
         .LBracket: .Index,
         .Dot: .Reference,
+        .QuestionMark: .Trenary,
+        .DoubleQuestionMark: .DoubleQuestionMark,
     ]
 
     let opPrecendences: [String: Precendence] = [
@@ -77,6 +81,8 @@ class Parser {
         prefixParseFns[.Nil] = parseNil
         prefixParseFns[.Me] = parseMe
 
+        infixParseFns[.QuestionMark] = parseTernaryOperator
+        infixParseFns[.DoubleQuestionMark] = parseDoubleQuestionMarkOperator
         infixParseFns[.Operator(pos: .Infix, assign: false)] = parseInfixExpression
         infixParseFns[.LParen] = parseCallExpression
         infixParseFns[.LBracket] = parseIndex
@@ -530,6 +536,28 @@ class Parser {
         let token = advance()
         let rightExpr = try parseExpression(.Prefix)
         return PrefixExpression(token: token, op: token.lexeme, right: rightExpr)
+    }
+
+    func parseTernaryOperator(left: Expression) throws -> Expression {
+        let condition = left
+        let token = try consume(type: .QuestionMark, message: "expected ? , got '\(peek().lexeme)'")
+        let consequence = try parseExpression(.Lowest)
+        _ = try consume(type: .Colon, message: "expected : , got '\(peek().lexeme)'")
+        let alternative = try parseExpression(.Lowest)
+        return TernaryExpression(token: token, condition: condition, consequence: consequence, alternative: alternative)
+    }
+
+    func parseDoubleQuestionMarkOperator(left: Expression) throws -> Expression {
+        let token = try consume(type: .DoubleQuestionMark, message: "expected ?? , got '\(peek().lexeme)'")
+        let right = try parseExpression(curPrecedence)
+
+        // Rewrite to a ternary expression
+        // Example: `a ?? b`  -> `a != nil ? a : b`
+        let nilToken = Token(type: .Nil, lexeme: "nil", line: token.line, column: token.column)
+        let notEqToken = Token(type: .Operator(pos: .Infix, assign: false), lexeme: "!=", line: token.line, column: token.column)
+        let condition = InfixExpression(token: notEqToken, left: left, op: notEqToken.lexeme, right: Nil(token: nilToken))
+
+        return TernaryExpression(token: token, condition: condition, consequence: left, alternative: right)
     }
 
     func parseInfixExpression(left: Expression) throws -> Expression {

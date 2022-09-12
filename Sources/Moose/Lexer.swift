@@ -78,6 +78,13 @@ extension Lexer {
         case (".", _):
             readChar()
             tok = genToken(.Dot)
+        case let ("?", peek) where !isOpChar(char: peek):
+            readChar()
+            tok = genToken(.QuestionMark)
+        case ("?", "?"):
+            readChar()
+            readChar()
+            tok = genToken(.DoubleQuestionMark, "??")
         default:
             guard let unwrappedChar = char else {
                 return genToken(.EOF)
@@ -94,15 +101,10 @@ extension Lexer {
                     let type = determineOperator(prevChar: preChar, postChar: postChar, assign: false)
                     return genToken(type, op)
                 }
+                // lex string
             } else if unwrappedChar == "\"" {
-                readChar() // skip start "
-                let string = read { $0 != "\"" }
-                // if current char is not ending ", return invalid token
-                guard let char = char, char == "\"" else {
-                    throw error(message: "String does not end with an closing \".")
-                }
-                readChar() // skip ending "
-                return genToken(.String, string, string)
+                let (lexeme, literal) = try readString()
+                return genToken(.String, literal, lexeme)
             } else if isLetter(char: unwrappedChar) {
                 let ident = readIdentifier()
                 let type = lookUpIdent(ident: ident)
@@ -164,6 +166,46 @@ extension Lexer {
             readChar()
         }
         return input[pos ..< position]
+    }
+
+    private func readString() throws -> (lexem: String, literal: String) {
+        var str = ""
+        let pos = position
+        readChar()
+        while let chr = char, chr != "\"" {
+            if chr == "\\" {
+                readChar()
+                guard let chr = char else { continue }
+                str += escapeString(char: chr)
+                readChar()
+                continue
+            }
+            str += String(chr)
+            readChar()
+        }
+
+        guard char == "\"" else { throw error(message: "String does not end with an closint \".") }
+        readChar()
+        return (input[pos ..< position], str)
+    }
+
+    private func escapeString(char: Character) -> String {
+        switch char {
+        case "\\":
+            return "\\"
+        case "0":
+            return "\0"
+        case "t":
+            return "\t"
+        case "n":
+            return "\n"
+        case "r":
+            return "\r"
+        case "\"":
+            return "\""
+        default:
+            return "\\\(char)"
+        }
     }
 }
 

@@ -26,6 +26,7 @@ protocol Visitor {
     func visit(_ node: PrefixExpression) throws -> VisitorResult
     func visit(_ node: InfixExpression) throws -> VisitorResult
     func visit(_ node: PostfixExpression) throws -> VisitorResult
+    func visit(_ node: TernaryExpression) throws -> VisitorResult
     func visit(_ node: VariableDefinition) throws -> VisitorResult
     func visit(_ node: Tuple) throws -> VisitorResult
     func visit(_ node: Nil) throws -> VisitorResult
@@ -78,6 +79,10 @@ class BaseVisitor: Visitor {
 
     func visit(_: IfStatement) throws {
         fatalError(errorMessage)
+    }
+
+    func visit(_: TernaryExpression) throws {
+        fatalError()
     }
 
     func visit(_: Identifier) throws {

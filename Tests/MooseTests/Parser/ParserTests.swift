@@ -231,7 +231,7 @@ class ParserTests: BaseClass {
             ("a = asd(1)\n", "a = asd(1)"),
             ("mut a: String = asd((1, b(2)))\n", "mut a: String = asd((1, b(2)))"),
             ("mut a: String = asd()\n", "mut a: String = asd()"),
-            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"testString\")"),
+            ("mut a: String = asd(\"testString\")\n", "mut a: String = asd(\"\"testString\"\")"),
         ]
 
         for (i, t) in tests.enumerated() {
