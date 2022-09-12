@@ -378,6 +378,10 @@ class ClassTypeScope: TypeScope {
     var superClass: ClassTypeScope?
     var visited = false
 
+//    /// This property holds the status if a class definition already constructed typescope.
+//    /// Since extend statements also are able to create typescopes, this is required
+//    var classDefined = false
+
     init(enclosing: TypeScope? = nil, name: String, properties: [propType]) {
         self.className = name
         self.classProperties = properties

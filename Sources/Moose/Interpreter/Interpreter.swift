@@ -214,6 +214,10 @@ class Interpreter: Visitor {
         return VoidObj()
     }
 
+    func visit(_: ExtendStatement) throws -> MooseObject {
+        return VoidObj()
+    }
+
     func visit(_ node: IfStatement) throws -> MooseObject {
         let conditionResult = try node.condition.accept(self) as! BoolObj
 

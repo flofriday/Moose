@@ -45,28 +45,4 @@ board = Board(
   (Field(7), Field(8), Field(9))
 )
 
-t = Field(10)
-
-(a,b,c) = board.row1
-print(a.number)
-print(a.num())
-print(b.number)
-print(c.number)
-
-// //print(board)
-// (a,b) = board[0]
-
-
-// class T { a: Int }
-// class D < T { b: String }
-// class B { 
-//   row1: (Field, Field, Field)
-//   row2: (Field, Field, Field)
-//   row3: (Field, Field, Field)
-// }
-
-// (t1, t2, t3) = B((T(1), T(2), T(3)), (T(4), T(5), T(6))).a1
-
-// print(t1.a)
-// print(t2.a)
-// print(t3.a)
+print(board)

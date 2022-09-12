@@ -400,6 +400,22 @@ class ClassStatement {
     var returnDeclarations: (MooseType, Bool)?
 }
 
+class ExtendStatement {
+    let token: Token
+    let location: Location
+    let name: Identifier
+    let methods: [FunctionStatement]
+
+    init(token: Token, location: Location, name: Identifier, methods: [FunctionStatement]) {
+        self.token = token
+        self.location = location
+        self.name = name
+        self.methods = methods
+    }
+
+    var returnDeclarations: (MooseType, Bool)?
+}
+
 /// This class represents the `.` in `object.propertie`
 class Dereferer: Assignable {
     let token: Token
@@ -736,6 +752,17 @@ extension ClassStatement: Statement {
         let methods = self.methods.map { "\n \($0.description)" }.joined()
         let ext = extends != nil ? " < \(extends!.value)" : ""
         return "class \(name.value)\(ext) { \(props)\n \(methods)}"
+    }
+
+    func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {
+        return try visitor.visit(self)
+    }
+}
+
+extension ExtendStatement: Statement {
+    var description: String {
+        let methods = self.methods.map { "\n \($0.description)" }.joined()
+        return "extend \(name.value) { \(methods) }"
     }
 
     func accept<V: Visitor, R>(_ visitor: V) throws -> R where V.VisitorResult == R {

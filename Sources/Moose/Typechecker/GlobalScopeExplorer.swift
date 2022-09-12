@@ -81,10 +81,13 @@ class GlobalScopeExplorer: BaseVisitor {
         }
     }
 
+    // TODO: Check if class is already defined
     override func visit(_ node: ClassStatement) throws {
         guard scope.isGlobal() else {
             throw error(message: "Classes can only be defined in global scope.", node: node)
         }
+
+        guard !scope.has(clas: node.name.value) else { throw error(message: "Class `\(node.name)` was already defined.", node: node) }
 
         let classScope = ClassTypeScope(
             enclosing: scope,

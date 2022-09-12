@@ -187,6 +187,19 @@ class FunctionObj: MooseObject {
         env.value = self
     }
 
+    /// This constructor copies a given FunctionObj object
+    ///
+    /// This is required when initializing a MooseClass since
+    /// the closure has to be updated to the specific object
+    init(copy: FunctionObj) {
+        self.name = copy.name
+        self.type = copy.type
+        self.paramNames = copy.paramNames
+        self.value = copy.value
+        self.closure = copy.closure
+        env.value = self
+    }
+
     func equals(other _: MooseObject) -> Bool {
         // Functions can never be equal
         return false
@@ -212,7 +225,7 @@ class BuiltInFunctionObj: MooseObject {
         self.name = name
         self.params = params
         self.returnType = returnType
-        type = FunctionType(params: params, returnType: returnType)
+        self.type = FunctionType(params: params, returnType: returnType)
         self.function = function
         env.value = self
     }
@@ -484,8 +497,8 @@ class ClassObject: MooseObject, HashableObject {
     let type: MooseType
 
     init(env: ClassEnvironment?, name: String) {
-        classEnv = env
-        type = ClassType(name)
+        self.classEnv = env
+        self.type = ClassType(name)
     }
 
     func hash(into hasher: inout Hasher) {

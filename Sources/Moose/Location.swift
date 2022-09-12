@@ -18,16 +18,27 @@ struct Location {
     }
 }
 
+extension Token {
+    func mergeLocations(_ other: Location) -> Location {
+        return locationFromToken(self).mergeLocations(other)
+    }
+
+    func mergeLocations(_ other: Token) -> Location {
+        return Moose.mergeLocations(self, other)
+    }
+}
+
 func mergeLocations(_ a: Location, _ b: Location) -> Location {
     // Calculating the lines is straight forward
     let line = min(a.line, b.line)
     let endLine = max(a.line, b.line)
 
+    // rewrite logic
     // Lets assume a is the first one
     var col = a.col
 
     // Now check if we made a mistake and if so lets correct for it
-    if b.line < a.line || (b.line == a.line && b.col < a.col) {
+    if (b.line, b.col) < (a.line, a.col) {
         col = b.col
     }
 
@@ -35,7 +46,7 @@ func mergeLocations(_ a: Location, _ b: Location) -> Location {
     var endCol = b.endCol
 
     // Now check if we made another mistake
-    if (a.line > b.line) || (a.line == b.line && a.endLine > b.endLine) {
+    if (b.endLine, b.endCol) < (a.endLine, a.endCol) {
         endCol = a.endCol
     }
 

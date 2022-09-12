@@ -9,6 +9,10 @@ import Foundation
 
 extension Typechecker {
     func visit(_ node: ClassStatement) throws {
+        guard scope.isGlobal() else {
+            throw error(message: "Class can only be defined in global scope.", node: node)
+        }
+
         guard let clasScope = scope.getScope(clas: node.name.value) else {
             throw error(message: "Scope of class `\(node.name.value)` was not found in global scope!", node: node)
         }
@@ -47,6 +51,26 @@ extension Typechecker {
         if let superClass = clas.superClass {
             try checkCycle(for: name, in: superClass)
         }
+    }
+
+    func visit(_ node: ExtendStatement) throws {
+        guard scope.isGlobal() else {
+            throw error(message: "Extend statements can only be defined in global scope.", node: node)
+        }
+
+        guard let clasScope = scope.getScope(clas: node.name.value) else {
+            throw error(message: "Class `\(node.name.value)` does not exist.", node: node)
+        }
+
+        let prevScope = scope
+        scope = clasScope
+
+        // Check all methods and compare their declared type with the actual return type
+        for meth in node.methods {
+            try meth.accept(self)
+        }
+
+        scope = prevScope
     }
 
     func visit(_ node: Dereferer) throws {
