@@ -9,6 +9,7 @@ import Foundation
 
 extension BuiltIns {
     static func castToString(_ params: [MooseObject], _ env: Environment) throws -> StringObj {
-        return StringObj(value: params[0].description)
+        if let str = params[0] as? StringObj { return StringObj(value: str.value) }
+        return StringObj(value: try representAny(obj: params[0]))
     }
 }

@@ -12,6 +12,14 @@ class BuiltIns {
         // Mini stdlib
         BuiltInFunctionObj(name: "range", params: [IntType()], returnType: ListType(IntType()), function: rangeBuiltIn),
 
+        // Math functions
+        BuiltInFunctionObj(name: "min", params: [IntType(), IntType()], returnType: IntType(), function: minBuiltIn),
+        BuiltInFunctionObj(name: "min", params: [FloatType(), FloatType()], returnType: FloatType(), function: minBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [IntType(), IntType()], returnType: IntType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [FloatType(), FloatType()], returnType: FloatType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "abs", params: [IntType()], returnType: IntType(), function: absBuiltIn),
+        BuiltInFunctionObj(name: "abs", params: [FloatType()], returnType: FloatType(), function: absBuiltIn),
+
         // IO Functions
         BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),
 
@@ -37,6 +45,7 @@ extension BuiltIns {
         BuiltInOperatorObj(name: "-", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerSubBuiltIn),
         BuiltInOperatorObj(name: "*", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerMulBuiltIn),
         BuiltInOperatorObj(name: "/", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerDivBuiltIn),
+        BuiltInOperatorObj(name: "%", opPos: .Infix, params: [IntType(), IntType()], returnType: IntType(), function: integerModuloBuiltIn),
 
         // Integer comparisons
         BuiltInOperatorObj(name: "<", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerLessBuiltIn),
@@ -45,6 +54,7 @@ extension BuiltIns {
         BuiltInOperatorObj(name: ">=", opPos: .Infix, params: [IntType(), IntType()], returnType: BoolType(), function: integerGreaterEqualBuiltIn),
 
         // Float calculations
+        BuiltInOperatorObj(name: "-", opPos: .Prefix, params: [FloatType()], returnType: FloatType(), function: floatNegBuiltIn),
         BuiltInOperatorObj(name: "+", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatAddBuiltIn),
         BuiltInOperatorObj(name: "-", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatSubBuiltIn),
         BuiltInOperatorObj(name: "*", opPos: .Infix, params: [FloatType(), FloatType()], returnType: FloatType(), function: floatMulBuiltIn),
@@ -97,14 +107,47 @@ extension BuiltIns {
         return ListObj(type: type, value: l)
     }
 
+    /// Checks if env has represent function with string as return type
+    /// If so, it calls it and returns the String back
+    ///
+    /// Otherwise return nil
+    static func callRepresent(env: Environment) throws -> StringObj? {
+        guard env.has(function: Settings.REPRESENT_FUNCTIONNAME, params: []) else {
+            return nil
+        }
+
+        let repFun = try env.get(function: Settings.REPRESENT_FUNCTIONNAME, params: [])
+
+        if let repFun = repFun as? BuiltInFunctionObj {
+            guard repFun.returnType is StringType else { return nil }
+        } else if let repFun = repFun as? FunctionObj {
+            guard (repFun.type as? FunctionType)?.returnType is StringType else { return nil }
+        } else {
+            return nil
+        }
+
+        let strObj = try Interpreter(environment: env).callFunctionOrOperator(callee: repFun, args: [])
+        guard let strObj = strObj as? StringObj else { return nil }
+        return strObj
+    }
+
+    static func representAny(obj: MooseObject) throws -> String {
+        guard !obj.isNil else { return "nil" }
+        guard let repObj = try callRepresent(env: obj.env) else {
+            return obj.description
+        }
+
+        return repObj.value!
+    }
+
     /// A generic print function that can print any MooseObject
-    static func printBuiltIn(params: [MooseObject], _: Environment) -> VoidObj {
+    static func printBuiltIn(params: [MooseObject], env _: Environment) throws -> VoidObj {
         if let str = params[0] as? StringObj {
-            print(str.value ?? "nil")
+            print(str.value!)
             return VoidObj()
         }
 
-        print(params[0].description)
+        print(try representAny(obj: params[0]))
         return VoidObj()
     }
 
@@ -162,30 +205,14 @@ extension BuiltIns {
 // Buit-in OperatorFunction
 extension BuiltIns {
     // Asserts that either Int, Float, Bool or String inputs are not nil
-    private static func assertNoNil(_ args: [MooseObject]) throws {
+    static func assertNoNil(_ args: [MooseObject]) throws {
         try args.forEach {
-            switch $0 {
-            case let int as IntegerObj:
-                if int.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let float as FloatObj:
-                if float.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let bool as BoolObj:
-                if bool.value == nil {
-                    throw NilUsagePanic()
-                }
-            case let str as StringObj:
-                if str.value == nil {
-                    throw NilUsagePanic()
-                }
-
-            default:
-                throw RuntimeError(message: "Internal Error in assertNoNil")
-            }
+            if $0.isNil { throw NilUsagePanic() }
         }
+    }
+
+    static func assertNoNil(_ args: MooseObject...) throws {
+        try assertNoNil(args)
     }
 
     // A generic builtin equal operator function that can compare any two
@@ -244,6 +271,15 @@ extension BuiltIns {
         return IntegerObj(value: a / b)
     }
 
+    /// Modulo of two integers with an infix operation
+    static func integerModuloBuiltIn(_ args: [MooseObject], _: Environment) throws -> IntegerObj {
+        try assertNoNil(args)
+
+        let a = (args[0] as! IntegerObj).value!
+        let b = (args[1] as! IntegerObj).value!
+        return IntegerObj(value: a % b)
+    }
+
     /// A helper to make comparing functions (requiring arguments to be not nil)
     /// a lot easier to write.
     private static func integerComparison(args: [MooseObject], _: Environment, operation: (Int64, Int64) -> Bool) throws -> BoolObj {
@@ -272,6 +308,14 @@ extension BuiltIns {
     /// Check if two integers are less or equal than each other
     static func integerLessEqualBuiltIn(_ args: [MooseObject], _ env: Environment) throws -> BoolObj {
         try integerComparison(args: args, env, operation: <=)
+    }
+
+    /// Negate an float by writing a minus in front of it
+    static func floatNegBuiltIn(_ args: [MooseObject], _: Environment) throws -> FloatObj {
+        try assertNoNil(args)
+
+        let value = (args[0] as! FloatObj).value!
+        return FloatObj(value: value * -1)
     }
 
     /// Add two integer floats with an infix operation
@@ -365,5 +409,40 @@ extension BuiltIns {
         let a = (args[0] as! StringObj).value!
         let b = (args[1] as! StringObj).value!
         return StringObj(value: a + b)
+    }
+
+    // min function int and float
+    static func minBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if args[0].type is IntType {
+            return (args as! [IntegerObj]).sorted { $0.value! < $1.value! }[0]
+        } else {
+            return (args as! [FloatObj]).sorted { $0.value! < $1.value! }[0]
+        }
+    }
+
+    // max function int and float
+    static func maxBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if args[0].type is IntType {
+            return (args as! [IntegerObj]).sorted { $0.value! > $1.value! }[0]
+        } else {
+            return (args as! [FloatObj]).sorted { $0.value! > $1.value! }[0]
+        }
+    }
+
+    // abs function int and float
+    static func absBuiltIn(_ args: [MooseObject], _: Environment) throws -> MooseObject {
+        try assertNoNil(args)
+
+        if let i = args[0] as? IntegerObj {
+            return IntegerObj(value: Int64(abs(i.value!)))
+        } else if let f = args[0] as? FloatObj {
+            return FloatObj(value: Float64(abs(f.value!)))
+        }
+
+        fatalError("Function \(#function) does not support type \(args[0].type)!")
     }
 }

@@ -23,8 +23,6 @@ protocol Environment {
     func global() -> Environment
     var enclosing: Environment? { get }
 
-    var closed: Bool { get set }
-
     func printDebug(header: Bool)
 }
 
@@ -49,7 +47,6 @@ class BaseEnvironment: Environment {
     typealias rateType = (rate: Int, extendStep: Int)
 
     var enclosing: Environment?
-    var closed: Bool = false
     var variables: [String: MooseObject] = [:]
     var funcs: [String: [MooseObject]] = [:]
     var ops: [String: [MooseObject]] = [:]
@@ -82,7 +79,7 @@ extension BaseEnvironment {
         }
 
         // Scan in enclosing envs
-        if let enclosing = enclosing, !closed {
+        if let enclosing = enclosing {
             let found = enclosing.update(variable: variable, value: value, allowDefine: false)
             if found {
                 return true
@@ -117,7 +114,7 @@ extension BaseEnvironment {
             return obj
         }
 
-        if let enclosing = enclosing, !closed {
+        if let enclosing = enclosing {
             return try enclosing.get(variable: variable)
         } else {
             throw EnvironmentError(message: "Variable '\(variable)' not found.")
@@ -171,7 +168,7 @@ extension BaseEnvironment {
             return obj
         }
 
-        guard let enclosing = enclosing, !closed else {
+        guard let enclosing = enclosing else {
             throw EnvironmentError(message: "Function '\(function)' not found.")
         }
         return try enclosing.get(function: function, params: params)
@@ -230,7 +227,7 @@ extension BaseEnvironment {
         if let obj = objs?.first?.obj {
             return obj
         }
-        guard let enclosing = enclosing, !closed else {
+        guard let enclosing = enclosing else {
             throw EnvironmentError(message: "Operation '\(op)' not found.")
         }
         return try enclosing.get(op: op, pos: pos, params: params)
@@ -257,7 +254,7 @@ extension BaseEnvironment {
 
     func nearestClass() throws -> ClassEnvironment {
         guard let env = self as? ClassEnvironment else {
-            guard let enclosing = enclosing, !closed else {
+            guard let enclosing = enclosing else {
                 throw EnvironmentError(message: "Not inside a class object.")
             }
             return try enclosing.nearestClass()
@@ -269,12 +266,12 @@ extension BaseEnvironment {
 // Some helper functions
 extension BaseEnvironment {
     func isGlobal() -> Bool {
-        return enclosing == nil && !closed
+        return enclosing == nil
     }
 
     // Return the global environment
     func global() -> Environment {
-        guard let enclosing = enclosing, !closed else {
+        guard let enclosing = enclosing else {
             return self
         }
 
@@ -319,7 +316,6 @@ extension BaseEnvironment {
         } else {
             print("--- Environment ---")
         }
-        print("closed: \(closed)")
         print("Variables: ")
         for (variable, value) in variables {
             print("\t\(variable): \(value.type.description) = \(value.description)")
@@ -429,6 +425,7 @@ class ClassEnvironment: BaseEnvironment {
 extension Environment {
     /// Returns if and in how many steps a class extends an other class
     func doesEnvironmentExtend(clas: String, extend superclass: String) -> (extends: Bool, steps: Int) {
+        guard isGlobal() else { return global().doesEnvironmentExtend(clas: clas, extend: superclass) }
         do {
             let subClass = try get(clas: clas)
             return subClass.extends(clas: superclass)

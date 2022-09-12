@@ -26,6 +26,22 @@ extension TypecheckerTests {
             func test(a: Int, b: Int) {}
             test(nil, 2)
             """
+
+            """
+            a = A()
+            b = 2
+            x = 3
+            T().test()
+
+            func set(a: Int) > Int { return a }
+            class A {}
+            class T {
+                func test () {
+                    me.call( a.set(x), b)
+                }
+                func call(a: Int, b: Int) { print((a, b)) }
+            }
+            """
         }
     }
 
@@ -41,6 +57,23 @@ extension TypecheckerTests {
             func test(a: Int, b: String) {}
             test(nil, 2)
             test("Test", nil)
+            """
+
+            """
+            a = A()
+            b = 2
+            x = 3
+            T().test()
+
+            class A {
+                func set(a: Int) > Int { return a }
+            }
+            class T {
+                func test () {
+                    me.call( a.set(x), b)
+                }
+                func call(a: Int, b: Int) { print((a, b)) }
+            }
             """
         }
     }

@@ -90,15 +90,29 @@ extension Typechecker {
     func visit(_ node: IndexExpression) throws {
         try node.indexable.accept(self)
 
-        guard let listtype = (node.indexable.mooseType as? ListType)?.type else {
-            throw error(message: "`\(node.indexable.description)` is of type `\(node.indexable.mooseType!)`, but index access requires a List.", node: node.indexable)
-        }
+        let normalScope = scope
+        scope = paramScope ?? scope
+
+        let prevArgCheck = TypeScope.argumentCheck
+        TypeScope.argumentCheck = true
 
         try node.index.accept(self)
-        guard node.index.mooseType is IntType else {
-            throw error(message: "Index expression `\(node.index.description)` must be an `Int` but is of type `\(node.index.mooseType!)`", node: node.index)
-        }
 
-        node.mooseType = listtype
+        TypeScope.argumentCheck = prevArgCheck
+
+        scope = normalScope
+
+        do {
+            guard let indexableType = node.indexable.mooseType as? AnyType else {
+                throw error(message: "Type \(String(describing: node.indexable.mooseType)) is not callable via indexing.", node: node)
+            }
+
+            let classScope = try indexableType.inferredClass()
+            let retType = try classScope.returnType(function: Settings.GET_ITEM_FUNCTIONNAME, params: [node.index.mooseType!])
+            node.mooseType = retType
+
+        } catch let err as ScopeError {
+            throw error(message: "Type \(node.indexable.mooseType!) does not support indexed access of type \(node.index.mooseType!): \(err.message)", node: node)
+        }
     }
 }

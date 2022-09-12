@@ -78,6 +78,13 @@ extension Lexer {
         case (".", _):
             readChar()
             tok = genToken(.Dot)
+        case let ("?", peek) where !isOpChar(char: peek):
+            readChar()
+            tok = genToken(.QuestionMark)
+        case ("?", "?"):
+            readChar()
+            readChar()
+            tok = genToken(.DoubleQuestionMark, "??")
         default:
             guard let unwrappedChar = char else {
                 return genToken(.EOF)
@@ -248,7 +255,7 @@ extension Lexer {
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
         let lastChar = input[readPosition - 2]
-        return genToken(type, nil, "\(lastChar ?? " ")")
+        return genToken(type, nil, "\(lastChar)")
     }
 
     /// genToken with lexeme and literal nil
@@ -300,8 +307,8 @@ extension Lexer {
 extension Lexer {
     /// determine if operator is prefix, infix, or postfix depending on characters before and after operator
     func determineOperator(prevChar: Character?, postChar: Character?, assign: Bool) -> TokenType {
-        let prevWhite = prevChar == nil ? true : prevChar!.isWhitespace || [";", "(", "{", "["].contains(prevChar!)
-        let postWhite = postChar == nil ? true : postChar!.isWhitespace || [";", ")", "}", "]"].contains(postChar!)
+        let prevWhite = prevChar == nil ? true : prevChar!.isWhitespace || [";", "(", "{", "[", ","].contains(prevChar!)
+        let postWhite = postChar == nil ? true : postChar!.isWhitespace || [";", ")", "}", "]", ","].contains(postChar!)
         if (prevWhite && postWhite) || (!prevWhite && !postWhite) { // such as "a+b" "a + b"
             return TokenType.Operator(pos: .Infix, assign: assign)
         } else if prevWhite, !postWhite { // such as "+a"

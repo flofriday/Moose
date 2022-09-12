@@ -1,8 +1,21 @@
-b = "Test"
-class A { func a() > String { return me.b }}
 
-print(A().a())
+a = {"String": 2 }
+b = {true: "String"}
 
-func f() { print("Test") }
-A().f() 
+print("First example: " + String(a.indexing("String")))
+print("Second example: " + b.indexing(true))
 
+
+
+mut arr = [1,2,3]
+print(arr[2])
+arr = nil
+
+print(arr[2])
+// t = wishlist[0+2]
+
+
+
+// t = wishlist[-1]
+//wishlist.indexing(0+2)
+//wishlist.indexing(-1)

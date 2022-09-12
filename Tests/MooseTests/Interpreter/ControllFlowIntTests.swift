@@ -10,7 +10,7 @@ import Foundation
 import XCTest
 
 extension InterpreterTests {
-    func test_controllflow() throws {
+    func test_conditions() throws {
         let tests: [(String, [(String, MooseObject)])] = [
             (
                 """
@@ -68,6 +68,13 @@ extension InterpreterTests {
                     ("number", IntegerObj(value: 42)),
                 ]
             ),
+        ]
+
+        try runValidTests(name: #function, tests)
+    }
+
+    func test_loops() throws {
+        let tests: [(String, [(String, MooseObject)])] = [
             (
                 """
                 // C-style for loop tests
@@ -170,6 +177,64 @@ extension InterpreterTests {
             ),
         ]
 
+        try runValidTests(name: #function, tests)
+    }
+
+    func test_ternaryOp() throws {
+        let tests: [(String, [(String, MooseObject)])] = [
+            (
+                """
+                // Ternary Operator
+                a1 = true ? 1 : 2
+                a2 = false ? 1 : 2
+                a3 = 3 + 2 == 1 ? 1 * 3 + 12 : 2 * 3 / 2
+                """,
+                [
+                    ("a1", IntegerObj(value: 1)),
+                    ("a2", IntegerObj(value: 2)),
+                    ("a3", IntegerObj(value: 3)),
+                ]
+            ),
+            (
+                """
+                // Ternary Operator
+                a = 3
+                b = a > 42 ? "nice" : "bad"
+                c = true ? false : true
+                """,
+                [
+                    ("b", StringObj(value: "bad")),
+                    ("c", BoolObj(value: false)),
+                ]
+            ),
+            (
+                """
+                // Nested Trenary Operator
+                a = 3
+                b = a > 42 ? "nice" : a == 3 ? "three" : "small" 
+                c = a <= 9000 ? a < 1000 ? "Not even close" : "Too small" : "Over nine thousand!"
+                """,
+                [
+                    ("b", StringObj(value: "three")),
+                    ("c", StringObj(value: "Not even close")),
+                ]
+            ),
+            (
+                """
+                // Double Questionmark Operator
+                s = 3
+                n: Int = nil
+
+                x = s ?? 42
+                y = n ?? 12
+                """,
+                [
+                    ("x", IntegerObj(value: 3)),
+                    // TODO: this test fails because of issue #37
+                    ("y", IntegerObj(value: 12)),
+                ]
+            ),
+        ]
         try runValidTests(name: #function, tests)
     }
 }

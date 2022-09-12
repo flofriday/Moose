@@ -10,12 +10,19 @@ class Typechecker: Visitor {
     typealias ReturnDec = (MooseType, Bool)?
 
     var isFunction = false
+    var isLoop = false
     var functionReturnType: MooseType?
     var errors: [CompileErrorMessage] = []
     var scope: TypeScope
 
+    /// We set the param scope since params have to be in current scope not in class scope.
+    /// E.g.: `func a() { b = 2; obj.call(b) }` would not find b
+    var paramScope: TypeScope?
+
     init() throws {
         scope = TypeScope()
+        TypeScope.global = scope
+
         try addBuiltIns()
     }
 
@@ -50,6 +57,10 @@ class Typechecker: Visitor {
         try scope.add(
             clas: "List",
             scope: BuiltIns.builtIn_List_Env.asClassTypeScope("List")
+        )
+        try scope.add(
+            clas: "Dict",
+            scope: BuiltIns.builtIn_Dict_Env.asClassTypeScope("Dict")
         )
     }
 
@@ -176,6 +187,27 @@ class Typechecker: Visitor {
         node.returnDeclarations = (conTyp, conStatus && altStatus)
     }
 
+    func visit(_ node: TernaryExpression) throws {
+        try node.condition.accept(self)
+        guard node.condition.mooseType == BoolType() else {
+            // TODO: the Error highlights the wrong character here
+            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(node.condition.mooseType!) but if-conditions need to evaluate to Bool.", node: node.condition)
+        }
+
+        try node.consequence.accept(self)
+        try node.alternative.accept(self)
+
+        // Verify that both branches return the same type
+
+        let conType = node.consequence.mooseType
+        let altType = node.alternative.mooseType
+        guard conType == altType else {
+            throw error(message: "Both branches need to return the same but the consequence returns \(conType!), while the alternativereturns \(altType!).", node: node)
+        }
+
+        node.mooseType = conType
+    }
+
     func visit(_ node: Tuple) throws {
         var types: [ParamType] = []
 
@@ -206,6 +238,11 @@ class Typechecker: Visitor {
     func visit(_ node: ReturnStatement) throws {
         try node.returnValue?.accept(self)
         var retType: MooseType = VoidType()
+
+        guard isFunction else {
+            throw error(message: "A return is only possible inside a function.", node: node)
+        }
+
         if let expr = node.returnValue {
             guard let t = expr.mooseType else {
                 throw error(message: "Couldn't determine type of return statement.", node: expr)

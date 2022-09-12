@@ -293,4 +293,222 @@ extension InterpreterTests {
             ])
         }
     }
+
+    func test_objectSeparation() throws {
+        try runValidTests(name: #function, [
+            ("""
+            c1 = C(1)
+            c2 = C(2)
+
+            t1 = c1.b       // is 1
+            t2 = c1.num()   // is 2, should be 1
+            t3 = c2.b       // is 2
+            t4 = c2.num()   // is 2
+
+            b1true = t1 == t2   // is false, should be true
+            b2false = t2 == t3  // is true, should be false
+            b3true = t3 == t4   // is true
+
+            class C { b: Int; func num() > Int { return b } }
+            """, [
+                ("t1", IntegerObj(value: 1)),
+                ("t2", IntegerObj(value: 1)),
+                ("t3", IntegerObj(value: 2)),
+                ("t4", IntegerObj(value: 2)),
+                ("b1true", BoolObj(value: true)),
+                ("b2false", BoolObj(value: false)),
+                ("b3true", BoolObj(value: true)),
+            ]),
+        ])
+    }
+
+    func test_environment() throws {
+        try runValidTests(name: #function) {
+            ("""
+            mut a = 0
+            obj = A()
+            test()
+
+            class A {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            func test() {
+                b = 2
+                obj.set(b)
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+
+            // as before just with a me.set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    me.set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a A().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    A().set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a objA.set call
+            ("""
+            mut a = 0
+            objA = A()
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class A {
+                func call() {
+                    objA.set(test())
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a B().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class B < A {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            class A {
+                func call() {
+                    B().set(test())
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            // as before just with a B().set call
+            ("""
+            mut a = 0
+            A().call()
+
+            func test() > Int {
+                return 2
+            }
+
+            class B {
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            class A {
+                func call() {
+                    B().set(test())
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+            ])
+
+            ("""
+            mut a = 0
+            A(2).call()
+
+            func test(b: Int) { a = b }
+
+            class A {
+                b: Int
+                func call() {
+                    test(me.b)
+                }
+
+                func set(b: Int) {
+                    a = b
+                }
+            }
+
+            """, [
+                ("a", IntegerObj(value: 2)),
+
+            ])
+        }
+    }
 }

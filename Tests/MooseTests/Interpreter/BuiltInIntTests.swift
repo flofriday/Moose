@@ -226,6 +226,103 @@ extension InterpreterTests {
         try runValidTests(name: #function, tests)
     }
 
+    func test_builtIn_math_functions() throws {
+        try runValidTests(name: #function, [
+            (
+                // min float and integer
+                """
+                f1 = min(0.023, 0.23)
+                f2 = min(23.3, 23.0)
+                f3 = min(-0.03, 2.3)
+
+                f4 = [0.2, -0.003, 0.0].min()
+
+                i1 = min(2, 12)
+                i2 = min(13, 1)
+                i3 = min(-12,-2)
+
+                i4 = [1,-2,0].min()
+                """, [
+                    ("i1", IntegerObj(value: 2)),
+                    ("i2", IntegerObj(value: 1)),
+                    ("i3", IntegerObj(value: -12)),
+                    ("i4", IntegerObj(value: -2)),
+                    ("f1", FloatObj(value: 0.023)),
+                    ("f2", FloatObj(value: 23.0)),
+                    ("f3", FloatObj(value: -0.03)),
+                    ("f4", FloatObj(value: -0.003)),
+                ]
+            ),
+
+            (
+                // max float and integer
+                """
+                f1 = max(0.023, 0.23)
+                f2 = max(23.3, 23.0)
+                f3 = max(-0.03, 2.3)
+
+                f4 = [0.2, -0.003, 0.0].max()
+
+                i1 = max(2, 12)
+                i2 = max(13, 1)
+                i3 = max(-12,-2)
+
+                i4 = [1,-2,0].max()
+
+                """, [
+                    ("i1", IntegerObj(value: 12)),
+                    ("i2", IntegerObj(value: 13)),
+                    ("i3", IntegerObj(value: -2)),
+                    ("i4", IntegerObj(value: 1)),
+                    ("f1", FloatObj(value: 0.23)),
+                    ("f2", FloatObj(value: 23.3)),
+                    ("f3", FloatObj(value: 2.3)),
+                    ("f4", FloatObj(value: 0.2)),
+                ]
+            ),
+
+            (
+                // abs float and integer
+                """
+                f1 = abs(0.023)
+                f2 = abs(-0.023)
+                f3 = abs(0.0)
+
+                f4 = (-0.023).abs()
+
+                i1 = abs(2)
+                i2 = abs(-2)
+                i3 = abs(0)
+
+                i4 = (-2).abs()
+
+                """, [
+                    ("i1", IntegerObj(value: 2)),
+                    ("i2", IntegerObj(value: 2)),
+                    ("i3", IntegerObj(value: 0)),
+                    ("i4", IntegerObj(value: 2)),
+                    ("f1", FloatObj(value: 0.023)),
+                    ("f2", FloatObj(value: 0.023)),
+                    ("f3", FloatObj(value: 0.0)),
+                    ("f4", FloatObj(value: 0.023)),
+                ]
+            ),
+
+            (
+                // abs float and integer
+                """
+                i1 = 2%3
+                i2 = 5 % 1
+
+                """, [
+                    ("i1", IntegerObj(value: 2)),
+                    ("i2", IntegerObj(value: 0)),
+                ]
+            ),
+
+        ])
+    }
+
     func test_builtIn_methods() throws {
         let tests: [(String, [(String, MooseObject)])] = [
             (

@@ -53,19 +53,36 @@ extension Typechecker {
         // search for scope and check on this scope
         try node.obj.accept(self)
 
-        guard let className = (node.obj.mooseType as? AnyType)?.asClass?.name else {
-            throw error(message: "Expected object of class. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
+        guard let type = (node.obj.mooseType as? AnyType) else {
+            throw error(message: "Expected object of AnyType. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
         }
 
         var wasClosed = scope.closed
         scope.closed = false
-        guard let classScope = scope.getScope(clas: className) else {
-            throw error(message: "No class `\(className)` found in scope.", node: node)
+
+        let classScope: ClassTypeScope!
+        do {
+            classScope = try type.inferredClass()
+        } catch let err as ScopeError {
+            throw error(message: "Couldn't get class: \(err.message)", node: node)
         }
         scope.closed = wasClosed
 
+        // We set the param scope since params have to be in current scope not in class scope
+        // like: `func a() { b = 2; obj.call(b) }` would not find b
+        let prevParamScope = paramScope
+        // when derefering multiple times, only the first deref should change paramScope
+        paramScope = paramScope == nil ? scope : paramScope
+
+        // We do this since in case of
+        // me.call( a.set(x), b) we want that a.set is closed, so we have to disable the
+        // argumentCheck
+        let prevArgCheck = TypeScope.argumentCheck
+        TypeScope.argumentCheck = false
+
         let prevScope = scope
         scope = classScope
+
         wasClosed = scope.closed
         scope.closed = true
 
@@ -74,5 +91,9 @@ extension Typechecker {
 
         scope.closed = wasClosed
         scope = prevScope
+
+        TypeScope.argumentCheck = prevArgCheck
+
+        paramScope = prevParamScope
     }
 }

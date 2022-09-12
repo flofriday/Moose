@@ -12,7 +12,7 @@ extension Parser {
         let token = try consume(type: .For, message: "Expected `for` as begin of for loop, but got \(peek().lexeme) instead.")
         skip(all: .NLine)
 
-        if peek2().type == .In {
+        if tokenIsBefore(toFind: .In, isBefore: .LBrace) {
             return try parseForEach(token: token)
         } else {
             return try parseForC(token: token)
@@ -23,7 +23,14 @@ extension Parser {
     ///
     /// Does currently not support unpackaging like `for (a,b) in [(1,2)] {}`
     func parseForEach(token: Token) throws -> ForEachStatement {
-        let variable = try parseIdentifier()
+        var variable: Assignable!
+        if check(type: .LParen) {
+            let t = try parseTupleAndGroupedExpression()
+            guard let t = t as? Assignable else { throw error(message: "For each variable must be a tuple or identifier.", token: t.token) }
+            variable = t
+        } else {
+            variable = try parseIdentifier()
+        }
         _ = try consume(type: .In, message: "Expected `in` after variable in for each loop, but got \(peek().lexeme) instead.")
         let list = try parseExpression(.Lowest)
         skip(all: .NLine)
