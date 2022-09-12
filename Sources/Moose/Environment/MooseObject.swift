@@ -589,7 +589,7 @@ class NilObj: MooseObject {
 
     var isNil: Bool { true }
     func equals(other: MooseObject) -> Bool {
-        return type == other.type
+        return other.isNil
     }
 
     var description: String {

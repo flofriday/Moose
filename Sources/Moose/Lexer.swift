@@ -248,7 +248,7 @@ extension Lexer {
     /// genToken with lexeme " "
     private func genToken(_ type: TokenType) -> Token {
         let lastChar = input[readPosition - 2]
-        return genToken(type, nil, "\(lastChar ?? " ")")
+        return genToken(type, nil, "\(lastChar)")
     }
 
     /// genToken with lexeme and literal nil

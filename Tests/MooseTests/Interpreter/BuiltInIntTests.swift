@@ -226,6 +226,38 @@ extension InterpreterTests {
         try runValidTests(name: #function, tests)
     }
 
+    func test_nil_comparison() throws {
+        try runValidTests(name: #function) {
+            (
+                """
+                t1 = nil == nil
+
+                a: Int = nil
+                t2 = a == nil
+                t3 = nil == a
+                """, [
+                    ("t1", BoolObj(value: true)),
+                    ("t2", BoolObj(value: true)),
+                    ("t3", BoolObj(value: true)),
+                ]
+            )
+
+            (
+                """
+                f1 = nil != nil
+
+                a: Int = nil
+                f2 = a != nil
+                f3 = nil != a
+                """, [
+                    ("f1", BoolObj(value: false)),
+                    ("f2", BoolObj(value: false)),
+                    ("f3", BoolObj(value: false)),
+                ]
+            )
+        }
+    }
+
     func test_builtIn_math_functions() throws {
         try runValidTests(name: #function, [
             (
