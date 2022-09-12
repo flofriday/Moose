@@ -9,7 +9,7 @@ written in [Swift](https://www.swift.org/).
 
 You need to [install swift](https://www.swift.org/download/), after which you can run:
 
-```bash
+```dart
 swift run Moose
 ```
 
@@ -31,7 +31,7 @@ Moose provides two types of variables: immutable and mutable variables.
 
 Mutable variables are variables that can be reassigned over and over again. To declare a mutable variable, the keyword `mut` must be used.
 
-```jsx
+```dart
 mut a = 2
 a = 4
 a +: 1
@@ -44,18 +44,18 @@ b = 2
 
 While mutable variables need to be declared using the `mut` keyword, immutable variables don’t have such a keyword. They also have to be assigned directly on the declaration, since the declaration without explicit initialisation is initialised with `nil`.
 
-```jsx
+```dart
 a = 3;
 a = 2; // Error, cannot reassign immutable variable
 ```
 
-```jsx
+```dart
 b: Int;
 b; // nil
 b = 3; // Error, cannot reassign immutable variable
 ```
 
-```jsx
+```dart
 b: Int = 3;
 b; // 3
 ```
@@ -64,14 +64,14 @@ b; // 3
 
 Every object can be `nil`, and since even basic types are objects they can be `nil` too.
 
-```tsx
+```dart
 cookie: Int = nil; // Basic types can be nil
 strudel: Int; // Implizitly without assigning a value a variable is automatically nil.
 ```
 
 To make working with null more ergonomic, we introduced the double questionmark operator `??`
 
-```tsx
+```dart
 breakfast: Str = nil;
 print(breakfast ?? "Melage and semmel");
 
@@ -83,7 +83,7 @@ print(breakfast != nil ? breakfast : "Melage and semmel");
 
 Lists are arrays that can grow and shrink dynamically. Moreover there is a special syntax to create them, with square brackets. Lists also only contain objects of a single type.
 
-```tsx
+```dart
 wishlist: [String] = ["Computer", "Bicycle", "Teddybear"];
 
 print(wishlist[0]); // "Computer"
@@ -97,7 +97,7 @@ wishlist.appendAll(["Aircraftcarrier", "Worlddomination"]);
 
 Dictionaries (aka Hashtables or Hashmaps) are also build in.
 
-```tsx
+```dart
 ages: {Str:Int} = {
     "Flo": 23,
     "Paul": 24,
@@ -115,7 +115,7 @@ print(ages.contains("Paul")) // false
 
 Like go and rust we don’t require Parenteses around the condition but do require braces around the body.
 
-```tsx
+```dart
 age = 23
 if age > 18 {
     print("Please enter")
@@ -137,7 +137,7 @@ if (age > 12) && (name != "Paul") {
 
 `for` is the only loop in the language and is used as a foreach, C-Style for loop or like a while loop.
 
-```tsx
+```dart
 // For-each style
 for i in range(10) {
     print("I was here")
@@ -158,7 +158,7 @@ for true {
 
 Comments are written with `//`, which comments out the rest of the line.
 
-```jsx
+```dart
 a = 3; // this is a comment
 ```
 
@@ -166,7 +166,7 @@ a = 3; // this is a comment
 
 ### Classic Functions
 
-```jsx
+```dart
 func myFunction(age: Int, name: String) > String {
     return "Hi I am " + name + age.toString()
 }
@@ -178,7 +178,7 @@ print(myFunction(42, "Alan Turing"))
 
 Beside classic functions, Moose provides the possibility to write own operators for own types. In fact, all operators have a function implementation. There are 3 types of operator functions: `prefix`, `infix` and `postfix`
 
-```jsx
+```dart
 // What if JS was right with adding numbers to strings?
 infix + (a: String, b: Int) > String {
     return a + b.toString()
@@ -206,7 +206,7 @@ print(+d) // 2
 
 Each object has a default implementation of `represent()` that returns a string with all the fields and their values of the object. By assigning the object to a `String` variable or a parameter, the `represent()` function is called internally.
 
-```c
+```dart
 p = Person("Alan Turing", 41)
 
 print(p)
@@ -217,7 +217,7 @@ print(p.represent())
 
 ## Classes and Objects
 
-```tsx
+```dart
 class Person {
     name: Str
     age: Int
@@ -237,7 +237,7 @@ anna.hello()
 
 Moose supports single class inheritance.
 
-```tsx
+```dart
 class Employee < Person {
     work: Str
 
@@ -254,7 +254,7 @@ catrin = Employee("Catrin", 56, "Google")
 
 You extend existing classes by using the `extend` construct.
 
-```tsx
+```dart
 extend Person {
     friend: Person
     func add(friend: Person) {
@@ -272,7 +272,7 @@ print(str) // "Hello World"
 
 In Moose, tuples are a standard data type, like Int, String and others. It allows the programmer to return multiple values from a function and also offers the possibility of destructuring.
 
-```jsx
+```dart
 postfix / (a: [Int]) > ([Int], [Int]) {
     firstHalf = a[0:(a.len/2)]
     secondHalf = a[(a.len/2):a.len-1)]
@@ -290,7 +290,7 @@ print(b) // [3,4]
 
 Destructuring is not only possible for tuples themselves, but also for objects, where the tuple contains the first n object fields.
 
-```jsx
+```dart
 p = Person("Alan Turing", 41)
 (name, age) = p
 ```
@@ -299,7 +299,7 @@ p = Person("Alan Turing", 41)
 
 Accessing data of an object is not only possible for `List` s, but for all datatypes that implement the indexing method.
 
-```jsx
+```dart
 class Person {
     name: String
 
@@ -318,7 +318,7 @@ print(b) // "l"
 
 It is also possible to unpack the rest of an indexed object by providing the `len()` function for that respective class.
 
-```c
+```dart
 extend Person {
     func len() > Int {
         return self.name.len()
@@ -327,4 +327,33 @@ extend Person {
 
 [a, rest..] = p
 print(rest) // ["l", "a", "n", " ", "T", "u", "r", "i", "n", "g"]
+```
+
+## Error handling and Panics
+
+Moose has two types of error handling. Unlike exceptions panics are unrecoverable 
+errors, which will cause the interpreter stop execution and exit with a 
+non-zero exit code.
+
+```dart
+a: Int = nil
+b = a + 3       // NIlUsagePanic
+
+l = [1, 2, 3]
+x = l[9000]     // OutOfBoundsPanic
+```
+
+For recoverable errors the convention is to return a tuple, where the last 
+element is a string with an error message. If the error is nil everything 
+succeeded, whereas if an error occurred it will be a message describing the 
+reason.
+
+```dart
+(mail, err) = open("mail.txt")
+if err != nil {
+    print("Oh no I cannot read the mail because: " + err)
+    exit(1)
+}
+
+print(mail)
 ```
