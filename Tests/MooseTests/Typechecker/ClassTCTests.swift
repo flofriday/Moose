@@ -212,6 +212,12 @@ extension TypecheckerTests {
     func test_classTyping_fail() throws {
         try runInvalidTests(name: #function) {
             """
+            if true {
+                class A {}
+            }
+            """
+
+            """
             a: A = B()
 
             class A < B {}
@@ -267,6 +273,80 @@ extension TypecheckerTests {
             prefix ++ (a: B) {}
             class A < B{}
             class B{}
+            """
+        }
+    }
+
+    func test_extend_fail() throws {
+        try runInvalidTests(name: #function) {
+            """
+            extend A {}
+            """
+
+            """
+            extend String {
+                func first() > String { return me[0] }
+            }
+            """
+
+            """
+            class A {}
+            if true {
+                extend A {}
+            }
+            """
+
+            """
+            class A {
+                func a(a: Int) {}
+            }
+            extend A {
+                func a(a: Int) > Int {}
+            }
+            """
+
+            """
+            class A {
+                func a(a: Int) {}
+            }
+            extend A {
+                func a() > String { return 2 }
+            }
+            """
+
+            """
+            class A {
+                func a() {}
+            }
+            extend A {
+                func a(a: Int) > Int {}
+            }
+            extend A {
+                func a(a: Int) > Void {}
+            }
+            """
+
+            """
+            class A < B {
+                func a() {}
+            }
+            extend A {
+                func a(a: Int) > Int {}
+            }
+            class B {
+                func a(a: Int) > Int {}
+            }
+            """
+
+            """
+            class A < B {
+                func a(a: C) {}
+            }
+            extend A {
+                func a(a: C) {}
+            }
+            class B < C { }
+            class C { }
             """
         }
     }

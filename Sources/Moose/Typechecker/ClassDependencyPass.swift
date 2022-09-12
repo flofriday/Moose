@@ -36,6 +36,8 @@ class ClassDependecyPass: BaseVisitor {
                 switch stmt {
                 case is ClassStatement:
                     try stmt.accept(self)
+                case is ExtendStatement:
+                    try stmt.accept(self)
                 default:
                     break
                 }
@@ -61,6 +63,29 @@ class ClassDependecyPass: BaseVisitor {
             }
 
             clasScope.superClass = extendClass
+        }
+    }
+
+    override func visit(_ node: ExtendStatement) throws {
+        guard scope.isGlobal() else {
+            throw error(message: "Class extensions can only be defined in global scope.", node: node)
+        }
+
+        guard MooseType.toType(node.name.value) is ClassType else {
+            throw error(message: "BuiltIn classes cannot be extended.", node: node)
+        }
+
+        guard let classScope = scope.getScope(clas: node.name.value) else {
+            throw error(message: "Class `\(node.name.value)` is not defined.", node: node)
+        }
+
+        for meth in node.methods {
+            let paramTypes = meth.params.map { $0.declaredType }
+            guard !classScope.has(function: meth.name.value, params: paramTypes) else {
+                throw error(message: "Method `\(meth.name.value)(\(paramTypes.map { $0.description }.joined(separator: ", ")))` is already defined in class `\(classScope.className)`.", node: meth)
+            }
+
+            try classScope.add(function: meth.name.value, params: paramTypes, returnType: meth.returnType)
         }
     }
 

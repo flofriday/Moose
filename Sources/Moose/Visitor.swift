@@ -36,6 +36,7 @@ protocol Visitor {
     func visit(_ node: CallExpression) throws -> VisitorResult
     func visit(_ node: OperationStatement) throws -> VisitorResult
     func visit(_ node: ClassStatement) throws -> VisitorResult
+    func visit(_ node: ExtendStatement) throws -> VisitorResult
     func visit(_ node: Dereferer) throws -> VisitorResult
     func visit(_ node: List) throws -> VisitorResult
     func visit(_ node: Dict) throws -> VisitorResult
@@ -152,6 +153,10 @@ class BaseVisitor: Visitor {
     }
 
     func visit(_: ClassStatement) throws {
+        fatalError(errorMessage)
+    }
+
+    func visit(_: ExtendStatement) throws {
         fatalError(errorMessage)
     }
 

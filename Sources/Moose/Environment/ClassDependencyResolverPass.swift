@@ -28,7 +28,7 @@ class ClassDependencyResolverPass: BaseVisitor {
     override func visit(_ node: Program) throws {
         for stmt in node.statements {
             switch stmt {
-            case is ClassStatement:
+            case is ClassStatement, is ExtendStatement:
                 try stmt.accept(self)
             default:
                 break
@@ -43,5 +43,26 @@ class ClassDependencyResolverPass: BaseVisitor {
                 .get(clas: node.name.value)
                 .superClass = environment.get(clas: superClass)
         }
+    }
+
+    /// Adds all extend methods to the class environment
+    override func visit(_ node: ExtendStatement) throws {
+        let classEnv = try environment
+            .get(clas: node.name.value)
+        let prevEnv = environment
+        environment = classEnv
+        for meth in node.methods {
+            try meth.accept(self)
+        }
+        environment = prevEnv
+    }
+
+    /// Is only called by the extend statemen to add all extend methods
+    override func visit(_ node: FunctionStatement) throws {
+        let paramNames = node.params.map { $0.name.value }
+        let params = node.params.map { $0.declaredType }
+        let type = FunctionType(params: params, returnType: node.returnType)
+        let obj = FunctionObj(name: node.name.value, type: type, paramNames: paramNames, value: node.body, closure: environment)
+        environment.set(function: obj.name, value: obj)
     }
 }

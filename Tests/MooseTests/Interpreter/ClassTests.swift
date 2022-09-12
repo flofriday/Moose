@@ -511,4 +511,52 @@ extension InterpreterTests {
             ])
         }
     }
+
+    func test_extend() throws {
+        try runValidTests(name: #function) {
+            (
+                """
+                mut t1: Int
+                mut t2: Int
+
+                a = A()
+                a.a()
+                a.a(12)
+
+                class A {
+                    func a() {t1 = 1}
+                }
+                extend A {
+                    func a(a: Int) > Int {t2 = 2; return a;}
+                }
+                """, [
+                    ("t1", IntegerObj(value: 1)),
+                    ("t2", IntegerObj(value: 2)),
+                ]
+            )
+
+            (
+                """
+                mut t1: Int
+                mut t2: Int
+
+                a = A()
+                a.a(C())
+                a.a(B())
+
+                class A < B {
+                    func a(a: C) { t1 = 1 }
+                }
+                extend A {
+                    func a(a: B) {t2 = 2}
+                }
+                class B < C { }
+                class C { }
+                """, [
+                    ("t1", IntegerObj(value: 1)),
+                    ("t2", IntegerObj(value: 2)),
+                ]
+            )
+        }
+    }
 }

@@ -140,6 +140,8 @@ class Parser {
             return try parseIfStatement()
         } else if check(type: .Class) {
             return try parseClassDefinition()
+        } else if check(type: .Extend) {
+            return try parseExtendDefinition()
         } else if check(type: .For) {
             return try parseForLoop()
         } else if check(type: .Break) {
@@ -366,6 +368,31 @@ class Parser {
         return ClassStatement(token: token, location: location, name: name, properties: properties, methods: methods, extends: extends)
     }
 
+    func parseExtendDefinition() throws -> ExtendStatement {
+        let token = try consume(type: .Extend, message: "'extend' was expected, but got '\(peek().lexeme)' instead")
+
+        let name = try parseIdentifier()
+        skip(all: .NLine)
+
+        guard peek().lexeme != "<" else {
+            throw error(message: "Extend statements cannot inherit from other classes.", token: peek())
+        }
+
+        _ = try consume(type: .LBrace, message: "Expected `{` as start of extend body, got `\(peek().lexeme)` instead.")
+        skip(all: .NLine)
+
+        let props = try parseAllVariableDefinitions()
+        guard props.isEmpty else {
+            throw error(message: "Class properties cannot be defined in extend statements.", token: props[0].token)
+        }
+
+        let methods = try parseAllMethodDefinitions()
+        let rbrace = try consume(type: .RBrace, message: "Expected `}` as end of extend body, got `\(peek().lexeme)` instead.")
+//        let location = rbrace.mergeLocations(token)
+        let location = mergeLocations(locationFromToken(rbrace), locationFromToken(token))
+        return ExtendStatement(token: token, location: location, name: name, methods: methods)
+    }
+
     @available(*, deprecated, message: "This method is deprecated since parseAssignExpressionStatement is used to parse ExpressionStatements")
     func parseExpressionStatement() throws -> ExpressionStatement {
         let token = peek()
@@ -526,7 +553,7 @@ class Parser {
 
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
         let rparen = try consume(type: .RParen, message: "expected ')' at end of argument list")
-        let location = mergeLocations(token, rparen)
+        let location = mergeLocations(token, rparen).mergeLocations(function.location)
         return CallExpression(token: token, location: location, function: function, arguments: exprs)
     }
 
