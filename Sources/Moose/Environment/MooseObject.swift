@@ -273,7 +273,7 @@ class BuiltInOperatorObj: BuiltInFunctionObj {
 class TupleObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObject {
     let type: MooseType
     var value: [MooseObject]?
-    var env: BuiltInClassEnvironment = .init(env: BuiltIns.builtIn_Tuple_Env)
+    var env: BuiltInClassEnvironment = BuiltinTupleEnv(env: BuiltIns.builtIn_Tuple_Env)
 
     init(type: MooseType, value: [MooseObject]?) {
         self.type = type

@@ -124,4 +124,39 @@ extension TypecheckerTests {
 
         try runValidTests(name: #function, tests)
     }
+
+    func test_tupleAccess_fail() throws {
+        try runInvalidTests(name: #function) {
+            """
+            a = (1,2)
+            a.2
+            """
+
+            """
+            a: (Int, String) = (1, "String")
+            b: Int = a.1
+            """
+
+            """
+            a = (1, "String")
+            b: Int = a.1
+            """
+
+            """
+            a: (A, B) = (A(), A())
+            b: A = a.1
+
+            class A < B {}
+            class B {}
+            """
+
+            """
+            a: (A, B) = (A(1,2), A(3,4))
+            b = a.1.a
+
+            class A < B {a: Int}
+            class B {b: Int}
+            """
+        }
+    }
 }
