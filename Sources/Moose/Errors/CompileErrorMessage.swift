@@ -26,23 +26,13 @@ extension CompileErrorMessage {
     public func getFullReport(sourcecode: String) -> String {
         var out = "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
 
-        let lines = sourcecode.lines
-        var l = location.line
-        if !(l - 1 < lines.count) {
-            l = lines.count
-        }
-
-        // TOOD: Update for multiline errors
-        // The source code line causing the error
-        out += String(format: "%3d| ".blue, location.line)
-        out += "\(lines[l - 1])\n"
-        out += String(repeating: " ", count: 5 + (location.col - 1))
-        out += String(repeating: "^".red, count: location.endCol - (location.col - 1))
-        out += "\n\n"
+        // Print the bad code part
+        out += Highlighter.highlight(location: location, sourcecode: sourcecode)
+        out += "\n"
 
         // A detailed message explaining the error
         out += message
-        out += "\n"
+        out += "\n\n"
         return out
     }
 }

@@ -24,7 +24,19 @@ extension Typechecker {
             // if the current type is no subtype of the acc. type, check if it is a supertype of the acc type
             // if it is the super, set the type to the curr
             if TypeScope.rate(subtype: curr.mooseType!, ofSuper: acc, classExtends: scope.doesScopeExtend) == nil {
-                guard TypeScope.rate(subtype: acc, ofSuper: curr.mooseType!, classExtends: scope.doesScopeExtend) != nil else {
+                if TypeScope.rate(subtype: acc, ofSuper: curr.mooseType!, classExtends: scope.doesScopeExtend) == nil {
+                    // check if they share same superclass
+                    if let curr = curr.mooseType! as? ClassType, let acc = acc as? ClassType {
+                        let currSupers = try curr.inferredClass().superClassNames
+                        let accSupers = try acc.inferredClass().superClassNames
+
+                        for s in currSupers {
+                            if accSupers.contains(s) {
+                                return ClassType(s)
+                            }
+                        }
+                    }
+
                     throw error(message: "`\(curr.description)` is of type `\(curr.mooseType!.description)`, but previous list entry is of type `\(acc.description)`.\nTip: Lists have to be homogen.", node: node)
                 }
                 return curr.mooseType!

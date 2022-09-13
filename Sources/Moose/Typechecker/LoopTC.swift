@@ -9,7 +9,7 @@ import Foundation
 
 extension Typechecker {
     func visit(_ node: ForEachStatement) throws {
-        isLoop = true
+        let prevLoop = isLoop
         try node.list.accept(self)
 
         guard let typ = (node.list.mooseType as? ListType)?.type else {
@@ -38,7 +38,7 @@ extension Typechecker {
         try node.body.accept(self)
         try popScope()
         node.returnDeclarations = node.body.returnDeclarations
-        isLoop = false
+        isLoop = prevLoop
     }
 
     private func validLoopVar(variable: Assignable) -> (valid: Bool, vars: [Identifier]) {
@@ -51,6 +51,7 @@ extension Typechecker {
     }
 
     func visit(_ node: ForCStyleStatement) throws {
+        let prevLoop = isLoop
         isLoop = true
         pushNewScope()
         try node.preStmt?.accept(self)
@@ -64,7 +65,7 @@ extension Typechecker {
         try node.body.accept(self)
         node.returnDeclarations = node.body.returnDeclarations
         try popScope()
-        isLoop = false
+        isLoop = prevLoop
     }
 
     func visit(_ node: Break) throws {

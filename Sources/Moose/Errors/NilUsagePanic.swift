@@ -17,11 +17,8 @@ extension NilUsagePanic {
         out += "Stacktrace (most recent call last):\n\n".blue
         for location in stacktrace.locations.reversed() {
             // The source code line causing the error
-            out += String(format: "%3d| ".blue, location.line)
-            out += "\(sourcecode.lines[location.line - 1])\n"
-            out += String(repeating: " ", count: 5 + (location.col - 1))
-            out += String(repeating: "^".red, count: location.endCol - (location.col - 1))
-            out += "\n\n"
+            out += Highlighter.highlight(location: location, sourcecode: sourcecode)
+            out += "\n"
         }
 
         // Exact reason for this error

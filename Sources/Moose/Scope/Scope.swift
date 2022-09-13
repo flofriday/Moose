@@ -20,6 +20,9 @@ protocol Scope {
     func has(function: String, params: [MooseType], includeEnclosing: Bool) -> Bool
     func has(op: String, opPos: OpPos, params: [MooseType]) -> Bool
 
+    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)]
+    // func getSimilar(variable: String) -> [(String, MooseType)]
+
     func isMut(variable: String) throws -> Bool
 
     func add(variable: String, type: MooseType, mutable: Bool) throws

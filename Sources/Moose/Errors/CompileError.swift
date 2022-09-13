@@ -22,11 +22,9 @@ extension CompileError: LocalizedError {
     }
 
     public func getFullReport(sourcecode: String) -> String {
-        var out = ""
-        for msg in messages {
-            // The header
-            out += msg.getFullReport(sourcecode: sourcecode)
+        return messages.map { message in
+            message.getFullReport(sourcecode: sourcecode)
         }
-        return out
+        .joined()
     }
 }

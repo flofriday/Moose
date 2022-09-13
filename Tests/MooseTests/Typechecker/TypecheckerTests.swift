@@ -101,6 +101,10 @@ class TypecheckerTests: TypecheckerBaseClass {
             """
             func a(a: ABC) {}
             """,
+            """
+            func A() > Int { return 4 }
+            class A {}
+            """,
         ]
 
         try runInvalidTests(name: #function, tests)

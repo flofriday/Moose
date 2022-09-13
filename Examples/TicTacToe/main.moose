@@ -1,48 +1,124 @@
+infix * (str: String, mult: Int) > String {
+  mut retstr = ""
+  for i in range(mult) {
+    retstr +: str
+  }
+  return retstr
+}
+
+lineUp = "\e{[1A}"
+
 
 class Field {
+  func represent() > String { return "" }
+  func eq(o: Field) > Bool { return false}
+}
+
+class BoardField < Field {
   number: Int
 
-  func num() > Int { return number }
   func represent() > String { return String(number) }
 }
 
-class FilledField < Field {
-  filledWith: String
-  
-  func represent() > String { return filledWith }
+class Player < Field {}
+
+class PlayerX < Player {
+  func represent() > String { return "\e{[0;32m}X\e{[0m}" }
+  func eq(o: Field) > Bool { return o is PlayerX }
+}
+
+class PlayerO < Field {
+  func represent() > String { return "\e{[0;33m}O\e{[0m}" }
+  func eq(o: Field) > Bool { return o is PlayerO }
 }
 
 class Board {
-  row1: (Field, Field, Field)
-  row2: (Field, Field, Field)
-  row3: (Field, Field, Field)
+  fields: [[Field]]
   
-  func getItem(i: Int) > (Field, Field, Field) {
-    if i == 0 { 
-      return row1 
-    } else if  i == 1  { 
-      return row2 
-    } else { return row3 }
+  func getItem(i: Int) > Field {
+    row = fields[(i-1)/3]
+    return row[(i-1) % 3]
   }
 
-  func length() > Int { return 3 }
+  func setItem(i: Int, field: Field) {
+    row = fields[(i-1)/3]
+    row[(i-1) % 3] = field
+  }
 
   func represent() > String { 
-    mut str = ""
-    for (f1, f2, f3) in [row1, row2, row3] {
-      str +: String(f1)
-      str +: String(f2)
-      str +: String(f3)
-      str +: "\n"
+    seperator = " -------------\n"
+    col = " | "
+    mut str = seperator
+    for row in fields {
+      str +: col + String(row[0]) + col
+      str +: String(row[1]) + col
+      str +: String(row[2]) + col
+      str +: "\n" + seperator
     }
-    return str
+    return str + "\n"
   }
+
+  func winnerState() > Bool {
+    for i in range(3) {
+      // check columns
+      if me[i].eq(me[i+3]) && me[i].eq(me[i+6]) { return true }
+      row = i * 3
+      // check rows
+      if me[row].eq(me[row+1]) && me[row].eq(me[i+2]) { return true }
+    }
+
+    // left right diagonal
+    if me[0].eq(me[4]) && me[0].eq(me[8]) { return true }
+    // right left diagonal
+    if me[2].eq(me[4]) && me[2].eq(me[6]) { return true }
+    return false
+  }
+
 }
 
 board = Board(
-  (Field(1), Field(2), Field(3)),
-  (Field(4), Field(5), Field(6)),
-  (Field(7), Field(8), Field(9))
+  [[BoardField(1), BoardField(2), BoardField(3)],
+  [BoardField(4), BoardField(5), BoardField(6)],
+  [BoardField(7), BoardField(8), BoardField(9)]]
 )
 
+print("\n\n")
 print(board)
+mut upcount = 8
+player: [Field] = [PlayerX(), PlayerO()]
+
+mut round = 0
+
+for true {
+  currPlayer = player[round % 2]
+  print("Player '" + currPlayer.represent() + "' set number: ")
+
+  mut num: Int
+  for true {
+    a = input()
+    (num, err) = a.parseInt()
+    if err != nil {
+      print(lineUp + "\e{[2K}\r\e{[0;31m}Input must be a number! Try again: \e{[0m}")
+      continue
+    }
+
+    if board[num] is Player {
+      print(lineUp + "\e{[2K}\r\e{[0;31m}This field was already set! Try again: \e{[0m}")
+      continue
+    }
+
+    break
+  }
+
+  board[num] = currPlayer
+  // erease this line
+  print(lineUp + "\e{[2K}")
+  print(lineUp * upcount)
+  print(board)
+
+  if board.winnerState() { break }
+
+  round +: 1
+}
+
+println("Congratulation, you won!")

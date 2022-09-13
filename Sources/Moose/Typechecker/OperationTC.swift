@@ -94,7 +94,7 @@ extension Typechecker {
             }
 
             guard try scope.isMut(variable: ident.value) else {
-                throw error(message: "Variable `\(ident.value)` is inmutable.\nTip: Add the `mut` keyword to the variable declaration.", node: ident)
+                throw error(message: "Variable `\(ident.value)` is immutable.\nTip: Add the `mut` keyword to the variable declaration.", node: ident)
             }
 
             guard try scope.typeOf(variable: ident.value) == opType else {

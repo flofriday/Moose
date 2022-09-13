@@ -36,12 +36,12 @@ class TypeScope: Scope {
     }
 
     init(copy: TypeScope) {
-        self.funcs = copy.funcs
-        self.variables = copy.variables
-        self.ops = copy.ops
-        self.classes = copy.classes
-        self.enclosing = copy.enclosing
-        self.closed = copy.closed
+        funcs = copy.funcs
+        variables = copy.variables
+        ops = copy.ops
+        classes = copy.classes
+        enclosing = copy.enclosing
+        closed = copy.closed
     }
 }
 
@@ -268,6 +268,29 @@ extension TypeScope {
 }
 
 extension TypeScope {
+    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)] {
+        var similars: [(String, FunctionType)] = []
+
+        if let candidates = funcs[function] {
+            similars += candidates.map { (function, $0) }
+        }
+
+        // TODO: add similar named functions
+
+        if let enclosing = enclosing {
+            similars += enclosing.getSimilar(function: function, params: params)
+        }
+
+        // Sort by arity
+        similars.sort { a, b in
+            abs(a.1.params.count - params.count) < abs(b.1.params.count - params.count)
+        }
+
+        return similars
+    }
+}
+
+extension TypeScope {
     func isGlobal() -> Bool {
         return enclosing == nil && !closed
     }
@@ -383,16 +406,16 @@ class ClassTypeScope: TypeScope {
 //    var classDefined = false
 
     init(enclosing: TypeScope? = nil, name: String, properties: [propType]) {
-        self.className = name
-        self.classProperties = properties
+        className = name
+        classProperties = properties
         super.init(enclosing: enclosing)
     }
 
     init(copy: ClassTypeScope) {
-        self.className = copy.className
-        self.classProperties = copy.classProperties
-        self.visited = copy.visited
-        self.superClass = copy.superClass
+        className = copy.className
+        classProperties = copy.classProperties
+        visited = copy.visited
+        superClass = copy.superClass
         super.init(copy: copy)
     }
 
@@ -451,6 +474,11 @@ class ClassTypeScope: TypeScope {
 
     var propertyCount: Int {
         return super.variableCount
+    }
+
+    var superClassNames: [String] {
+        guard let superClass = superClass else { return [] }
+        return [superClass.className] + superClass.superClassNames
     }
 }
 
