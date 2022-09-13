@@ -295,7 +295,7 @@ class TupleObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObje
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
-        value?.forEach { ($0 as! HashableObject).hash(into: &hasher) }
+        value?.forEach { ($0 as! (any HashableObject)).hash(into: &hasher) }
     }
 
     var isNil: Bool { value == nil }
@@ -363,7 +363,7 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObjec
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
-        value?.forEach { ($0 as! HashableObject).hash(into: &hasher) }
+        value?.forEach { ($0 as! (any HashableObject)).hash(into: &hasher) }
     }
 
     var isNil: Bool { value == nil }
@@ -441,8 +441,8 @@ class DictObj: MooseObject, HashableObject {
         hasher.combine(type.description)
         // smh it is not possible to force cast value and key to Hashable object in the same iteration
         // so we have to do it worse
-        pairs?.forEach { ($0.value as! HashableObject).hash(into: &hasher) }
-        pairs?.forEach { ($0.key as! HashableObject).hash(into: &hasher) }
+        pairs?.forEach { ($0.value as! (any HashableObject)).hash(into: &hasher) }
+        pairs?.forEach { ($0.key as! (any HashableObject)).hash(into: &hasher) }
     }
 
     private var dictType: DictType {
@@ -504,7 +504,7 @@ class ClassObject: MooseObject, HashableObject {
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
         env.getAllVariables().forEach {
-            ($0 as! HashableObject).hash(into: &hasher)
+            ($0 as! (any HashableObject)).hash(into: &hasher)
         }
     }
 

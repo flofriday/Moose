@@ -291,6 +291,10 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: FunctionStatement) throws {
+        guard !scope.has(clas: node.name.value) else {
+            throw error(message: "A class with name `\(node.name.value)` already exists, so this function cannot have the same name.", node: node.name)
+        }
+
         let wasFunction = isFunction
         isFunction = true
         pushNewScope()
