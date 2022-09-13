@@ -86,10 +86,10 @@ To make working with null more ergonomic, we introduced the double questionmark 
 
 ```dart
 breakfast: Str = nil;
-print(breakfast ?? "Melage and semmel");
+println(breakfast ?? "Melage and semmel");
 
 // This code is just sytactic sugar and is equivalent to
-print(breakfast != nil ? breakfast : "Melage and semmel");
+println(breakfast != nil ? breakfast : "Melage and semmel");
 ```
 
 ## Lists
@@ -99,8 +99,8 @@ Lists are arrays that can grow and shrink dynamically. Moreover there is a speci
 ```dart
 wishlist: [String] = ["Computer", "Bicycle", "Teddybear"];
 
-print(wishlist[0]); // "Computer"
-print(wishlist[-1]); // "Teddybear"
+println(wishlist[0]); // "Computer"
+println(wishlist[-1]); // "Teddybear"
 
 wishlist.append("car");
 wishlist.appendAll(["Aircraftcarrier", "Worlddomination"]);
@@ -117,11 +117,11 @@ ages: {Str:Int} = {
     "Clemens": 7,
 }
 
-print(ages["Paul"]) // 24
+println(ages["Paul"]) // 24
 
-print(ages.contains("Paul")) // true
+println(ages.contains("Paul")) // true
 ages.remove("Paul")
-print(ages.contains("Paul")) // false
+println(ages.contains("Paul")) // false
 ```
 
 ## If Else
@@ -131,17 +131,17 @@ Like go and rust we don’t require Parenteses around the condition but do requi
 ```dart
 age = 23
 if age > 18 {
-    print("Please enter")
+    println("Please enter")
 } else if age == 18 {
-    print("Finally you can enter")
+    println("Finally you can enter")
 } else {
-    print("I am sorry come back in a year")
+    println("I am sorry come back in a year")
 }
 
 // Sometimes you need to discriminate against Pauls
 name = "Paul"
 if (age > 12) && (name != "Paul") {
-    print("Welcome to the waterpark")
+    println("Welcome to the waterpark")
 }
 
 ```
@@ -153,17 +153,17 @@ if (age > 12) && (name != "Paul") {
 ```dart
 // For-each style
 for i in range(10) {
-    print("I was here")
+    println("I was here")
 }
 
 // C-style loop
 for i = 0; i < 100; i +: 3 {
-    print(i)
+    println(i)
 }
 
 // while style loop
 for true {
-    print("I will never terminate")
+    println("I will never terminate")
 }
 ```
 
@@ -184,7 +184,7 @@ func myFunction(age: Int, name: String) > String {
     return "Hi I am " + name + age.toString()
 }
 
-print(myFunction(42, "Alan Turing"))
+println(myFunction(42, "Alan Turing"))
 ```
 
 ### Operator Functions
@@ -209,10 +209,10 @@ a = "4"
 b = 12
 
 c = a + b
-print(c) // 412
+println(c) // 412
 
 mut d = -2
-print(+d) // 2
+println(+d) // 2
 ```
 
 ### Print Objects
@@ -222,9 +222,9 @@ Each object has a default implementation of `represent()` that returns a string 
 ```dart
 p = Person("Alan Turing", 41)
 
-print(p)
+println(p)
 // equivalent to
-print(p.represent())
+println(p.represent())
 // Person: {name: "Alan Turing", age: 41}
 ```
 
@@ -237,7 +237,7 @@ class Person {
 
     func hello() {
         // Instead of this, Moose uses me
-        print("Hey I am " + me.name)
+        println("Hey I am " + me.name)
     }
 }
 
@@ -256,7 +256,7 @@ class Employee < Person {
 
     func hello() {
         super.hello()
-        print("And I work at " + me.work)
+        println("And I work at " + me.work)
     }
 }
 
@@ -278,7 +278,7 @@ extend Person {
 a = "Hello"
 str.add(" World")
 
-print(str) // "Hello World"
+println(str) // "Hello World"
 
 
 ## Tuple
@@ -295,8 +295,8 @@ postfix / (a: [Int]) > ([Int], [Int]) {
 l = [1,2,3,4]
 (a,b) = l/ // destruction of tupel
 
-print(a) // [1,2]
-print(b) // [3,4]
+println(a) // [1,2]
+println(b) // [3,4]
 ```
 
 ### Destructuring of Objects
@@ -323,10 +323,10 @@ class Person {
 
 p = Person("Alan Turing")
 
-print(p[1]) // "A"
+println(p[1]) // "A"
 
 [a,b,c] = p // unpack indexed object
-print(b) // "l"
+println(b) // "l"
 ```
 
 It is also possible to unpack the rest of an indexed object by providing the `len()` function for that respective class.
@@ -339,7 +339,7 @@ extend Person {
 }
 
 [a, rest..] = p
-print(rest) // ["l", "a", "n", " ", "T", "u", "r", "i", "n", "g"]
+println(rest) // ["l", "a", "n", " ", "T", "u", "r", "i", "n", "g"]
 ```
 
 ## Error handling and Panics
@@ -364,9 +364,9 @@ reason.
 ```dart
 (mail, err) = open("mail.txt")
 if err != nil {
-    print("Oh no I cannot read the mail because: " + err)
+    println("Oh no I cannot read the mail because: " + err)
     exit(1)
 }
 
-print(mail)
+println(mail)
 ```
