@@ -452,6 +452,11 @@ class ClassTypeScope: TypeScope {
     var propertyCount: Int {
         return super.variableCount
     }
+
+    var superClassNames: [String] {
+        guard let superClass = superClass else { return [] }
+        return [superClass.className] + superClass.superClassNames
+    }
 }
 
 extension TypeScope {

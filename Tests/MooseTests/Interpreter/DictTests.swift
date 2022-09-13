@@ -211,6 +211,23 @@ extension InterpreterTests {
             ])
 
             ("""
+            a = [A(1), B(2), C(3), F(4)]
+
+            b = a[1].a
+            mut t = 0
+            if a[0] is D { t = 1 }
+
+            class A < C {}
+            class B < C {}
+            class C < D {}
+            class F < D {}
+            class D { a: Int }
+            """, [
+                ("b", IntegerObj(value: 2)),
+                ("t", IntegerObj(value: 1)),
+            ])
+
+            ("""
             a = [1,2,4]
             a[0] = 2
             b = a[0]
