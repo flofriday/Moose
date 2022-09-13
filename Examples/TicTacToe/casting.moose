@@ -1,12 +1,23 @@
 
+infix * (str: String, mult: Int) > String {
+  mut retstr = ""
+  for i in range(mult) {
+    retstr +: str
+  }
+  return retstr
+}
 
-a: B = A()
+mut testvar = "test" 
+// mut variable = 3
 
-print(a is A)
+println(testvar)
 
+testvar *: 3
 
+println(testvar)
 
+a = [1,2,3]
 
+(first, second) = a
 
-class A < B {}
-class B {}
+print(first)
