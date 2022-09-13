@@ -240,7 +240,7 @@ extension TypeScope {
     func add(function: String, params: [ParamType], returnType: MooseType) throws {
         let inCurrent = currentContains(function: function, params: params)
         guard !inCurrent else {
-            throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) is already defined.")
+            throw ScopeError(message: "Function `\(function)(\(params.map { $0.description }.joined(separator: ",")))` is already defined.")
         }
         var list = (funcs[function] ?? [])
         list.append(FunctionType(params: params, returnType: returnType))

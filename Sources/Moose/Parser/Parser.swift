@@ -705,15 +705,21 @@ extension Parser {
 
 extension Parser {
     func error(message: String, token: Token) -> CompileErrorMessage {
+        // TODO: The header could be more descriptive but I cannot really
+        // think of a good one in each case so this is the solution for now.
         CompileErrorMessage(
             location: locationFromToken(token),
+            header: "Parsing Error",
             message: message
         )
     }
 
     func error(message: String, node: Node) -> CompileErrorMessage {
+        // TODO: The header could be more descriptive but I cannot really
+        // think of a good one in each case so this is the solution for now.
         return CompileErrorMessage(
             location: node.location,
+            header: "Parsing Error",
             message: message
         )
     }

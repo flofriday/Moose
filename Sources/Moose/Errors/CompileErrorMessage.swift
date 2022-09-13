@@ -9,12 +9,13 @@ import Foundation
 // prevents this because execution stops after an error.
 struct CompileErrorMessage: Error {
     var location: Location
+    var header: String
     var message: String
 }
 
 extension CompileErrorMessage: LocalizedError {
     public var errorDescription: String? {
-        var out = "-- CompileError ---\n"
+        var out = "-- \(header) ---\n"
         out += "Line: \(location.line)\nStart: \(location.col)\nEnd: \(location.endCol)\n"
         out += "Message: \(message)\n\n"
         return out
@@ -24,7 +25,10 @@ extension CompileErrorMessage: LocalizedError {
 // TODO: adapt for multiline errors
 extension CompileErrorMessage {
     public func getFullReport(sourcecode: String) -> String {
-        var out = "\("-- CompileError ----------------------------------------------------------------\n\n".red)"
+        // The read header
+        var out = "-- \(header) ".red
+        out += String(repeating: "-", count: 80 - 4 - header.count).red
+        out += "\n\n"
 
         // Print the bad code part
         out += Highlighter.highlight(location: location, sourcecode: sourcecode)
