@@ -333,14 +333,16 @@ extension Lexer {
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
         var lexeme = lexeme
 
-        // TODO: This is wrong for newlines
         var startCol = column - lexeme.count
 
-        // String literals need to be adjusted for two qutationmarks
         if type == .String {
+            // String literals need to be adjusted for two qutationmarks
             startCol -= 2
         } else if type == .EOF {
             lexeme = " "
+        } else if type == .NLine {
+            // Newlines need to be on the previous line
+            startCol = input.lines[line - 1].count + 1
         }
 
         let t = Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
