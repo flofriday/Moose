@@ -23,9 +23,8 @@ swift build -c release
 The interpreter also accepts a single file:
 
 ```bash
-echo "print(42)" > tmp.moose
-./.build/release/Moose tmp.moose
-`
+./.build/release/Moose Examples/TicTacToe/main.moose
+```
 
 ## Status
 
