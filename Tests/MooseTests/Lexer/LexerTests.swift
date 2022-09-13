@@ -95,6 +95,35 @@ class LexerTests: XCTestCase {
         try testNextToken(i, ts)
     }
 
+    func testInvalidEscape() throws {
+        print("-- \(#function)")
+
+        let tests = [
+            """
+            mut a = "test\\easd"
+            for (t1,
+            """,
+            """
+            "\\e[1A}\\e{[1A}\\e{[1A}\\e{[K}"
+            """,
+            """
+            "test\\e\n"
+            """,
+            """
+            "test\\e{tes"
+            """,
+            """
+            "test\\e{tes\n"
+            """,
+        ]
+
+        for t in tests {
+            XCTAssertThrowsError(
+                print(try Lexer(input: t).scan()),
+                "Should throw error since escape \\e was not correct.") { err in print("Got error, \((err as! CompileError).getFullReport(sourcecode: t))") }
+        }
+    }
+
     func testStrings() throws {
         print("-- \(#function)")
 

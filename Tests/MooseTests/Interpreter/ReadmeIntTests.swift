@@ -201,6 +201,9 @@ extension InterpreterTests {
                 a4 = "new\\0line"
                 a5 = "new\\tline"
                 a6 = "new\\\\line"
+
+                a7 = "ansi\\e{asdf}code"
+                a8 = "ansi\\\\e{asdf}code"
                 """, [
                     ("a1", StringObj(value: "new\nline")),
                     ("a2", StringObj(value: "new\"line")),
@@ -208,6 +211,8 @@ extension InterpreterTests {
                     ("a4", StringObj(value: "new\0line")),
                     ("a5", StringObj(value: "new\tline")),
                     ("a6", StringObj(value: "new\\line")),
+                    ("a7", StringObj(value: "ansi\u{001B}asdfcode")),
+                    ("a8", StringObj(value: "ansi\\e{asdf}code")),
                 ]
             )
         }

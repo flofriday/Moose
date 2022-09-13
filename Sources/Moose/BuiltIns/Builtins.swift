@@ -22,6 +22,7 @@ class BuiltIns {
 
         // IO Functions
         BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),
+        BuiltInFunctionObj(name: "println", params: [ParamType()], returnType: VoidType(), function: printlnBuiltIn),
 
         BuiltInFunctionObj(name: "input", params: [], returnType: StringType(), function: inputBuiltIn),
         BuiltInFunctionObj(name: "open", params: [StringType()], returnType: TupleType([StringType(), StringType()]), function: openBuiltIn),
@@ -141,13 +142,24 @@ extension BuiltIns {
     }
 
     /// A generic print function that can print any MooseObject
-    static func printBuiltIn(params: [MooseObject], env _: Environment) throws -> VoidObj {
+    static func printlnBuiltIn(params: [MooseObject], env _: Environment) throws -> VoidObj {
         if let str = params[0] as? StringObj {
             print(str.value!)
             return VoidObj()
         }
 
         print(try representAny(obj: params[0]))
+        return VoidObj()
+    }
+
+    /// A generic print function that can print any MooseObject
+    static func printBuiltIn(params: [MooseObject], env _: Environment) throws -> VoidObj {
+        if let str = params[0] as? StringObj {
+            print(str.value!, terminator: "")
+            return VoidObj()
+        }
+
+        print(try representAny(obj: params[0]), terminator: "")
         return VoidObj()
     }
 

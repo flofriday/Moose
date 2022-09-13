@@ -11,7 +11,10 @@ class Lexer {
     private var char: Character?
     private var line: Int = 1
     private var column: Int = 0
-    private var errors: [CompileErrorMessage] = []
+
+    // I think it does not make sense to check multiple lexer error,
+    // since most of the time the first error causes the others
+//    private var errors: [CompileErrorMessage] = []
 
     init(input: String) {
         self.input = input
@@ -30,9 +33,10 @@ extension Lexer {
                     break
                 }
             } catch let e as CompileErrorMessage {
-                errors.append(e)
+                throw CompileError(messages: [e])
             }
         }
+
         return tokens
     }
 
@@ -176,8 +180,7 @@ extension Lexer {
             if chr == "\\" {
                 readChar()
                 guard let chr = char else { continue }
-                str += escapeString(char: chr)
-                readChar()
+                str += try escapeString(char: chr)
                 continue
             }
             str += String(chr)
@@ -189,7 +192,8 @@ extension Lexer {
         return (input[pos ..< position], str)
     }
 
-    private func escapeString(char: Character) -> String {
+    private func escapeString(char: Character) throws -> String {
+        readChar()
         switch char {
         case "\\":
             return "\\"
@@ -203,9 +207,29 @@ extension Lexer {
             return "\r"
         case "\"":
             return "\""
+        case "e":
+            let ansi = try parseAnsi()
+            return "\u{001B}\(ansi)"
         default:
             return "\\\(char)"
         }
+    }
+
+    private func parseAnsi() throws -> String {
+        guard char == "{" else {
+            throw error(message: "Opening `{` for ANSI code definition expected after escaping \\e.")
+        }
+        // first ansi letter
+        readChar()
+        var ansi = ""
+        while let chr = char, chr != "}" {
+            ansi += String(chr)
+            readChar()
+        }
+
+        guard char == "}" else { throw error(message: "Expected closing `}` at end of ANSI code definition.") }
+        readChar()
+        return ansi
     }
 }
 
