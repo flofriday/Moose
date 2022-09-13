@@ -9,24 +9,23 @@ import Foundation
 
 extension Typechecker {
     func visit(_ node: ForEachStatement) throws {
-        let prevLoop = isLoop
         try node.list.accept(self)
 
         guard let typ = (node.list.mooseType as? ListType)?.type else {
-            throw error(message: "Expression `\(node.list)` in for each loop must be of type List, but is of type \(node.list.mooseType!)", node: node.list)
+            throw error(header: "Type Mismatch", message: "Expression `\(node.list)` in for each loop must be of type List, but is of type \(node.list.mooseType!)", node: node.list)
         }
 
         guard node.variable.isAssignable else {
-            throw error(message: "For each loop can only have identifiers on left side of `in`.", node: node.variable)
+            throw error(header: "Variable Error", message: "For each loop can only have identifiers on left side of `in`.", node: node.variable)
         }
         let (valid, vars) = validLoopVar(variable: node.variable)
         guard valid else {
-            throw error(message: "For each loop can only have identifiers on left side of `in`.", node: node.variable)
+            throw error(header: "Variable Error", message: "For each loop can only have identifiers on left side of `in`.", node: node.variable)
         }
 
         for v in vars {
             guard !scope.has(variable: v.value) else {
-                throw error(message: "Variable `\(v)` in for each loop must be new and is not allowed to exist in current scope.", node: node.variable)
+                throw error(header: "Variable Error", message: "Variable `\(v)` in for each loop must be new and is not allowed to exist in current scope.", node: node.variable)
             }
         }
 
@@ -35,10 +34,12 @@ extension Typechecker {
 
         pushNewScope()
         try assign(valueType: typ, to: node.variable, with: nil, on: assignStmt)
+        let prevLoop = isLoop
+        isLoop = true
         try node.body.accept(self)
+        isLoop = prevLoop
         try popScope()
         node.returnDeclarations = node.body.returnDeclarations
-        isLoop = prevLoop
     }
 
     private func validLoopVar(variable: Assignable) -> (valid: Bool, vars: [Identifier]) {
@@ -51,28 +52,29 @@ extension Typechecker {
     }
 
     func visit(_ node: ForCStyleStatement) throws {
-        let prevLoop = isLoop
-        isLoop = true
         pushNewScope()
         try node.preStmt?.accept(self)
         try node.condition.accept(self)
         try node.postEachStmt?.accept(self)
 
         guard node.condition.mooseType is BoolType else {
-            throw error(message: "Condition of loop must have type Bool, but `\(node.condition)` has type \(node.condition.mooseType!)", node: node.condition)
+            throw error(header: "Type Mismatch", message: "Condition of loop must have type Bool, but `\(node.condition)` has type \(node.condition.mooseType!)", node: node.condition)
         }
 
+        let prevLoop = isLoop
+        isLoop = true
         try node.body.accept(self)
+        isLoop = prevLoop
+
         node.returnDeclarations = node.body.returnDeclarations
         try popScope()
-        isLoop = prevLoop
     }
 
     func visit(_ node: Break) throws {
-        guard isLoop else { throw error(message: "`break` is only allowed inside a loop body.", node: node) }
+        guard isLoop else { throw error(header: "Illegal Break", message: "`break` is only allowed inside a loop body.", node: node) }
     }
 
     func visit(_ node: Continue) throws {
-        guard isLoop else { throw error(message: "`continue` is only allowed inside a loop body.", node: node) }
+        guard isLoop else { throw error(header: "Illegal Continue", message: "`continue` is only allowed inside a loop body.", node: node) }
     }
 }

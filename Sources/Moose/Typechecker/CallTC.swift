@@ -49,7 +49,7 @@ extension Typechecker {
                     }
                     .joined(separator: "\n")
                 }
-                throw self.error(message: message, node: node)
+                throw self.error(header: "Unknown Function", message: message, node: node)
             }
         }
     }
@@ -63,22 +63,22 @@ extension Typechecker {
             // is required since constructor need to know all properties
             try classScope.flat()
         } catch let err as ScopeError {
-            throw error(message: err.message, node: node)
+            throw error(header: "Unknown Class", message: err.message, node: node)
         }
 
         guard MooseType.toType(node.function.value) is ClassType else {
-            throw error(message: "`\(node.function.value)` is a built in type and therefore not constructable!", node: node)
+            throw error(header: "Class Error", message: "`\(node.function.value)` is a built in type and therefore not constructable!", node: node)
         }
 
         guard classScope.propertyCount == node.arguments.count, node.arguments.count == classScope.classProperties.count else {
-            throw error(message: "Constructor needs \(classScope.classProperties.count) arguments (\(classScope.classProperties.map { $0.type.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
+            throw error(header: "Argument Mismatch", message: "Constructor needs \(classScope.classProperties.count) arguments (\(classScope.classProperties.map { $0.type.description }.joined(separator: ", "))), but got \(node.arguments.count) instead.", node: node)
         }
 
         for (arg, prop) in zip(node.arguments, classScope.classProperties) {
             do {
                 try checkAssignment(given: prop.type, with: arg.mooseType!, on: arg)
             } catch let err as CompileErrorMessage {
-                throw error(message: "Couldn't assign \(arg) to property \(prop.name): \(err.message)", node: arg)
+                throw error(header: "Type Mismatch", message: "Couldn't assign \(arg) to property \(prop.name): \(err.message)", node: arg)
             }
         }
 

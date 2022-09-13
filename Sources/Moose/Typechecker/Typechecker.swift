@@ -110,7 +110,7 @@ class Typechecker: Visitor {
 
         // guard no return statements outside function
         guard isFunction || returnDec == nil else {
-            throw error(message: "Returns are only allowed inside functions and operators.", token: findReturnStatement(body: node)?.token ?? node.token)
+            throw error(header: "Illegal Return", message: "Returns are only allowed inside functions and operators.", token: findReturnStatement(body: node)?.token ?? node.token)
         }
         node.returnDeclarations = returnDec
 
@@ -125,7 +125,7 @@ class Typechecker: Visitor {
             return current
         }
         guard currType == incType else {
-            throw error(message: "Different return types occured. This branch returns type \(incType) while previous branch returned \(currType)", node: incoming)
+            throw error(header: "Type Mismatch", message: "Different return types occured. This branch returns type \(incType) while previous branch returned \(currType)", node: incoming)
         }
 
         // if incoming has all brances returning, we return incoming status, else current
@@ -139,8 +139,7 @@ class Typechecker: Visitor {
     func visit(_ node: IfStatement) throws {
         try node.condition.accept(self)
         guard node.condition.mooseType == BoolType() else {
-            // TODO: the Error highlights the wrong character here
-            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", node: node.condition)
+            throw error(header: "Type Mismatch", message: "The condition `\(node.condition.description)` evaluates to a \(String(describing: node.condition.mooseType)) but if-conditions need to evaluate to Bool.", node: node.condition)
         }
 
         try node.consequence.accept(self)
@@ -180,7 +179,7 @@ class Typechecker: Visitor {
         // guard that alternative and consequence return same types
         guard conTyp == altTyp else {
             // if not throw an error
-            throw error(message: "Consequence of if statement returns type \(conTyp) while alternative branch returns \(altTyp)", node: node.alternative!)
+            throw error(header: "Type Mismatch", message: "The consequence of if statement returns type \(conTyp) while alternative branch returns \(altTyp)", node: node.alternative!)
         }
 
         // set return declaration for if statement. Status is true if all branches in consequence AND in alternative return, else false.
@@ -191,7 +190,7 @@ class Typechecker: Visitor {
         try node.condition.accept(self)
         guard node.condition.mooseType == BoolType() else {
             // TODO: the Error highlights the wrong character here
-            throw error(message: "The condition `\(node.condition.description)` evaluates to a \(node.condition.mooseType!) but if-conditions need to evaluate to Bool.", node: node.condition)
+            throw error(header: "Type Mismatch", message: "The condition `\(node.condition.description)` evaluates to a \(node.condition.mooseType!) but if-conditions need to evaluate to Bool.", node: node.condition)
         }
 
         try node.consequence.accept(self)
@@ -202,7 +201,7 @@ class Typechecker: Visitor {
         let conType = node.consequence.mooseType
         let altType = node.alternative.mooseType
         guard conType == altType else {
-            throw error(message: "Both branches need to return the same but the consequence returns \(conType!), while the alternativereturns \(altType!).", node: node)
+            throw error(header: "Type Mismatch", message: "Both branches need to return the same but the consequence returns \(conType!), while the alternativereturns \(altType!).", node: node)
         }
 
         node.mooseType = conType
@@ -214,7 +213,7 @@ class Typechecker: Visitor {
         for expr in node.expressions {
             try expr.accept(self)
             guard let type = expr.mooseType! as? ParamType else {
-                throw error(message: "Expression is of type \(expr.mooseType!) which is not suitable as tuple entry.", node: expr)
+                throw error(header: "Type Mismatch", message: "Expression is of type \(expr.mooseType!) which is not suitable as tuple entry.", node: expr)
             }
             types.append(type)
         }
@@ -229,7 +228,7 @@ class Typechecker: Visitor {
     /// Check if me keyword is used inside a class function an set node name to .Class(className)
     func visit(_ node: Me) throws {
         guard let scope = scope.nearestClassScope() else {
-            throw error(message: "`me` keyword is only available in class functions.", node: node)
+            throw error(header: "Illegal Me", message: "`me` keyword is only available in class functions.", node: node)
         }
 
         node.mooseType = ClassType(scope.className)
@@ -240,14 +239,14 @@ class Typechecker: Visitor {
         var retType: MooseType = VoidType()
 
         guard isFunction else {
-            throw error(message: "You can only return inside a functions.", node: node)
+            throw error(header: "Illegal Return", message: "You can only return inside a functions.", node: node)
         }
 
         if let expr = node.returnValue {
-            guard let t = expr.mooseType else {
-                throw error(message: "Couldn't determine type of return statement.", node: expr)
-            }
-            retType = t
+            // guard let t = expr.mooseType else {
+            //     throw error(message: "Couldn't determine type of return statement.", node: expr)
+            // }
+            retType = expr.mooseType!
         }
         node.returnDeclarations = (retType, true)
     }
@@ -259,8 +258,8 @@ class Typechecker: Visitor {
     func visit(_ node: Identifier) throws {
         do {
             node.mooseType = try scope.typeOf(variable: node.value)
-        } catch let err as ScopeError {
-            throw error(message: "Could not find `\(node.value)`: \(err.message)", node: node)
+        } catch is ScopeError {
+            throw error(header: "Variable Error", message: "I couldn't find a `\(node.value)` variable.", node: node)
         }
     }
 
@@ -284,7 +283,7 @@ class Typechecker: Visitor {
         try node.expression.accept(self)
         if let clas = MooseType.toType(node.type.value) as? ClassType {
             guard scope.has(clas: clas.name) else {
-                throw error(message: "Type `\(clas.name)` does not exist.", node: node.type)
+                throw error(header: "Type Error", message: "I couldn't find a `\(clas.name)` type.", node: node.type)
             }
         }
         node.mooseType = BoolType()
@@ -292,7 +291,7 @@ class Typechecker: Visitor {
 
     func visit(_ node: FunctionStatement) throws {
         guard !scope.has(clas: node.name.value) else {
-            throw error(message: "A class with name `\(node.name.value)` already exists, so this function cannot have the same name.", node: node.name)
+            throw error(header: "Name Collision", message: "A class with name `\(node.name.value)` already exists, so this function cannot have the same name.", node: node.name)
         }
 
         let wasFunction = isFunction
@@ -302,7 +301,7 @@ class Typechecker: Visitor {
         for param in node.params {
             if let className = (param.declaredType as? ClassType)?.name {
                 guard scope.global().has(clas: className) else {
-                    throw error(message: "Type `\(className)` of parameter `\(param.name.value)` could not be found.", node: param)
+                    throw error(header: "Type Error", message: "I couldn't find the type `\(className)` of the parameter `\(param.name.value)`.", node: param)
                 }
             }
 
@@ -314,14 +313,14 @@ class Typechecker: Visitor {
         if let (typ, eachBranch) = node.body.returnDeclarations {
             // if functions defined returnType is not Void and not all branches return, function body need explicit return at end
             guard node.returnType is VoidType || eachBranch else {
-                throw error(message: "Return missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", node: node.body.statements.last ?? node.body)
+                throw error(header: "Type Mismatch", message: "A `return` is missing in function body.\nTipp: Add explicit return with value of type '\(node.returnType)' to end of function body", node: node.body.statements.last ?? node.body)
             }
             realReturnValue = typ
         }
 
         guard realReturnValue == node.returnType else {
             // TODO: We highlight the wrong thing here, but there is no reference to the correct return in the AST here.
-            throw error(message: "Function returns '\(realReturnValue)', but signature requires it as '\(node.returnType)'", node: node)
+            throw error(header: "Type Mismatch", message: "Function returns '\(realReturnValue)', but signature requires it to be '\(node.returnType)'", node: node)
         }
 
         try popScope()
@@ -333,21 +332,23 @@ class Typechecker: Visitor {
 
         if let className = (node.declaredType as? ClassType)?.name {
             guard scope.global().has(clas: className) else {
-                throw error(message: "Classtype `\(className)` of variable `\(node.name.value)` is not defined.", node: node)
+                throw error(header: "Type Error", message: "I couldn't find the type `\(className)` of the variable `\(node.name.value).", node: node)
             }
         }
     }
 
-    internal func error(message: String, token: Token) -> CompileErrorMessage {
+    internal func error(header: String, message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
             location: locationFromToken(token),
+            header: header,
             message: message
         )
     }
 
-    internal func error(message: String, node: Node) -> CompileErrorMessage {
+    internal func error(header: String, message: String, node: Node) -> CompileErrorMessage {
         return CompileErrorMessage(
             location: node.location,
+            header: header,
             message: message
         )
     }
@@ -371,7 +372,11 @@ extension Typechecker {
     /// Replaces the current scope by the enclosing scope of the current scope. If it doesn't has an enclosing scope, the internal error occures.
     func popScope() throws {
         guard let enclosing = scope.enclosing else {
-            throw CompileErrorMessage(location: Location(col: 1, endCol: 1, line: 1, endLine: 1), message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!")
+            throw CompileErrorMessage(
+                location: Location(col: 1, endCol: 1, line: 1, endLine: 1),
+                header: "Internal Scope Error",
+                message: "INTERNAL ERROR: Could not pop current scope \n\n\(scope)\n\n since it's enclosing scope is nil!"
+            )
         }
         scope = enclosing
     }
@@ -385,9 +390,10 @@ extension Typechecker {
     }
 }
 
-internal func error(message: String, node: Node) -> CompileErrorMessage {
+internal func error(header: String, message: String, node: Node) -> CompileErrorMessage {
     return CompileErrorMessage(
         location: node.location,
+        header: header,
         message: message
     )
 }

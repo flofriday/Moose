@@ -10,11 +10,11 @@ import Foundation
 extension Typechecker {
     func visit(_ node: ClassStatement) throws {
         guard scope.isGlobal() else {
-            throw error(message: "Class can only be defined in global scope.", node: node)
+            throw error(header: "Illegal Class Definition", message: "Class can only be defined in global scope.", node: node)
         }
 
         guard let clasScope = scope.getScope(clas: node.name.value) else {
-            throw error(message: "Scope of class `\(node.name.value)` was not found in global scope!", node: node)
+            throw error(header: "Scope Not Found", message: "Scope of class `\(node.name.value)` was not found in global scope!", node: node)
         }
 
         // Check if there are dependency circles (like `A < A` or `A < B, B < A`)
@@ -23,7 +23,8 @@ extension Typechecker {
         do {
             try clasScope.flat()
         } catch let err as ScopeError {
-            throw error(message: err.message, node: node)
+            // TODO: Yes this header is bad but I don't know what happened here.
+            throw error(header: "Scope Error", message: err.message, node: node)
         }
 
         // check if declared types exist
@@ -45,7 +46,7 @@ extension Typechecker {
     /// check if class inhertiance has dependecy circle
     private func checkCycle(for name: Identifier, in clas: ClassTypeScope) throws {
         guard name.value != clas.superClass?.className else {
-            throw error(message: "Class `\(name.value)` results in a dependency circle, since `\(clas.className)` extends it, but is also a dependecy of `\(name.value)`", node: name)
+            throw error(header: "Cyclic Dependency", message: "Class `\(name.value)` results in a dependency circle, since `\(clas.className)` extends it, but is also a dependecy of `\(name.value)`", node: name)
         }
 
         if let superClass = clas.superClass {
@@ -55,11 +56,11 @@ extension Typechecker {
 
     func visit(_ node: ExtendStatement) throws {
         guard scope.isGlobal() else {
-            throw error(message: "Extend statements can only be defined in global scope.", node: node)
+            throw error(header: "Illegal Extend", message: "Extend statements can only be defined in global scope.", node: node)
         }
 
         guard let clasScope = scope.getScope(clas: node.name.value) else {
-            throw error(message: "Class `\(node.name.value)` does not exist.", node: node)
+            throw error(header: "Class Error", message: "Class `\(node.name.value)` does not exist.", node: node)
         }
 
         let prevScope = scope
@@ -78,7 +79,7 @@ extension Typechecker {
         try node.obj.accept(self)
 
         guard let type = (node.obj.mooseType as? AnyType) else {
-            throw error(message: "Expected object of AnyType. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
+            throw error(header: "Type Mismatch", message: "Expected object of AnyType. Instead got object of type \(node.obj.mooseType?.description ?? "Unknown").", node: node.obj)
         }
 
         var wasClosed = scope.closed
@@ -88,7 +89,7 @@ extension Typechecker {
         do {
             classScope = try type.inferredClass()
         } catch let err as ScopeError {
-            throw error(message: "Couldn't get class: \(err.message)", node: node)
+            throw error(header: "Class Error", message: "Couldn't get class: \(err.message)", node: node)
         }
         scope.closed = wasClosed
 
