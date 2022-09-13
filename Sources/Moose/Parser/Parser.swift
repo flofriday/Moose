@@ -439,9 +439,17 @@ class Parser {
         let obj = lhs
         let prec = curPrecedence
         let token = try consume(type: .Dot, message: ". was expected, got '\(peek().lexeme)' instead.")
-        guard check(type: .Identifier) else {
+
+        if check(type: .Int) {
+            let num = try parseIntegerLiteral()
+            let ref = Identifier(token: num.token, value: num.value.description)
+            return Dereferer(token: token, obj: lhs, referer: ref)
+        }
+
+        guard check(oneOf: .Identifier) else {
             throw error(message: "Identifier was expected for reference, got `\(peek().lexeme)` instead.", token: peek())
         }
+
         let ref = try parseExpression(prec)
         return Dereferer(token: token, obj: obj, referer: ref)
     }
@@ -477,7 +485,7 @@ class Parser {
         return Continue(token: token)
     }
 
-    func parseIntegerLiteral() throws -> Expression {
+    func parseIntegerLiteral() throws -> IntegerLiteral {
         guard let literal = advance().literal as? Int64 else {
             throw genLiteralTypeError(t: previous(), expected: "Int64")
         }

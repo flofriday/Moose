@@ -352,9 +352,14 @@ extension BuiltIns {
         guard let className = type.asClass?.name, let old = TypeScope.global.getScope(clas: className) else {
             fatalError("INTERNAL ERROR: Requested Builtin type \(type.asClass?.name ?? "Unknown") from global scope, but it does not exist.")
         }
-        let ndict = ClassTypeScope(copy: old)
+        let inferred = ClassTypeScope(copy: old)
 
-        return ndict
+        // add access properties
+        for (i, t) in type.entries.enumerated() {
+            try inferred.add(variable: "\(i)", type: t, mutable: true)
+        }
+
+        return inferred
     }
 
     private static func representTuple(params _: [MooseObject], env: Environment) throws -> StringObj {
@@ -635,14 +640,22 @@ extension BuiltIns {
     }
 }
 
-/// This struct wraps the environment of a builtin class
+/// This class wraps the environment of a builtin class
 /// and its own mooseObject
 ///
-/// It is a struct so we can change the value without coping the class all the time and use a single environment for all builtin
-/// class objects.
-struct BuiltInClassEnvironment: Environment {
+/// We use this, so we can create new value instances without coping the whole environment
+class BuiltInClassEnvironment: Environment {
     let env: BaseEnvironment
     var value: MooseObject!
+
+    init(env: BaseEnvironment) {
+        self.env = env
+    }
+
+    init(env: BaseEnvironment, value: MooseObject) {
+        self.env = env
+        self.value = value
+    }
 
     func update(variable: String, value: MooseObject, allowDefine: Bool) -> Bool {
         env.update(variable: variable, value: value, allowDefine: allowDefine)
@@ -706,5 +719,50 @@ struct BuiltInClassEnvironment: Environment {
 
     func printDebug(header _: Bool) {
         env.printDebug()
+    }
+}
+
+///// This is a special environment, since it has to incept variable calls
+///// because it has builtin class properties
+class BuiltinTupleEnv: BuiltInClassEnvironment {
+    private var this: TupleObj { value as! TupleObj }
+
+    private func propIndex(variable: String) -> Int? {
+        let props = (0 ..< this.value!.count).map { "\($0)" }
+        return props.firstIndex(of: variable)
+    }
+
+    override func update(variable: String, value: MooseObject, allowDefine: Bool) -> Bool {
+        if let valIndex = propIndex(variable: variable) {
+            this.value![valIndex] = value
+            return true
+        }
+
+        return super.update(variable: variable, value: value, allowDefine: allowDefine)
+    }
+
+    override func updateInCurrentEnv(variable: String, value: MooseObject, allowDefine: Bool) -> Bool {
+        if let valIndex = propIndex(variable: variable) {
+            this.value![valIndex] = value
+            return true
+        }
+
+        return super.updateInCurrentEnv(variable: variable, value: value, allowDefine: allowDefine)
+    }
+
+    override func get(variable: String) throws -> MooseObject {
+        if let valIndex = propIndex(variable: variable) {
+            return this.value![valIndex]
+        }
+
+        return try super.get(variable: variable)
+    }
+
+    override func getAllVariables() -> [String: MooseObject] {
+        var vars = super.getAllVariables()
+        for (i, v) in this.value!.enumerated() {
+            vars["\(i)"] = v
+        }
+        return vars
     }
 }
