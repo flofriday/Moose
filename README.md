@@ -9,9 +9,23 @@ written in [Swift](https://www.swift.org/).
 
 You need to [install swift](https://www.swift.org/download/), after which you can run:
 
-```dart
+```bash
 swift run Moose
 ```
+
+Or if you want to have an optimized build you can build and run with:
+
+```bash
+swift build -c release
+./.build/release/Moose
+```
+
+The interpreter also accepts a single file:
+
+```bash
+echo "print(42)" > tmp.moose
+./.build/release/Moose tmp.moose
+`
 
 ## Status
 
