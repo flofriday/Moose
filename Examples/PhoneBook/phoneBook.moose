@@ -79,9 +79,6 @@ class PhoneBookEntry {
 }
 
 phoneBook = PhoneBook([]);
-phoneBook.add(PhoneBookEntry("Victoria", 35, "+012345678910"))
-phoneBook.add(PhoneBookEntry("George", 24, "+012345678911"))
-phoneBook.add(PhoneBookEntry("Flo", 49, "+012345678912"))
 println("Welcome to your personal command line phonebook! \n - because why wouldn't you manage your sensitive contacts in a command line program that looses all data as soon as you close the terminal")
 println("\nYou can use the following commands:")
 println("- add <name> <age> <phone number>")
@@ -106,7 +103,11 @@ for true {
     phone_number = args[3]
 
     if !phoneBook.containsNumber(phone_number){
-      upcount = 2
+      if phoneBook.getSize() == 0 {
+        upcount = 3
+      } else{
+        upcount = 2
+      }
       phoneBook.add(PhoneBookEntry(name, age, phone_number))
       prompt = "\e{[0;33m}Please enter a command:\e{[0m}"
     } else{
