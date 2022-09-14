@@ -213,7 +213,7 @@ class Parser {
         }
 
         try consumeStatementEnd()
-        let location = mergeLocations(locationFromToken(startToken), expr.location)
+        let location = Location(startToken.location, expr.location)
         return AssignStatement(token: token, location: location, assignable: assignable, value: expr, mutable: mutable, type: type)
     }
 
@@ -323,7 +323,7 @@ class Parser {
             skip(all: .NLine)
         }
         let rbrace = try consume(type: .RBrace, message: "expected } at end of function body")
-        let location = mergeLocations(token, rbrace)
+        let location = Location(token.location, rbrace.location)
         return BlockStatement(token: token, location: location, statements: stmts)
     }
 
@@ -371,7 +371,7 @@ class Parser {
         let methods = try parseAllMethodDefinitions()
         let rbrace = try consume(type: .RBrace, message: "Expected '}' as end of class body, got '\(peek().lexeme)' instead.")
 
-        let location = mergeLocations(token, rbrace)
+        let location = Location(token.location, rbrace.location)
         return ClassStatement(token: token, location: location, name: name, properties: properties, methods: methods, extends: extends)
     }
 
@@ -395,8 +395,8 @@ class Parser {
 
         let methods = try parseAllMethodDefinitions()
         let rbrace = try consume(type: .RBrace, message: "Expected `}` as end of extend body, got `\(peek().lexeme)` instead.")
-//        let location = rbrace.mergeLocations(token)
-        let location = mergeLocations(locationFromToken(rbrace), locationFromToken(token))
+//        let location = rbrace.location(token)
+        let location = Location(rbrace.location, token.location)
         return ExtendStatement(token: token, location: location, name: name, methods: methods)
     }
 
@@ -518,7 +518,7 @@ class Parser {
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
         let rparen = try consume(type: .RParen, message: "I expected a closing parenthesis here.")
 
-        let location = mergeLocations(token, rparen)
+        let location = Location(token.location, rparen.location)
 
         guard !exprs.isEmpty else {
             // TODO: We should not only point to the opening parenthesis (token) here, but also to the closing.
@@ -562,8 +562,8 @@ class Parser {
 
         // Rewrite to a ternary expression
         // Example: `a ?? b`  -> `a != nil ? a : b`
-        let nilToken = Token(type: .Nil, lexeme: "nil", line: token.line, column: token.column)
-        let notEqToken = Token(type: .Operator(pos: .Infix, assign: false), lexeme: "!=", line: token.line, column: token.column)
+        let nilToken = Token(type: .Nil, lexeme: "nil", location: token.location)
+        let notEqToken = Token(type: .Operator(pos: .Infix, assign: false), lexeme: "!=", location: token.location)
         let condition = InfixExpression(token: notEqToken, left: left, op: notEqToken.lexeme, right: Nil(token: nilToken))
 
         return TernaryExpression(token: token, condition: condition, consequence: left, alternative: right)
@@ -590,7 +590,7 @@ class Parser {
 
         let exprs = try parseExpressionList(seperator: .Comma, end: .RParen)
         let rparen = try consume(type: .RParen, message: "expected ')' at end of argument list")
-        let location = mergeLocations(token, rparen).mergeLocations(function.location)
+        let location = Location(Location(token.location, rparen.location), function.location)
         return CallExpression(token: token, location: location, function: function, arguments: exprs)
     }
 
@@ -717,7 +717,7 @@ extension Parser {
         // TODO: The header could be more descriptive but I cannot really
         // think of a good one in each case so this is the solution for now.
         CompileErrorMessage(
-            location: locationFromToken(token),
+            location: token.location,
             header: "Parsing Error",
             message: message
         )

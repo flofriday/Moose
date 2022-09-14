@@ -68,7 +68,7 @@ class LexerTests: XCTestCase {
 
         let l = Lexer(input: "a = b")
         let _ = try l.nextToken()
-        let tt = Token(type: .Assign, lexeme: "=", literal: nil, line: 0, column: 0)
+        let tt = Token(type: .Assign, lexeme: "=", literal: nil, location: Location(col: 0, endCol: 0, line: 0, endLine: 0))
         let tok = try l.peekToken()
 
         try assertEqualToken(tt, tok)
@@ -120,7 +120,8 @@ class LexerTests: XCTestCase {
         for t in tests {
             XCTAssertThrowsError(
                 print(try Lexer(input: t).scan()),
-                "Should throw error since escape \\e was not correct.") { err in print("Got error, \((err as! CompileError).getFullReport(sourcecode: t))") }
+                "Should throw error since escape \\e was not correct."
+            ) { err in print("Got error, \((err as! CompileError).getFullReport(sourcecode: t))") }
         }
     }
 

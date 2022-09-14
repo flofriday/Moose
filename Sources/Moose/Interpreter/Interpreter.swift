@@ -467,7 +467,7 @@ class Interpreter: Visitor {
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let funcIdent = Identifier(token: node.indexable.token, value: Settings.GET_ITEM_FUNCTIONNAME)
-        let location = mergeLocations(node.indexable.token, node.index.token)
+        let location = Location(node.indexable.token.location, node.index.token.location)
         let indexCall = CallExpression(token: node.index.token, location: location, function: funcIdent, arguments: [node.index])
         let dereferer = Dereferer(token: node.token, obj: node.indexable, referer: indexCall)
         return try dereferer.accept(self)

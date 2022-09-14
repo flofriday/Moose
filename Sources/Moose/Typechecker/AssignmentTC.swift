@@ -165,7 +165,7 @@ extension Typechecker {
         default:
             guard assignType == givenType else {
                 if let variable = variable {
-                    throw error(header: "Type Mismatch", message: "Variable `\(variable.value)` has type `\(givenType.description)` but you try to assign type `\(assignType.description)`.", node: node)
+                    throw error(header: "Type Mismatch", message: "Variable `\(variable.value)` has type `\(givenType.description)` but you tried to assign type `\(assignType.description)`.", node: node)
                 }
                 throw error(header: "Type Mismatch", message: "You want to assign value of type `\(assignType)` to defined type `\(givenType)`.", node: node)
             }

@@ -105,8 +105,7 @@ struct Token {
     var type: TokenType
     var lexeme: String
     var literal: Any?
-    var line: Int
-    var column: Int
+    var location: Location
 }
 
 internal func lookUpIdent(ident: String) -> TokenType {

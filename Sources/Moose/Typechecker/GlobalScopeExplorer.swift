@@ -65,7 +65,7 @@ class GlobalScopeExplorer: BaseVisitor {
         } catch let err as ScopeError {
             // TODO: We should also highlight the parentesis here but we do not
             // have enough information from the AST where they are.
-            let location = node.token.mergeLocations(node.name.location)
+            let location = Location(node.token.location, node.name.location)
             throw error(header: "Function Redefinition", message: err.message, location: location)
         }
     }
@@ -85,7 +85,7 @@ class GlobalScopeExplorer: BaseVisitor {
 
     // TODO: Check if class is already defined
     override func visit(_ node: ClassStatement) throws {
-        let startLocation = node.token.mergeLocations(node.name.location)
+        let startLocation = Location(node.token.location, node.name.location)
 
         guard scope.isGlobal() else {
             throw error(header: "Bad class declaration", message: "Classes can only be defined in global scope.", location: startLocation)
@@ -113,7 +113,7 @@ class GlobalScopeExplorer: BaseVisitor {
     }
 
     private func error(header: String, message: String, token: Token) -> CompileErrorMessage {
-        return error(header: header, message: message, location: locationFromToken(token))
+        return error(header: header, message: message, location: token.location)
     }
 
     private func error(header: String, message: String, node: Node) -> CompileErrorMessage {

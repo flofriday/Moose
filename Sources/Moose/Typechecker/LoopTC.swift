@@ -29,7 +29,7 @@ extension Typechecker {
             }
         }
 
-        let location = node.variable.location.mergeLocations(node.list.location)
+        let location = Location(node.variable.location, node.list.location)
         let assignStmt = AssignStatement(token: node.token, location: location, assignable: node.variable, value: node.list, mutable: false, type: nil)
 
         pushNewScope()

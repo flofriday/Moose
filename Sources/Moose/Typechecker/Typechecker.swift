@@ -339,7 +339,7 @@ class Typechecker: Visitor {
 
     internal func error(header: String, message: String, token: Token) -> CompileErrorMessage {
         CompileErrorMessage(
-            location: locationFromToken(token),
+            location: token.location,
             header: header,
             message: message
         )

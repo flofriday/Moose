@@ -333,19 +333,26 @@ extension Lexer {
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
         var lexeme = lexeme
 
-        var startCol = column - lexeme.count
+        var location = Location(
+            col: column - lexeme.count,
+            endCol: column - 1,
+            line: line,
+            endLine: line
+        )
 
         if type == .String {
             // String literals need to be adjusted for two qutationmarks
-            startCol -= 2
+            location.col -= 2
         } else if type == .EOF {
             lexeme = " "
         } else if type == .NLine {
             // Newlines need to be on the previous line
-            startCol = input.lines[line - 1].count + 1
+            let col = input.lines[line - 1].count + 1
+            location.col = col
+            location.endCol = col
         }
 
-        let t = Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
+        let t = Token(type: type, lexeme: lexeme, literal: lit, location: location)
         return t
     }
 }

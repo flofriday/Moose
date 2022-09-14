@@ -6,16 +6,18 @@ import Foundation
 @testable import Moose
 
 @resultBuilder
-struct TokenBuilder {
+enum TokenBuilder {
     static func buildBlock() -> [Token] { [] }
 }
+
 extension TokenBuilder {
-    static func buildBlock(_ defs:  (type: TokenType, lexeme: String)...) -> [Token] {
+    static func buildBlock(_ defs: (type: TokenType, lexeme: String)...) -> [Token] {
         return defs.map { type, lexeme -> Token in
-            Token(type: type, lexeme: lexeme, literal: nil, line: 0, column: 0)
+            Token(type: type, lexeme: lexeme, literal: nil, location: Location(col: 1, endCol: 1, line: 1, endLine: 1))
         }
     }
 }
+
 func buildTokenList(@TokenBuilder _ tokens: () -> [Token]) -> [Token] {
     return tokens()
 }
