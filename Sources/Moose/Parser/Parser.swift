@@ -334,6 +334,7 @@ class Parser {
         let condition = try parseExpression(.Lowest)
         skip(all: .NLine)
         let consequence = try parseBlockStatement()
+        skip(all: .NLine)
         guard match(types: .Else) else {
             return IfStatement(token: token, condition: condition, consequence: consequence, alternative: nil)
         }
