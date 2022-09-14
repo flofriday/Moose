@@ -186,7 +186,7 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: StringType(), function: lengthString))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
