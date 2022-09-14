@@ -85,7 +85,7 @@ strudel: Int; // Implizitly without assigning a value a variable is automaticall
 To make working with null more ergonomic, we introduced the double questionmark operator `??`
 
 ```dart
-breakfast: Str = nil;
+breakfast: String = nil;
 println(breakfast ?? "Melage and semmel");
 
 // This code is just sytactic sugar and is equivalent to
@@ -111,7 +111,7 @@ wishlist.appendAll(["Aircraftcarrier", "Worlddomination"]);
 Dictionaries (aka Hashtables or Hashmaps) are also build in.
 
 ```dart
-ages: {Str:Int} = {
+ages: {String:Int} = {
     "Flo": 23,
     "Paul": 24,
     "Clemens": 7,
@@ -232,7 +232,7 @@ println(p.represent())
 
 ```dart
 class Person {
-    name: Str
+    name: String
     age: Int
 
     func hello() {
@@ -252,15 +252,15 @@ Moose supports single class inheritance.
 
 ```dart
 class Employee < Person {
-    work: Str
+    work: String
 
-    func hello() {
-        super.hello()
-        println("And I work at " + me.work)
+    func hello() > String {
+        print("Hi I am " + me.name + " and I work at " + me.work)
     }
 }
 
-catrin = Employee("Catrin", 56, "Google")
+catrin = Employee("Google", "Catrin", 56 )
+catrin.hello()
 ```
 
 ## Extending Classes
@@ -269,48 +269,45 @@ You extend existing classes by using the `extend` construct.
 
 ```dart
 extend Person {
-    friend: Person
-    func add(friend: Person) {
-        me.friend = friend
+    func wasBorn() > Int {
+        return 2022 - me.age
     }
 }
 
-a = "Hello"
-str.add(" World")
-
-println(str) // "Hello World"
-
+j = Person("Johannes", 23)
+println(j.wasBorn())
+```
 
 ## Tuple
 
-In Moose, tuples are a standard data type, like Int, String and others. It allows the programmer to return multiple values from a function and also offers the possibility of destructuring.
+In Moose, tuples are a standard data type, like Int, String and others. It also allows programmers to return multiple values from a function and offers the possibility of unpacking.
 
 ```dart
-postfix / (a: [Int]) > ([Int], [Int]) {
-    firstHalf = a[0:(a.len/2)]
-    secondHalf = a[(a.len/2):a.len-1)]
-    return (first, second)
-}
+person = ("luis", 17, false)
 
-l = [1,2,3,4]
-(a,b) = l/ // destruction of tupel
+// Without unpacking
+name1 = person.0
+age1 = person.1
+married1 = person.2
 
-println(a) // [1,2]
-println(b) // [3,4]
+// With unpacking
+(name2, age2, married2) = person
+
+println(name1 == name2)
 ```
 
-### Destructuring of Objects
+### Unpacking Objects
 
-Destructuring is not only possible for tuples themselves, but also for objects, where the tuple contains the first n object fields.
+Unpacking is not only possible for tuples themselves, but also for objects, where the tuple contains the first n object fields.
 
 ```dart
 p = Person("Alan Turing", 41)
 (name, age) = p
 ```
 
-## Indexing und Unpacking
+## Indexing
 
-Accessing data of an object is not only possible for `List` s, but for all datatypes that implement the indexing method.
+Accessing data of an object is not only possible for `List` s, but for all datatypes that implement the `getItem(Int)` method. Similarly the `setItem(Int, Any)` allows to write at an index.
 
 ```dart
 class Person {
@@ -323,29 +320,13 @@ class Person {
 
 p = Person("Alan Turing")
 
-println(p[1]) // "A"
-
-[a,b,c] = p // unpack indexed object
-println(b) // "l"
-```
-
-It is also possible to unpack the rest of an indexed object by providing the `len()` function for that respective class.
-
-```dart
-extend Person {
-    func len() > Int {
-        return self.name.len()
-    }
-}
-
-[a, rest..] = p
-println(rest) // ["l", "a", "n", " ", "T", "u", "r", "i", "n", "g"]
+println(p[0]) // "A"
 ```
 
 ## Error handling and Panics
 
-Moose has two types of error handling. Unlike exceptions panics are unrecoverable 
-errors, which will cause the interpreter stop execution and exit with a 
+Moose has two types of error handling. Unlike exceptions panics are unrecoverable
+errors, which will cause the interpreter stop execution and exit with a
 non-zero exit code.
 
 ```dart
@@ -356,9 +337,9 @@ l = [1, 2, 3]
 x = l[9000]     // OutOfBoundsPanic
 ```
 
-For recoverable errors the convention is to return a tuple, where the last 
-element is a string with an error message. If the error is nil everything 
-succeeded, whereas if an error occurred it will be a message describing the 
+For recoverable errors the convention is to return a tuple, where the last
+element is a string with an error message. If the error is nil everything
+succeeded, whereas if an error occurred it will be a message describing the
 reason.
 
 ```dart

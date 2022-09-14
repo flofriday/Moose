@@ -220,7 +220,7 @@ extension BuiltIns {
 
         let value = obj.value!
         guard value.count > key.value! else {
-            throw RuntimeError(message: "Array Access Error: String has a length of \(value.count) but you want to access \(key.value!).")
+            throw OutOfBoundsPanic(length: Int64(value.count), attemptedIndex: Int64(key.value!))
         }
 
         let index = Int(key.value!)
