@@ -23,7 +23,7 @@ swift build -c release
 The interpreter also accepts a single file:
 
 ```bash
-./.build/release/Moose Examples/TicTacToe/main.moose
+./.build/release/Moose Examples/ticktacktoe.moose
 ```
 
 ## Status

@@ -8,5 +8,5 @@ func fib(n: Int) > Int {
 }
 
 for i in range(20) {
-    println(String(i) + ": " + String(fib(i)))
+    println(i.toString() + ": " + fib(i).toString())
 }
