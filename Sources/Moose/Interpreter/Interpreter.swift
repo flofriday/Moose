@@ -333,8 +333,6 @@ class Interpreter: Visitor {
 
             // Execute the body
             do {
-                Interpreter.shared.environment.printDebug(header: true)
-                print("######################################")
                 _ = try callee.value.accept(self)
             } catch let error as ReturnSignal {
                 return error.value
