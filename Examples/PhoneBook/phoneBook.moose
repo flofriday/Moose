@@ -1,0 +1,132 @@
+infix * (str: String, mult: Int) > String {
+  mut retstr = ""
+  for i in range(mult) {
+    retstr +: str
+  }
+  return retstr
+}
+
+func getArgs(input: String) > [String] {
+  length = input.length()
+  mut current_command = ""
+  commands: [String] = []
+
+  for i in range(length) {
+    letter = input[i]
+    if letter == " "{
+      commands.append(current_command)
+      current_command = ""
+      continue
+    }
+    current_command +: letter
+  }
+  commands.append(current_command)
+
+  return commands
+}
+
+class PhoneBook {
+  mut entries: [PhoneBookEntry]
+
+  func add(entry: PhoneBookEntry) {
+    entries.append(entry)
+  }
+
+  func remove(phone_number: String) {
+    new_entries: [PhoneBookEntry] = []
+    for i in range(entries.length()) {
+      if entries[i].number != phone_number{
+        new_entries.append(PhoneBookEntry(entries[i].name, entries[i].age, entries[i].number))
+      }
+    }
+    entries = new_entries
+  }
+
+  func containsNumber(number: String) > Bool{
+    for i in range(entries.length()) {
+      if entries[i].number == number{
+        return true;
+      }
+    }
+    return false
+  }
+
+  func getSize() > Int {
+    return entries.length()
+  }
+
+  func display() {
+    mut output = "Phone book:\n"
+    length = entries.length()
+    for i in range(length) {
+      output +: entries[i].represent()
+      if i != length - 1 {
+        output +: "\n"
+      }
+    }
+    println(output);
+  }
+}
+
+class PhoneBookEntry {
+  name: String
+  age: Int
+  number: String
+
+  func represent() > String {
+    return "  > " + me.name + "  " + me.age.toString() + "  " + me.number;
+  }
+}
+
+phoneBook = PhoneBook([]);
+println("Welcome to your personal command line phonebook! \n - because why wouldn't you manage your sensitive contacts in a command line program that looses all data as soon as you close the terminal")
+println("\nYou can use the following commands:")
+println("- add <name> <age> <phone number>")
+println("- remove <phone number>\n\n")
+
+
+line_up = "\e{[1A}"
+line_clear = "\e{[2K}"
+
+mut prompt = "\e{[0;33m}Please enter a command:\e{[0m}"
+
+for true {
+  phoneBook.display()
+  println(prompt)
+
+  args = getArgs(input())
+
+  if args[0] == "add" {
+    mut upcount = 3
+    name = args[1]
+    (age, err) = args[2].parseInt()
+    phone_number = args[3]
+
+    if !phoneBook.containsNumber(phone_number){
+      if phoneBook.getSize() == 0 {
+        upcount = 3
+      } else{
+        upcount = 2
+      }
+      phoneBook.add(PhoneBookEntry(name, age, phone_number))
+      prompt = "\e{[0;33m}Please enter a command:\e{[0m}"
+    } else{
+      prompt = "\e{[0;33m}Can't add contact, number already exists\e{[0m}"
+    }
+    print((line_up + line_clear) * (upcount + phoneBook.getSize()))
+  } else if args[0] == "remove" {
+    phone_number = args[1]
+    if phoneBook.containsNumber(phone_number){
+      phoneBook.remove(phone_number)
+      prompt = "\e{[0;33m}Removed phone number\e{[0m}"
+    } else{
+      prompt = "\e{[0;33m}Can't remove phone number as it is not in the list\e{[0m}"
+    }
+    print((line_up + line_clear) * (4 + phoneBook.getSize()))
+  } else {
+    print((line_up + line_clear) * (3 + phoneBook.getSize()))
+    prompt = "\e{[0;31m}Command not supported, please try again\e{[0m}"
+  }
+}
+
+
