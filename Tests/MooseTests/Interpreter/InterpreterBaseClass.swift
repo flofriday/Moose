@@ -67,6 +67,44 @@ class InterpreterBaseClass: XCTestCase {
         }
     }
 
+    /// Rus a list of invalid tests that panic. Each test is a (String, Panic)
+    /// tuple where the first string is the program and the second is the panic
+    /// we expect when running the code.
+    func runPanicTests(name: String, _ tests: [(String, Panic)]) throws {
+        print("--- \(name)")
+        for (i, t) in tests.enumerated() {
+            let (source, expectedPanic) = t
+            print("------\nStart Panic Test \(i): \n\(source)")
+
+            do {
+                let prog = try parseAndCheckProgram(source)
+                let i = Interpreter.shared
+                i.reset()
+                try i.run(program: prog)
+            } catch let error as CompileError {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as CompileErrorMessage {
+                // This shouldn't happen but is really helpful if you write
+                // tests that don't compile.
+                XCTFail(error.getFullReport(sourcecode: source))
+            } catch let error as EnvironmentError {
+                // So this shouldn't happen but it might because of a bug in
+                // the interperter.
+                XCTFail(error.message)
+            } catch let actualPanic as Panic {
+                if actualPanic.equals(other: expectedPanic) {
+                    // everything is fine, lets continue with the next case
+                    continue
+                }
+                XCTFail("I expected `\(expectedPanic)` but I got `\(actualPanic)`")
+            }
+
+            XCTFail("I expected `\(expectedPanic)` but the program didn't panic.")
+        }
+    }
+
     func runInValidTests(name: String, checkFor allowedErrors: Error.Type..., @InterpreterTestBuilder tests: () -> [(String, [(String, MooseObject)])]) throws {
         print("--- \(name)")
         for (i, t) in tests().enumerated() {
