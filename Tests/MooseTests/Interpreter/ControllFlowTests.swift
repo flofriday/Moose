@@ -230,7 +230,6 @@ extension InterpreterTests {
                 """,
                 [
                     ("x", IntegerObj(value: 3)),
-                    // TODO: this test fails because of issue #37
                     ("y", IntegerObj(value: 12)),
                 ]
             ),

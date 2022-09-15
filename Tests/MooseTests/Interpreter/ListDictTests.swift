@@ -350,21 +350,24 @@ extension InterpreterTests {
         ])
     }
 
-    func test_string() throws {
-        try runValidTests(name: #function) {
-            ("""
-            a = "AbC"
+    func test_string_indexing() throws {
+        try runValidTests(name: #function, [
+            (
+                """
+                a = "AbC"
 
-            len = a.length()
-            aA = a[0]
-            ab = a[1]
-            aC = a[2]
+                len = a.length()
+                aA = a[0]
+                ab = a[1]
+                aC = a[2]
 
-            """, [
-                ("aA", StringObj(value: "A")),
-                ("ab", StringObj(value: "b")),
-                ("aC", StringObj(value: "C")),
-            ])
-        }
+                """, [
+                    ("aA", StringObj(value: "A")),
+                    ("ab", StringObj(value: "b")),
+                    ("aC", StringObj(value: "C")),
+                    ("len", IntegerObj(value: 3)),
+                ]
+            ),
+        ])
     }
 }
