@@ -1,4 +1,4 @@
-# Moose
+# 🐐 Moose
 
 **Moose** is a new programming language. This repo also includes an interpreter
 written in [Swift](https://www.swift.org/).
@@ -88,7 +88,7 @@ To make working with null more ergonomic, we introduced the double questionmark 
 breakfast: String = nil;
 println(breakfast ?? "Melage and semmel");
 
-// This code is just sytactic sugar and is equivalent to
+// This code is just syntactic sugar and is equivalent to
 println(breakfast != nil ? breakfast : "Melage and semmel");
 ```
 
