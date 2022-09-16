@@ -259,7 +259,18 @@ class Typechecker: Visitor {
         do {
             node.mooseType = try scope.typeOf(variable: node.value)
         } catch is ScopeError {
-            throw error(header: "Variable Error", message: "I couldn't find a `\(node.value)` variable.", node: node)
+            var message = "I couldn't find a `\(node.value)` variable."
+
+            let similars = scope.getSimilar(variable: node.value)[..<16]
+            if !similars.isEmpty {
+                message += "\n\n\nThese variables seem close though:\n\n"
+                message += similars.map { name, type in
+                    "\t\(name): \(type)".yellow
+                }
+                .joined(separator: "\n")
+            }
+
+            throw error(header: "Variable Error", message: message, node: node)
         }
     }
 

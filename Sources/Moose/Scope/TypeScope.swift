@@ -268,29 +268,6 @@ extension TypeScope {
 }
 
 extension TypeScope {
-    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)] {
-        var similars: [(String, FunctionType)] = []
-
-        if let candidates = funcs[function] {
-            similars += candidates.map { (function, $0) }
-        }
-
-        // TODO: add similar named functions
-
-        if let enclosing = enclosing {
-            similars += enclosing.getSimilar(function: function, params: params)
-        }
-
-        // Sort by arity
-        similars.sort { a, b in
-            abs(a.1.params.count - params.count) < abs(b.1.params.count - params.count)
-        }
-
-        return similars
-    }
-}
-
-extension TypeScope {
     func isGlobal() -> Bool {
         return enclosing == nil && !closed
     }
