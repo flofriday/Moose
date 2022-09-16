@@ -41,7 +41,7 @@ extension Typechecker {
             } catch _ as ScopeError {
                 var message = "I cannot find any function `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))`."
 
-                let similars = scope.getSimilar(function: node.function.value, params: paramTypes)[..<16]
+                let similars = scope.getSimilar(function: node.function.value, params: paramTypes).prefix(16)
                 if !similars.isEmpty {
                     message += "\n\n\nThese functions seem close though:\n\n"
                     message += similars.map { name, type in
