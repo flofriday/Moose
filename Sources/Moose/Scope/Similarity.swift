@@ -13,7 +13,7 @@
 /// similar function a score by which we sort:
 ///     - Per wrong argument type: 0.25
 ///     - Per wrong argument number: 0.50
-///     - Per levenshtein distance: -1
+///     - Per levenshtein distance: 1
 
 extension String {
     func chopPrefix(_ count: Int = 1) -> String {
@@ -43,31 +43,29 @@ extension TypeScope {
         )
     }
 
-    private func getSimilarHelper(variable: String) -> [(String, MooseType, Int)] {
-        return variables.map { n, v in
+    private func getSimilarHelper(variable: String) -> [(String, MooseType, Float)] {
+        var candidates = variables.map { n, v in
             let (t, _) = v
-            return (n, t, levenshtein(a: n, b: variable))
+            return (n, t, Float(levenshtein(a: n, b: variable)))
         }
         .filter { (_: String, _: MooseType, score) in
-            score <= 5
+            score <= 5 && score < Float(variable.count) * 0.33
         }
-    }
-
-    func getSimilar(variable: String) -> [(String, MooseType)] {
-        // Find all variables in current scope
-        var candidates = getSimilarHelper(variable: variable)
 
         // Add all from the outer scopes
         if let enclosing = enclosing {
             candidates += (enclosing.getSimilarHelper(variable: variable))
         }
 
+        return candidates
+    }
+
+    func getSimilar(variable: String) -> [(String, MooseType)] {
+        // Find all variables in current scope
+        var candidates = getSimilarHelper(variable: variable)
+
         // Sort by relevance
-        candidates = candidates.filter {
-            // Reject all that would need more than 33% change
-            Float($0.2) < Float(variable.count) * 0.33
-        }
-        .sorted {
+        candidates.sort {
             // The third element is the index and we want to sort on it.
             $0.2 < $1.2
         }
@@ -78,24 +76,70 @@ extension TypeScope {
         }
     }
 
-    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)] {
-        var similars: [(String, FunctionType)] = []
-
-        if let candidates = funcs[function] {
-            similars += candidates.map { (function, $0) }
+    // TODO: we could do better here, since we shouldn't compare types but
+    // look at the types that can match. For example a NilType is allowed for
+    // a function that expects IntType.
+    private func parmamsScore(a: [MooseType], b: [MooseType]) -> Float {
+        if a.count == 0 {
+            return Float(b.count) * 0.5
+        }
+        if b.count == 0 {
+            return Float(a.count) * 0.5
         }
 
-        // TODO: add similar named functions
+        // TODO: The creation of new arrays here is not the most sufficient
+        // solution.
+        if a[0] == b[0] {
+            return parmamsScore(a: Array(a[1...]), b: Array(b[1...]))
+        } else {
+            return 0.25 + parmamsScore(a: Array(a[1...]), b: Array(b[1...]))
+        }
+    }
 
+    func getSimilarHelper(function: String, params: [MooseType]) -> [(String, FunctionType, Float)] {
+        var candidates: [(String, FunctionType, Float)] = []
+
+        // Add functions with same name but different arguments
+        /* if let funcs = funcs[function] {
+             candidates += funcs.map { (function, $0, parmamsScore(a: params, b: $0.params)) }
+         } */
+
+        // Add functions with different name
+        for (otherName, otherFuncs) in funcs {
+            for otherFunc in otherFuncs {
+                let levScore = Float(levenshtein(a: function, b: otherName))
+                guard levScore <= 5 else {
+                    continue
+                }
+
+                candidates.append((otherName, otherFunc, levScore + parmamsScore(a: params, b: otherFunc.params)))
+            }
+        }
+
+        // Remove to bad candidates
+        candidates = candidates.filter { (_: String, _: MooseType, score) in
+            score <= 5 && score < Float(function.count) * 0.3
+        }
+
+        // Add functions from enclosing scopes
         if let enclosing = enclosing {
-            similars += enclosing.getSimilar(function: function, params: params)
+            candidates += enclosing.getSimilarHelper(function: function, params: params)
         }
 
-        // Sort by arity
-        similars.sort { a, b in
-            abs(a.1.params.count - params.count) < abs(b.1.params.count - params.count)
+        return candidates
+    }
+
+    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)] {
+        var candidates = getSimilarHelper(function: function, params: params)
+
+        // Sort by score
+        candidates.sort { a, b in
+            a.2 < b.2
         }
 
-        return similars
+        // Format the result
+        return candidates.map { c in
+            (c.0, c.1)
+        }
     }
 }

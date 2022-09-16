@@ -261,7 +261,7 @@ class Typechecker: Visitor {
         } catch is ScopeError {
             var message = "I couldn't find a `\(node.value)` variable."
 
-            let similars = scope.getSimilar(variable: node.value)
+            let similars = scope.getSimilar(variable: node.value)[..<16]
             if !similars.isEmpty {
                 message += "\n\n\nThese variables seem close though:\n\n"
                 message += similars.map { name, type in
