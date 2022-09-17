@@ -40,7 +40,7 @@ introduce the core ideas.
 Furthermore, there are some examples in the
 [Examples](https://github.com/flofriday/Moose/tree/main/Examples) folder and
 there is a full documentation of the quite small standard library in
-[Stdlib.md](https://github.com/flofriday/Moose/tree/main/Examples/Stdlib.md)
+[Stdlib.md](https://github.com/flofriday/Moose/blob/stdlib/Stdlib.md)
 
 ## Types
 

@@ -1,15 +1,9 @@
-# 🐐📖 Moose's Standard Library
+# 📖 Moose's Standard Library
 
 <!--
     NOTE FOR DEVELOPERS
 
-    If you add another or change an existing function or method, remember to
-    also add it to the contents table.
-
-    Same is true for adding or changing headers.
-
-    For formatting the documentation try to orient other existing functions,
-    whereas `println` should be an example/template.
+    For formatting the documentation try to orient  on existing functions, whereas `println` should be an example/template.
 -->
 
 <!--
@@ -76,11 +70,13 @@ Returns the smaller input.
 ### `print(AnyType) > Void`
 
 Prints the object without a newline to stdout.
+
 (`AnyType` is not an actual type but an internal the interpreter uses, so that it can work with any class.)
 
 ### `println(AnyType) > Void`
 
 Prints the object with a newline to stdout.
+
 (`AnyType` is not an actual type but an internal the interpreter uses, so that it can work with any class.)
 
 ### `range(Int) > [Int]`
@@ -93,12 +89,54 @@ Returns a list starting at the first input up to but not including the second in
 
 ## Integer Methods
 
+### `Int.abs() > Int`
+
+Returns the absolute of the integer.
+
+### `Int.toBool() > Bool`
+
+Returns the integer converted to a bool.
+
+### `Int.toFloat() > Float`
+
+Returns the integer converted to a float.
+
+### `Int.toString() > String`
+
+Returns the integer converted to a String.
+
 ## Bool Methods
+
+### `Bool.toInt() > Int`
+
+Returns the bool converted to an Int.
+
+### `Bool.toString() > String`
+
+Returns the bool converted to a String.
 
 ## Float Methods
 
+### `Float.abs() > Float`
+
+Returns the absolute of the float.
+
+### `Float.toInt() > Int`
+
+Returns the float converted to a Int.
+
+### `Float.toString() > String`
+
+Returns the float converted to a String.
+
 ## String Methods
+
+Not yet documented...
 
 ## List Methods
 
+Not yet documented...
+
 ## Dict Methods
+
+Not yet documented...
