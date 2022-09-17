@@ -131,7 +131,31 @@ Returns the float converted to a String.
 
 ## String Methods
 
-Not yet documented...
+### `String.getItem(Int) > String`
+
+Returns the character at the index and returns it in a new string.
+
+### `String.length() > Int`
+
+Returns the length of the string.
+
+### `String.parseBool() > (Bool, String)`
+
+Returns a tuple where the bool is the parsed bool and the string is `nil` if it succeeds.
+
+On error the bool is `nil` and the string contains the reason why it failed.
+
+### `String.parseFloat() > (Float, String)`
+
+Returns a tuple where the float is the parsed float and the string is `nil` if it succeeds.
+
+On error the float is `nil` and the string contains the reason why it failed.
+
+### `String.parseInt() > (Int, String)`
+
+Returns a tuple where the integer is the parsed integer and the string is `nil` if it succeeds.
+
+On error the integer is `nil` and the string contains the reason why it failed.
 
 ## List Methods
 
