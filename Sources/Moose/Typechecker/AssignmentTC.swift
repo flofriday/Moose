@@ -41,12 +41,10 @@ extension Typechecker {
     }
 
     private func assign(valueType: MooseType, to dereferer: Dereferer, with declaredType: MooseType?, on node: AssignStatement) throws {
-        // TODO: is something like `mut A().b = 2` or `A().b: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
             try checkAssignment(given: declaredType, with: valueType, on: node)
         }
 
-        // TODO: Doesn't work yet! Also if property is not mutable, it cannot get checked!
         try dereferer.accept(self)
 
         guard let className = (dereferer.obj.mooseType as? ClassType)?.name else {
@@ -66,7 +64,6 @@ extension Typechecker {
     }
 
     private func assign(valueType: MooseType, to indexing: IndexExpression, with declaredType: MooseType?, on node: AssignStatement) throws {
-        // TODO: is something like `mut a[0] = 2` or `a[0]: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
             try checkAssignment(given: declaredType, with: valueType, on: node)
         }
@@ -134,7 +131,7 @@ extension Typechecker {
             }
 
             guard !node.mutable else {
-                throw error(header: "Illegal Mut", message: "Since variable `\(variable.value)` does already exist in scope, you cannot use the `mut` keyword.", node: node)
+                throw error(header: "Illegal Mut", message: "Since variable `\(variable.value)` does already exist, you cannot use the `mut` keyword.", node: node)
             }
         } else {
             let type: MooseType = node.declaredType ?? valueType
