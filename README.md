@@ -3,7 +3,7 @@
 **Moose** is a new programming language. This repo also includes an interpreter
 written in [Swift](https://www.swift.org/).
 
-## Build it yourself
+## Try it out
 
 **Note:** We only support macOS, iOS and Linux. On Windows you can use WSL.
 
@@ -31,6 +31,16 @@ The interpreter also accepts a single file:
 At the moment we have already implemented all features we wanted. However,
 please consider that this was mainly a learning experience. We might continue
 working on it and playing with things that are interesting to us.
+
+## Getting Started
+
+The rest of this file is and introduction to the language which tries to
+introduce the core ideas.
+
+Furthermore, there are some examples in the
+[Examples](https://github.com/flofriday/Moose/tree/main/Examples) folder and
+there is a full documentation of the quite small standard library in
+[Stdlib.md](https://github.com/flofriday/Moose/tree/main/Examples/Stdlib.md)
 
 ## Types
 
