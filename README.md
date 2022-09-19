@@ -1,5 +1,5 @@
 # 🐐 Moose
-<p align="center">    
+<p>    
     <a href="https://github.com/flofriday/Moose/actions/workflows/moose-tests.yml" alt="Moose Tests">
         <img src="https://github.com/flofriday/Moose/actions/workflows/moose-tests.yml/badge.svg?branch=main" />
     </a>
