@@ -1,4 +1,4 @@
-name: Swift
+name: Moose Tests
 
 on:
   push:
