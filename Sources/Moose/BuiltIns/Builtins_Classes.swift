@@ -7,35 +7,9 @@
 
 import Foundation
 
-/// AnyClass Environment Creation
-///
-/// Unlike the others, this is not added to the environment on startup, but instead extends each class
-/// that has no superclass
 extension BuiltIns {
-    static let builtIn_AnyClass_Env: ClassEnvironment = createAnyClassEnv()
-
-    private static func createAnyClassEnv() -> ClassEnvironment {
-        let env = ClassEnvironment(enclosing: nil, className: "AnyClass", propertyNames: [])
-        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representAnyClass))
-        env.set(function: "dbg", value: BuiltInFunctionObj(name: "dbg", params: [], returnType: StringType(), function: dbgAnyClass))
-        return env
-    }
-
-    private static func dbgAnyClass(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
-        let this: ClassObject = try classEnvToObj(env)
-        try assertNoNil(this)
-
-        let ce = this.classEnv!
-        var out = "<< object: \(ce.className)\n"
-        try ce.variables.forEach { key, value in
-            out += "\t\(key): \(value.type) = \(try representAnyWithStringInQuotes(obj: value))\n"
-        }
-        out += ">>"
-
-        return StringObj(value: out)
-    }
-
-    private static func representAnyClass(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+    /// This is the default implementation of the represent() method for custom classes that are not implementing it.
+    static func defaultRepresentMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
         let this: ClassObject = try classEnvToObj(env)
         try assertNoNil(this)
         return StringObj(value: "<class object: \(this.classEnv!.className)>")

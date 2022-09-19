@@ -41,8 +41,6 @@ class ClassDependencyResolverPass: BaseVisitor {
         let env = try environment.get(clas: node.name.value)
         if let superClass = node.extends?.value {
             env.superClass = try environment.get(clas: superClass)
-        } else { // so if it does not extend an other class, extend AnyClass environment
-            env.superClass = BuiltIns.builtIn_AnyClass_Env
         }
     }
 

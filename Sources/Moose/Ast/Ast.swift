@@ -398,6 +398,10 @@ class ClassStatement {
     }
 
     var returnDeclarations: (MooseType, Bool)?
+
+    var hasRepresentMethod: Bool {
+        return methods.contains { $0.name.value == Settings.REPRESENT_FUNCTIONNAME }
+    }
 }
 
 class ExtendStatement {

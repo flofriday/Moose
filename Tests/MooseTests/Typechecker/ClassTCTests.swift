@@ -239,6 +239,12 @@ extension TypecheckerTests {
             class B {}
             class C {c: A}
             """
+
+            """
+            class A {
+                func represent() > Int { return 2 }
+            }
+            """
         }
     }
 

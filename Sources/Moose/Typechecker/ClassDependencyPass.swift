@@ -63,8 +63,6 @@ class ClassDependecyPass: BaseVisitor {
             }
 
             clasScope.superClass = extendClass
-        } else {
-            clasScope.superClass = try BuiltIns.builtIn_AnyClass_Env.asClassTypeScope("AnyClass")
         }
     }
 

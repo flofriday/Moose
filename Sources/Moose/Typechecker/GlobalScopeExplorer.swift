@@ -106,7 +106,17 @@ class GlobalScopeExplorer: BaseVisitor {
         }
 
         for meth in node.methods {
+            if meth.name.value == Settings.REPRESENT_FUNCTIONNAME {
+                guard meth.returnType is StringType else {
+                    throw error(header: "Class Error", message: "Method `represent()` must return type `String`.", node: meth)
+                }
+            }
             try classScope.add(function: meth.name.value, params: meth.params.map { $0.declaredType }, returnType: meth.returnType)
+        }
+
+        // If it does not extend anything, add represent method by default if this method does not already exist
+        if node.extends == nil, !node.hasRepresentMethod {
+            try classScope.add(function: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType())
         }
 
         try scope.add(clas: node.name.value, scope: classScope)
