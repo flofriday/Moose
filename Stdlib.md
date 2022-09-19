@@ -299,3 +299,19 @@ There is syntactic sugar for this function:
 dict = {"flo": true, "lisa": false}
 dict["luis"] = false
 ```
+
+## Tuple
+
+Tuples are a generic datastructure that can hold a arbitrary set of heterogen typed values. Tuples support unpackaging and are the only class that 
+uses numbers as property names.
+
+### Properties
+
+You can access elements via its indices, but not via index access, instead you use property access.
+
+```dart
+a = (1, true)
+print(a.0) // "1"
+print(a.1) // "true"
+```
+
