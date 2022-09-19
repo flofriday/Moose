@@ -131,6 +131,10 @@ Returns the float converted to a String.
 
 ## String Methods
 
+### `String.capitalize() > String`
+
+Returns a capitalized version of the string.
+
 ### `String.getItem(Int) > String`
 
 Returns the character at the index and returns it in a new string.
@@ -138,6 +142,14 @@ Returns the character at the index and returns it in a new string.
 ### `String.length() > Int`
 
 Returns the length of the string.
+
+### `String.lines() > List[String]`
+
+Returns a list where each item is a line in the original string.
+
+### `String.lower() > String`
+
+Returns a version of the string without upper letters.
 
 ### `String.parseBool() > (Bool, String)`
 
@@ -156,6 +168,18 @@ On error the float is `nil` and the string contains the reason why it failed.
 Returns a tuple where the integer is the parsed integer and the string is `nil` if it succeeds.
 
 On error the integer is `nil` and the string contains the reason why it failed.
+
+### `String.split(String) > List[String]`
+
+Splits the string by the separator provided.
+
+### `String.strip() > String`
+
+Returns a version with all whitespaces at the start and end of the string removed.
+
+### `String.upper() > String`
+
+Returns a version with all characters capitalized.
 
 ## List Methods
 

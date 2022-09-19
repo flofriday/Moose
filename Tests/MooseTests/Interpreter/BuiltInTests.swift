@@ -418,12 +418,8 @@ extension InterpreterTests {
             (
                 """
                 // Bool method tests
-
                 int1 = true.toInt()
                 int2 = false.toInt()
-
-                float1 = true.toFloat()
-                float2 = false.toFloat()
 
                 str1 = true.toString()
                 str2 = false.toString()
@@ -431,9 +427,6 @@ extension InterpreterTests {
                 [
                     ("int1", IntegerObj(value: 1)),
                     ("int2", IntegerObj(value: 0)),
-
-                    ("float1", FloatObj(value: 1.0)),
-                    ("float2", FloatObj(value: 0.0)),
 
                     ("str1", StringObj(value: "true")),
                     ("str2", StringObj(value: "false")),
@@ -458,6 +451,16 @@ extension InterpreterTests {
 
                 int10 = "".length()
                 int11 = "flotschi".length()
+
+                str12 = "halo".capitalize()
+                str13 = "WORLD".capitalize()
+                str14 = "\tHey there \n  ".strip()
+                str15 = "Nothing should change".strip()
+                str16 = "Scream fire".upper()
+                str17 = "You need to whisper: FIRE".lower()
+
+                list18 = "flo,23,vienna,developer".split(",")
+                list19 = "Dear mum,\nI hope you find this letter well.\nMunich was way colder than expected.\n\nYour flo".lines()
                 """,
                 [
                     ("int1", IntegerObj(value: 123)),
@@ -479,6 +482,24 @@ extension InterpreterTests {
 
                     ("int10", IntegerObj(value: 0)),
                     ("int11", IntegerObj(value: 8)),
+
+                    ("str12", StringObj(value: "Halo")),
+                    ("str13", StringObj(value: "World")),
+                    ("str14", StringObj(value: "Hey there")),
+                    ("str15", StringObj(value: "Nothing should change")),
+                    ("str16", StringObj(value: "SCREAM FIRE")),
+                    ("str17", StringObj(value: "you need to whisper: fire")),
+
+                    ("list18", ListObj(
+                        type: StringType(),
+                        value: ["flo", "23", "vienna", "developer"].map { StringObj(value: $0) }
+                    )),
+                    ("list19", ListObj(
+                        type: StringType(),
+                        value: [
+                            "Dear mum,", "I hope you find this letter well.", "Munich was way colder than expected.", "", "Your flo",
+                        ].map { StringObj(value: $0) }
+                    )),
                 ]
             ),
         ]

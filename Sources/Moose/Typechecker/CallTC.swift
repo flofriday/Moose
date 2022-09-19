@@ -39,17 +39,22 @@ extension Typechecker {
             do {
                 try checkConstructorCall(node)
             } catch _ as ScopeError {
-                var message = "I cannot find any function `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))`."
+                var target = "function"
+                if scope is ClassTypeScope {
+                    target = "method"
+                }
+
+                var message = "I cannot find any \(target) `\(node.function)(\(paramTypes.map { $0.description }.joined(separator: ", ")))`."
 
                 let similars = scope.getSimilar(function: node.function.value, params: paramTypes).prefix(16)
                 if !similars.isEmpty {
-                    message += "\n\n\nThese functions seem close though:\n\n"
+                    message += "\n\n\nThese \(target)s seem close though:\n\n"
                     message += similars.map { name, type in
                         "\t\(name)(\(type.params.map { $0.description }.joined(separator: ", "))) > \(type.returnType)".yellow
                     }
                     .joined(separator: "\n")
                 }
-                throw self.error(header: "Unknown Function", message: message, node: node)
+                throw self.error(header: "Unknown \(target.capitalized)", message: message, node: node)
             }
         }
     }
