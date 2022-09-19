@@ -461,6 +461,11 @@ extension InterpreterTests {
 
                 list18 = "flo,23,vienna,developer".split(",")
                 list19 = "Dear mum,\nI hope you find this letter well.\nMunich was way colder than expected.\n\nYour flo".lines()
+
+                bool20 = "hello".contains("world")
+                bool21 = "hello world nice".contains("world")
+                bool22 = "Flotschi".contains("flo")
+                bool23 = "Flotschi".lower().contains("flo")
                 """,
                 [
                     ("int1", IntegerObj(value: 123)),
@@ -500,6 +505,11 @@ extension InterpreterTests {
                             "Dear mum,", "I hope you find this letter well.", "Munich was way colder than expected.", "", "Your flo",
                         ].map { StringObj(value: $0) }
                     )),
+
+                    ("bool20", BoolObj(value: false)),
+                    ("bool21", BoolObj(value: true)),
+                    ("bool22", BoolObj(value: false)),
+                    ("bool23", BoolObj(value: true)),
                 ]
             ),
         ]

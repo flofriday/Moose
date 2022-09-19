@@ -141,6 +141,10 @@ Returns the float converted to a String.
 
 Returns a capitalized version of the string.
 
+### `String.contains(String) > Bool`
+
+Returns wether or not the string contains the other one.
+
 ### `String.getItem(Int) > String`
 
 Returns the character at the index and returns it in a new string.

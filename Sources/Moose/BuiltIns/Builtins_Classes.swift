@@ -187,6 +187,7 @@ extension BuiltIns {
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "capitalize", value: BuiltInFunctionObj(name: "capitalize", params: [], returnType: StringType(), function: strCapitalizeBuiltIn))
+        env.set(function: "contains", value: BuiltInFunctionObj(name: "contains", params: [StringType()], returnType: BoolType(), function: strContainsBuiltIn))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
         env.set(function: "lines", value: BuiltInFunctionObj(name: "lines", params: [], returnType: ListType(StringType()), function: strLinesBuiltIn))
@@ -349,6 +350,19 @@ extension BuiltIns {
 
         return StringObj(
             value: source.value!.capitalized
+        )
+    }
+
+    private static func strContainsBuiltIn(params: [MooseObject], _ env: Environment) throws -> BoolObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        try assertNoNil(params)
+        let other = (params[0] as! StringObj).value!
+
+        return BoolObj(
+            value: source.value!.contains(other)
         )
     }
 
