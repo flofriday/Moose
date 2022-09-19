@@ -559,4 +559,36 @@ extension InterpreterTests {
             )
         }
     }
+
+    func test_represent() throws {
+        try runValidTests(name: #function) {
+            (
+                """
+                a = 2.represent()
+                b = true.represent()
+                c = "Test".represent()
+                d = 2.002.represent()
+                """, [
+                    ("a", StringObj(value: "2")),
+                    ("b", StringObj(value: "true")),
+                    ("c", StringObj(value: "Test")),
+                    ("d", StringObj(value: "2.002")),
+                ]
+            )
+
+            (
+                """
+
+                a = NonRep(2).represent()
+                b = Rep(2).represent()
+
+                class NonRep { a: Int }
+                class Rep < NonRep { func represent() > String { return a.represent() } }
+                """, [
+                    ("a", StringObj(value: "<class object: NonRep>")),
+                    ("b", StringObj(value: "2")),
+                ]
+            )
+        }
+    }
 }

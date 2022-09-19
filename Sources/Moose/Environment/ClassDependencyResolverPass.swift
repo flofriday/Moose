@@ -38,10 +38,11 @@ class ClassDependencyResolverPass: BaseVisitor {
 
     /// Resolves all class dependencies, so we know that while executing the next pass, all dependencies are in place
     override func visit(_ node: ClassStatement) throws {
+        let env = try environment.get(clas: node.name.value)
         if let superClass = node.extends?.value {
-            try environment
-                .get(clas: node.name.value)
-                .superClass = environment.get(clas: superClass)
+            env.superClass = try environment.get(clas: superClass)
+        } else { // so if it does not extend an other class, extend AnyClass environment
+            env.superClass = BuiltIns.builtIn_AnyClass_Env
         }
     }
 

@@ -278,14 +278,14 @@ extension InterpreterTests {
             l7 = a.length()
 
             class A < B {
-                func represent() > String { return String(a) }
+                func represent() > String { return a.represent() }
             }
             class B {
                 a: Int
             }
 
             print("")
-            print("Output: " + String(a))
+            print("Output: " + a.represent())
             print("")
             """, [
                 ("l3", IntegerObj(value: 3)),
