@@ -93,6 +93,14 @@ Returns a list starting at 0 up to but not including the input.
 
 Returns a list starting at the first input up to but not including the second input.
 
+## Any Methods
+
+Any is not a real type, but the methods in this section hold true for every type (even custom class types).
+
+### `Any.represent() > String` 
+
+Returns are string representation of the object.
+
 ## Integer Methods
 
 ### `Int.abs() > Int`
@@ -206,6 +214,15 @@ Appends the rest the provided list to the end of the first one.
 ### `List[T].enumerated() > List[(Int, T)]`
 
 Returns a list where each item is wrapped in a tuple with the first element being the index in the original list and the second being the original item.
+
+### `List[T].joined() > String`
+
+Returns a string of the joined list, where each element is converted to String via its `represent()` method.
+
+### `List[T].joined(String) > String` 
+
+Returns a string of the joined list, where each element is converted to String via its `represent()` method.
+In addition the first argument is used as seperator between the joined elements.
 
 ### `List[T].getItem(Int) > T`
 
