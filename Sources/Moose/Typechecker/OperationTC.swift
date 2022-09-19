@@ -52,9 +52,9 @@ extension Typechecker {
             defer { scope.closed = wasClosed }
 
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.left, node.right], token: node.token)
-        } catch let err as ScopeError {
-            // TODO: we schouldn't embed the scope error in the error message
-            throw error(header: "Unclear Type", message: "Couldn't determine return type of infix operator: \(err.message)", node: node)
+        } catch is ScopeError {
+            node.mooseType = InternalErrorType()
+            throw error(header: "Operator Error", message: "I couldn't find any infix opertor `\(node.op)` for the types (\(node.left.mooseType!), \(node.right.mooseType!)).", node: node)
         }
     }
 
@@ -64,9 +64,9 @@ extension Typechecker {
             scope.closed = false
             defer { scope.closed = wasClosed }
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.right], token: node.token)
-        } catch let err as ScopeError {
-            // TODO: we schouldn't embed the scope error in the error message
-            throw error(header: "Unclear Type", message: "Couldn't determine return type of prefix operator: \(err.message)", node: node)
+        } catch is ScopeError {
+            node.mooseType = InternalErrorType()
+            throw error(header: "Operator Error", message: "I couldn't find any prefix operator `\(node.op)` for the type \(node.right.mooseType).", node: node)
         }
     }
 
@@ -76,9 +76,9 @@ extension Typechecker {
             scope.closed = false
             defer { scope.closed = wasClosed }
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.left], token: node.token)
-        } catch let err as ScopeError {
-            // TODO: we schouldn't embed the scope error in the error message
-            throw error(header: "Unclear Type", message: "Couldn't determine return type of postfix operator: \(err.message)", node: node)
+        } catch is ScopeError {
+            node.mooseType = InternalErrorType()
+            throw error(header: "Operator Error", message: "I couldn't find any postfix operator `\(node.op)` for the type \(node.left.mooseType).", node: node)
         }
     }
 

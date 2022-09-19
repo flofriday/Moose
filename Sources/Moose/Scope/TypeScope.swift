@@ -49,11 +49,13 @@ class TypeScope: Scope {
 extension TypeScope {
     func typeOf(variable: String) throws -> MooseType {
         if let type = variables[variable] {
-            return type.0
+            let res = type.0
+            guard !(res is InternalErrorType) else {
+                throw StopTypeCheckingSignal()
+            }
+            return res
         }
         guard let enclosing = enclosing, !closed else {
-            // TODO: We could find similarly named variables here and suggest
-            // them
             throw ScopeError(message: "Couldn't find variable '\(variable)' in the current scope.")
         }
         return try enclosing.typeOf(variable: variable)

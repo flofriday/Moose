@@ -20,8 +20,31 @@ extension Typechecker {
             throw error(header: "Assignment Error", message: "\(dups.first?.description ?? "") is used multiple times on left side of assignment. Multiple assignemnts of the same variable in a single assignment are not allowed.", node: node)
         }
 
-        try node.value.accept(self)
+        do {
+            try node.value.accept(self)
+        } catch let e as CompileErrorMessage {
+            // TODO: I think this dopesn't work for tuples etc.
+            try assignInternalError(to: node.assignable, mutable: node.mutable)
+            throw e
+        }
+
         try assign(valueType: node.value.mooseType!, to: node.assignable, with: node.declaredType, on: node)
+    }
+
+    func assignInternalError(to assignable: Expression, mutable: Bool) throws {
+        switch assignable {
+        case let ident as Identifier:
+            if !scope.has(variable: ident.value) {
+                try scope.add(variable: ident.value, type: InternalErrorType(), mutable: mutable)
+            }
+        case let tuple as Tuple:
+            for expr in tuple.expressions {
+                try assignInternalError(to: expr, mutable: mutable)
+            }
+        default: do {
+                // Nothing to do here
+            }
+        }
     }
 
     func assign(valueType: MooseType, to assignable: Expression, with declaredType: MooseType?, on node: AssignStatement) throws {

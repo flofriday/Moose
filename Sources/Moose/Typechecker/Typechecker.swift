@@ -95,6 +95,8 @@ class Typechecker: Visitor {
             } catch let error as CompileErrorMessage {
                 errors.append(error)
                 scope = oldScope
+            } catch is StopTypeCheckingSignal {
+                scope = oldScope
             }
         }
     }
@@ -111,6 +113,11 @@ class Typechecker: Visitor {
             } catch let error as CompileErrorMessage {
                 errors.append(error)
                 scope = oldScope
+
+                returnDec = try newReturnDec(current: returnDec, incoming: stmt)
+            } catch is StopTypeCheckingSignal {
+                scope = oldScope
+                returnDec = try newReturnDec(current: returnDec, incoming: stmt)
             }
         }
 
@@ -241,17 +248,22 @@ class Typechecker: Visitor {
     }
 
     func visit(_ node: ReturnStatement) throws {
-        try node.returnValue?.accept(self)
-        var retType: MooseType = VoidType()
-
         guard isFunction else {
             throw error(header: "Illegal Return", message: "You can only return inside a functions.", node: node)
         }
 
+        do {
+            try node.returnValue?.accept(self)
+        } catch let e as CompileErrorMessage {
+            node.returnDeclarations = (InternalErrorType(), true)
+            throw e
+        } catch let e as StopTypeCheckingSignal {
+            node.returnDeclarations = (InternalErrorType(), true)
+            throw e
+        }
+        var retType: MooseType = VoidType()
+
         if let expr = node.returnValue {
-            // guard let t = expr.mooseType else {
-            //     throw error(message: "Couldn't determine type of return statement.", node: expr)
-            // }
             retType = expr.mooseType!
         }
         node.returnDeclarations = (retType, true)
@@ -335,7 +347,7 @@ class Typechecker: Visitor {
             realReturnValue = typ
         }
 
-        guard realReturnValue == node.returnType else {
+        guard realReturnValue == node.returnType || realReturnValue == InternalErrorType() else {
             // TODO: We highlight the wrong thing here, but there is no reference to the correct return in the AST here.
             throw error(header: "Type Mismatch", message: "Function returns '\(realReturnValue)', but signature requires it to be '\(node.returnType)'", node: node)
         }

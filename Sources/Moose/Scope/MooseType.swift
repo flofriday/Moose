@@ -20,7 +20,7 @@ import Foundation
 class MooseType: Equatable, CustomStringConvertible {
     var description: String { "Not a Type" }
 
-    func superOf(type other: MooseType) -> Bool { true }
+    func superOf(type _: MooseType) -> Bool { true }
 
     static func == (lhs: MooseType, rhs: MooseType) -> Bool { lhs.superOf(type: rhs) && rhs.superOf(type: lhs) }
 }
@@ -221,6 +221,11 @@ class VoidType: MooseType {
     override func superOf(type other: MooseType) -> Bool { other is VoidType }
 }
 
+class InternalErrorType: ParamType {
+    override var description: String { "InternalErrorType" }
+    // override func superOf(type other: MooseType) -> Bool { other is InternalErrorType }
+}
+
 extension MooseType {
     static func toType(_ name: String) -> MooseType {
         switch name {
@@ -241,51 +246,3 @@ extension MooseType {
         }
     }
 }
-
-// extension MooseType {
-//    var asClass: MooseType? {
-//        switch self {
-//        case .Class:
-//            return self
-//        case .Int:
-//            return .Class("Int")
-//        case .Float:
-//            return .Class("Float")
-//        case .Bool:
-//            return .Class("Bool")
-//        case .Tuple:
-//            return .Class("Tuple")
-//        case .List:
-//            return .Class("List")
-//        default:
-//            return nil
-//        }
-//    }
-// }
-
-// extension MooseType: CustomStringConvertible {
-//    var description: String {
-//        switch self {
-//        case .Int:
-//            return "Int"
-//        case .Float:
-//            return "Float"
-//        case .String:
-//            return "String"
-//        case .Bool:
-//            return "Bool"
-//        case .Nil:
-//            return "Nil"
-//        case .Void:
-//            return "Void"
-//        case let .Class(i):
-//            return i
-//        case let .Tuple(ids):
-//            return "(\(ids.map { $0.description }.joined(separator: ", ")))"
-//        case let .Function(params, returnType):
-//            return "(\(params.map { $0.description }.joined(separator: ", "))) > \(returnType.description)"
-//        case let .List(i):
-//            return "[\(i.description)]"
-//        }
-//    }
-// }
