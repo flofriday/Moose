@@ -12,7 +12,11 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: swift-actions/setup-swift@v1.18.0
+      with:
+        swift-version: "5.7"
+    - name: Get Swift Version
+      run: swift --version
     - name: Build
       run: swift build -v
     - name: Run tests
