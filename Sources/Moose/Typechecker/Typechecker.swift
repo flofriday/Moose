@@ -62,6 +62,12 @@ class Typechecker: Visitor {
             clas: "Dict",
             scope: BuiltIns.builtIn_Dict_Env.asClassTypeScope("Dict")
         )
+
+        try scope.add(
+            variable: "args",
+            type: ListType(StringType()),
+            mutable: false
+        )
     }
 
     func check(program: Program) throws {

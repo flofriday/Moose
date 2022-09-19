@@ -35,9 +35,14 @@ class Interpreter: Visitor {
         addBuiltIns()
     }
 
-    func run(program: Program) throws {
+    func run(program: Program, arguments: [String]) throws {
         let explorer = GlobalEnvironmentExplorer(program: program, environment: environment)
         environment = try explorer.populate()
+        _ = environment.update(
+            variable: "args",
+            value: ListObj(type: StringType(), value: arguments.map { StringObj(value: $0) }),
+            allowDefine: true
+        )
 
         let dependencyResolver = ClassDependencyResolverPass(program: program, environment: environment)
         environment = try dependencyResolver.populate()

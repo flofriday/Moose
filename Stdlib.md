@@ -12,6 +12,12 @@ TODO: create a table of contents from the headers with python.
 ## Contents
 -->
 
+## Builtin variables
+
+### `args: List[String]`
+
+The command line arguments provided to the script.
+
 ## Builtin functions
 
 ### `abs(Int) > Int`

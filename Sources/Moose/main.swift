@@ -15,11 +15,8 @@ class Cli {
     func run() {
         if CommandLine.arguments.count == 1 {
             runRepl()
-        } else if CommandLine.arguments.count == 2 {
-            runFile(path: CommandLine.arguments[1])
         } else {
-            fputs("Usage: \(CommandLine.arguments[0]) [script]\n", stderr)
-            exit(1)
+            runFile(path: CommandLine.arguments[1])
         }
     }
 
@@ -57,7 +54,11 @@ class Cli {
 
             try typechecker.check(program: program!)
 
-            try interpreter.run(program: program!)
+            var args: [String] = []
+            if CommandLine.argc > 2 {
+                args = Array(CommandLine.arguments[2...])
+            }
+            try interpreter.run(program: program!, arguments: args)
 
         } catch let error as CompileError {
             print(error.getFullReport(sourcecode: input))
