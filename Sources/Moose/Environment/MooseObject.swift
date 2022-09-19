@@ -36,7 +36,11 @@ func == <T: MooseObject>(lhs: T, rhs: T) -> Bool {
     return lhs.equals(other: rhs)
 }
 
+#if swift(>=5.6)
 protocol HashableObject: Hashable, MooseObject {}
+#else
+protocol HashableObject: MooseObject {}
+#endif
 
 protocol IndexableObject: MooseObject {
     func getAt(index: Int64) -> MooseObject
@@ -295,7 +299,9 @@ class TupleObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObje
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
+#if swift(>=5.6)
         value?.forEach { ($0 as! (any HashableObject)).hash(into: &hasher) }
+#endif
     }
 
     var isNil: Bool { value == nil }
@@ -363,7 +369,9 @@ class ListObj: MooseObject, IndexableObject, IndexWriteableObject, HashableObjec
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
+#if swift(>=5.6)
         value?.forEach { ($0 as! (any HashableObject)).hash(into: &hasher) }
+#endif
     }
 
     var isNil: Bool { value == nil }
@@ -439,10 +447,12 @@ class DictObj: MooseObject, HashableObject {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
-        // smh it is not possible to force cast value and key to Hashable object in the same iteration
-        // so we have to do it worse
+// smh it is not possible to force cast value and key to Hashable object in the same iteration
+// so we have to do it worse
+#if swift(>=5.6)
         pairs?.forEach { ($0.value as! (any HashableObject)).hash(into: &hasher) }
         pairs?.forEach { ($0.key as! (any HashableObject)).hash(into: &hasher) }
+#endif
     }
 
     private var dictType: DictType {
@@ -503,9 +513,11 @@ class ClassObject: MooseObject, HashableObject {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(type.description)
+#if swift(>=5.6)
         env.getAllVariables().forEach {
             ($0 as! (any HashableObject)).hash(into: &hasher)
         }
+#endif
     }
 
     var isNil: Bool { classEnv == nil }
