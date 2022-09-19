@@ -1,0 +1,25 @@
+if args.length() < 2 {
+    println("Usage: grep PATTERN FILE...")
+    exit(1)
+}
+
+pattern = args[0]
+
+for i in range(1, args.length()) {
+    grepFile(pattern, args[i])
+}
+
+func grepFile(pattern: String, name: String) {
+    (file, err) = open(name)
+    if err != nil {
+        println("ERROR: Couldn't open file " + name + ": " +  err)
+        exit(1)
+    }
+
+    lines = file.lines()
+    for (i, line) in lines.enumerated() {
+        if line.contains(pattern) {
+            println(name + ":" + (i + 1).toString() + " \t" + line)
+        }
+    }
+}
