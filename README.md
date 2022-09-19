@@ -2,6 +2,8 @@
 
 [![Moose Tests](https://github.com/flofriday/Moose/actions/workflows/moose-tests.yml/badge.svg?branch=main)](https://github.com/flofriday/Moose/actions/workflows/moose-tests.yml)
 
+[![codecov](https://codecov.io/gh/flofriday/moose/branch/main/graph/badge.svg)](https://codecov.io/gh/flofriday/moose)
+
 **Moose** is a new programming language. This repo also includes an interpreter
 written in [Swift](https://www.swift.org/).
 
