@@ -188,9 +188,9 @@ extension BuiltIns {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
+        env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
-        env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
         return env
     }
 
@@ -381,18 +381,18 @@ extension BuiltIns {
 
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ParamType()], returnType: VoidType(), function: appendList))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ListType(ParamType())], returnType: VoidType(), function: appendList))
-        env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: VoidType(), function: reverseList))
-        env.set(function: "reversed", value: BuiltInFunctionObj(name: "reversed", params: [], returnType: ParamType(), function: reversedList))
         env.set(function: "enumerated", value: BuiltInFunctionObj(name: "enumerated", params: [], returnType: ParamType(), function: enumeratedList))
-        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
         env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [IntType(), ParamType()], returnType: VoidType(), function: setItemList))
-
-        env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "max", value: BuiltInFunctionObj(name: "max", params: [], returnType: NumericType(), function: maxList))
+        env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
+        env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: VoidType(), function: reverseList))
+        env.set(function: "reversed", value: BuiltInFunctionObj(name: "reversed", params: [], returnType: ParamType(), function: reversedList))
+
         return env
     }
 

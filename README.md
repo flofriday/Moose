@@ -113,7 +113,7 @@ println(wishlist[0]); // "Computer"
 println(wishlist[-1]); // "Teddybear"
 
 wishlist.append("car");
-wishlist.appendAll(["Aircraftcarrier", "Worlddomination"]);
+wishlist.append(["Aircraftcarrier", "Worlddomination"]);
 ```
 
 ## Dicts

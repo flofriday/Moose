@@ -159,8 +159,92 @@ On error the integer is `nil` and the string contains the reason why it failed.
 
 ## List Methods
 
-Not yet documented...
+Lists are a generic datastructure and with that an exception as Moose doesn't allow you to define custom generic Classes.
+
+### `List[T].append(T) > Void`
+
+Appends the provided item to the end of the list.
+
+### `List[T].append(List[T]) > Void`
+
+Appends the rest the provided list to the end of the first one.
+
+### `List[T].enumerated() > List[(Int, T)]`
+
+Returns a list where each item is wrapped in a tuple with the first element being the index in the original list and the second being the original item.
+
+### `List[T].getItem(Int) > T`
+
+Returns the item at the provided index.
+
+This method panics with `OutOfBoundsPanic` if the item at the index doesn't exist.
+
+There is syntactic sugar for this function:
+
+```dart
+l = [1, 77, 3, 4]
+println(l[1])
+```
+
+### `List[T].setItem(Int, T) > Void`
+
+Updates the item at the provided index.
+
+This method panics with `OutOfBoundsPanic` if the item at the index doesn't exist.
+
+There is syntactic sugar for this function:
+
+```dart
+l = [1, 77, 3, 4]
+l[1] = 2
+```
+
+### `List[T].length() > Int`
+
+Returns the length of the list.
+
+<!-- TODO: min, max but how do they work? -->
+
+### `List[T].reverse() > Void`
+
+Reverses the List in place.
+
+### `List[T].reversed() > List[T]`
+
+Returns a reversed copy of the list and leaves the original intact.
 
 ## Dict Methods
 
-Not yet documented...
+Dicts are a generic datastructure and with that an exception as Moose doesn't allow you to define custom generic Classes.
+
+### `Dict[K, V].length() > Int`
+
+Returns the number of key-value pairs.
+
+### `Dict[K, V].flat() > List[(K, V)]`
+
+Converts the dictionary to a list where each item is a tuple with the key and value from the dictionary.
+
+### `Dict[K, V].getItem(K) > V`
+
+Gets the item with the provided key.
+
+If the key doesn't exist, it will return `nil`.
+
+There is syntactic sugar for this function:
+
+```dart
+dict = {"flo": true, "lisa": false}
+println(dict["lisa"])
+```
+
+### `Dict[K, V].setItem(K, V) > Void`
+
+Updates the provided key with the provided value.
+
+There is syntactic sugar for this function:
+
+```dart
+dict = {"flo": true, "lisa": false}
+dict["luis"] = false
+```
