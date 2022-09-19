@@ -347,6 +347,17 @@ extension InterpreterTests {
                     ("t1", IntegerObj(value: 4)),
                 ]
             ),
+
+            (
+                """
+                list = [1,2,3,4]
+                t1 = list.reversed().joined()
+                t2 = list.reversed().joined(" ")
+                """, [
+                    ("t1", StringObj(value: "4321")),
+                    ("t2", StringObj(value: "4 3 2 1")),
+                ]
+            ),
         ])
     }
 
@@ -356,7 +367,7 @@ extension InterpreterTests {
                 """
                 // Index out of bounds test
                 l = [1]
-                a = l[1] 
+                a = l[1]
                 """,
                 OutOfBoundsPanic(length: 1, attemptedIndex: 1)
             ),
@@ -372,7 +383,7 @@ extension InterpreterTests {
                 """
                 // Nil indexing test
                 l: [Int] = nil
-                a = l[1] 
+                a = l[1]
                 """,
                 NilUsagePanic()
             ),
