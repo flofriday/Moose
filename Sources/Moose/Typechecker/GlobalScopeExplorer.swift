@@ -63,7 +63,10 @@ class GlobalScopeExplorer: BaseVisitor {
         do {
             try scope.add(function: node.name.value, params: paramTypes, returnType: node.returnType)
         } catch let err as ScopeError {
-            throw error(message: err.message, token: node.token)
+            // TODO: We should also highlight the parentesis here but we do not
+            // have enough information from the AST where they are.
+            let location = Location(node.token.location, node.name.location)
+            throw error(header: "Function Redefinition", message: err.message, location: location)
         }
     }
 
@@ -71,23 +74,26 @@ class GlobalScopeExplorer: BaseVisitor {
         let paramTypes = node.params.map {
             $0.declaredType
         }
-        guard !scope.has(op: node.name, opPos: node.position, params: paramTypes) else {
-            throw error(message: "Operation is already defined with the same signature", token: node.token)
-        }
         do {
             try scope.add(op: node.name, opPos: node.position, params: paramTypes, returnType: node.returnType)
         } catch let err as ScopeError {
-            throw error(message: err.message, token: node.token)
+            // TODO: The location we highlight here is bad but we don't have
+            // enough information at the moment to do better.
+            throw error(header: "Operation Redefinition", message: err.message, token: node.token)
         }
     }
 
     // TODO: Check if class is already defined
     override func visit(_ node: ClassStatement) throws {
+        let startLocation = Location(node.token.location, node.name.location)
+
         guard scope.isGlobal() else {
-            throw error(message: "Classes can only be defined in global scope.", node: node)
+            throw error(header: "Bad class declaration", message: "Classes can only be defined in global scope.", location: startLocation)
         }
 
-        guard !scope.has(clas: node.name.value) else { throw error(message: "Class `\(node.name)` was already defined.", node: node) }
+        guard !scope.has(clas: node.name.value) else {
+            throw error(header: "Class Redefinition", message: "Class `\(node.name)` was already defined.", location: startLocation)
+        }
 
         let classScope = ClassTypeScope(
             enclosing: scope,
@@ -106,16 +112,18 @@ class GlobalScopeExplorer: BaseVisitor {
         try scope.add(clas: node.name.value, scope: classScope)
     }
 
-    private func error(message: String, token: Token) -> CompileErrorMessage {
-        CompileErrorMessage(
-            location: locationFromToken(token),
-            message: message
-        )
+    private func error(header: String, message: String, token: Token) -> CompileErrorMessage {
+        return error(header: header, message: message, location: token.location)
     }
 
-    private func error(message: String, node: Node) -> CompileErrorMessage {
+    private func error(header: String, message: String, node: Node) -> CompileErrorMessage {
+        return error(header: header, message: message, location: node.location)
+    }
+
+    private func error(header: String, message: String, location: Location) -> CompileErrorMessage {
         return CompileErrorMessage(
-            location: node.location,
+            location: location,
+            header: header,
             message: message
         )
     }

@@ -1,0 +1,18 @@
+// A elegant fizz buzz implementation
+func fizzbuzz(n: Int) > String {
+    t = ((n % 3) == 0, (n % 5) == 0)
+
+    if t == (true, false) {
+        return "Fizz"
+    } else if t == (false, true) {
+        return "Buzz"
+    } else if t == (true, true) {
+        return "FizzBuzz"
+    } else {
+        return n.toString()
+    }
+}
+
+for i in range(1, 25) {
+    println(fizzbuzz(i))
+}

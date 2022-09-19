@@ -11,13 +11,13 @@ extension Typechecker {
     func visit(_ node: AssignStatement) throws {
         // assignable (left side) must be assignable (e.g. not (a,1))
         guard node.assignable.isAssignable else {
-            throw error(message: "Assignment to `\(node.assignable)` is not valid since it is not assignable.", node: node.assignable)
+            throw error(header: "Assignment Error", message: "Assignment to `\(node.assignable)` is not valid since it is not assignable.", node: node.assignable)
         }
 
         // find duplicate idents (not allowed in single assignment)
         let dups = Dictionary(grouping: node.assignable.assignables.compactMap { ($0 as? Identifier)?.value }, by: { $0 }).filter { $1.count > 1 }.keys
         guard dups.count == 0 else {
-            throw error(message: "\(dups.first?.description ?? "") is used multiple times on left side of assignment. Multiple assignemnts of the same variable in a single assignment are not allowed.", node: node)
+            throw error(header: "Assignment Error", message: "\(dups.first?.description ?? "") is used multiple times on left side of assignment. Multiple assignemnts of the same variable in a single assignment are not allowed.", node: node)
         }
 
         try node.value.accept(self)
@@ -36,25 +36,23 @@ extension Typechecker {
         case let dereferer as Dereferer:
             try assign(valueType: valueType, to: dereferer, with: declaredType, on: node)
         default:
-            throw error(message: "Assignment to `\(assignable.description)` is not valid.", node: node)
+            throw error(header: "Assignment Error", message: "Assignment to `\(assignable.description)` is not valid.", node: node)
         }
     }
 
     private func assign(valueType: MooseType, to dereferer: Dereferer, with declaredType: MooseType?, on node: AssignStatement) throws {
-        // TODO: is something like `mut A().b = 2` or `A().b: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
             try checkAssignment(given: declaredType, with: valueType, on: node)
         }
 
-        // TODO: Doesn't work yet! Also if property is not mutable, it cannot get checked!
         try dereferer.accept(self)
 
         guard let className = (dereferer.obj.mooseType as? ClassType)?.name else {
-            throw error(message: "Expected object of class. Instead got object of type \(dereferer.obj.mooseType?.description ?? "Unknown").", node: dereferer.obj)
+            throw error(header: "Type Error", message: "Expected object of class. Instead got object of type \(dereferer.obj.mooseType?.description ?? "Unknown").", node: dereferer.obj)
         }
 
         guard let classScope = scope.getScope(clas: className) else {
-            throw error(message: "No class `\(className)` found in scope.", node: node)
+            throw error(header: "Class Error", message: "No class `\(className)` found in scope.", node: node)
         }
 
         let oldscope = scope
@@ -66,7 +64,6 @@ extension Typechecker {
     }
 
     private func assign(valueType: MooseType, to indexing: IndexExpression, with declaredType: MooseType?, on node: AssignStatement) throws {
-        // TODO: is something like `mut a[0] = 2` or `a[0]: Int = 2` allowed? Currently yes. it just doesnt effect anything.
         if let declaredType = declaredType {
             try checkAssignment(given: declaredType, with: valueType, on: node)
         }
@@ -82,7 +79,7 @@ extension Typechecker {
             let inferredScope = try (indexing.indexable.mooseType! as! AnyType).inferredClass()
             _ = try inferredScope.typeOf(function: Settings.SET_ITEM_FUNCTIONNAME, params: [indexType, valueType])
         } catch let err as ScopeError {
-            throw error(message: "Type \(indexing.indexable.mooseType!) isn't assignable via index: \(err.message)", node: indexing)
+            throw error(header: "Type Error", message: "Type \(indexing.indexable.mooseType!) isn't assignable via index: \(err.message)", node: indexing)
         }
     }
 
@@ -95,7 +92,7 @@ extension Typechecker {
         var declaredTypes: [MooseType]?
         if let declaredType = declaredType {
             guard let types = (declaredType as? TupleType)?.entries else {
-                throw error(message: "You declared type as \(declaredType) while it should be a Tuple.", node: node)
+                throw error(header: "Type Mismatch", message: "You declared type as \(declaredType) while it should be a Tuple.", node: node)
             }
             declaredTypes = types
         }
@@ -123,18 +120,18 @@ extension Typechecker {
                 // TODO: We highlight the variable here instead of the type declaration. At the time of writing we
                 // cannot highlight the declaration because it is not part of the AST and thereby not reachable by the
                 // checker.
-                throw error(message: "Type declarations are only possible for new variable declarations. Variable '\(variable.value)' already exists.\nTipp: Remove `: \(t.description)`", node: node.assignable)
+                throw error(header: "Illegal Type Declaration", message: "Type declarations are only possible for new variable declarations. Variable '\(variable.value)' already exists.\nTipp: Remove `: \(t.description)`", node: node.assignable)
             }
 
             // check that tuple to assign has same type as stored variable
             try checkAssignment(given: varType, with: valueType, on: node, to: variable)
 
             guard try scope.isMut(variable: variable.value) else {
-                throw error(message: "Variable `\(variable.value)` is immutable.\nTip: Make `\(variable.value)` mutable by adding the keyworkd `mut` at its declaration.", node: node)
+                throw error(header: "Immutability Violation", message: "Variable `\(variable.value)` is immutable.\nTip: Make `\(variable.value)` mutable by adding the keyworkd `mut` at its declaration.", node: node)
             }
 
             guard !node.mutable else {
-                throw error(message: "Since variable `\(variable.value)` does already exist in scope, you cannot use the `mut` keyword.", node: node)
+                throw error(header: "Illegal Mut", message: "Since variable `\(variable.value)` does already exist, you cannot use the `mut` keyword.", node: node)
             }
         } else {
             let type: MooseType = node.declaredType ?? valueType
@@ -148,7 +145,7 @@ extension Typechecker {
     /// else check if assigntype is the same es the given type
     internal func checkAssignment(given givenType: MooseType, with assignType: MooseType, on node: Node, to variable: Identifier? = nil) throws {
         guard let givenType = givenType as? ParamType else {
-            throw error(message: "INTERNAL ERROR: Given type must be param type.", node: node)
+            throw error(header: "Internal Error", message: "INTERNAL ERROR: Given type must be param type.", node: node)
         }
 
         if assignType is NilType { return }
@@ -165,16 +162,16 @@ extension Typechecker {
         default:
             guard assignType == givenType else {
                 if let variable = variable {
-                    throw error(message: "Variable `\(variable.value)` has type `\(givenType.description)` but you try to assign type `\(assignType.description)`.", node: node)
+                    throw error(header: "Type Mismatch", message: "Variable `\(variable.value)` has type `\(givenType.description)` but you tried to assign type `\(assignType.description)`.", node: node)
                 }
-                throw error(message: "You want to assign value of type `\(assignType)` to defined type `\(givenType)`.", node: node)
+                throw error(header: "Type Mismatch", message: "You want to assign value of type `\(assignType)` to defined type `\(givenType)`.", node: node)
             }
         }
     }
 
     private func checkAssignment(givenTuple givenType: TupleType, withTuple assignType: TupleType, on node: Node, to variable: Identifier? = nil) throws {
         guard givenType.entries.count == assignType.entries.count else {
-            throw error(message: "Given type \(givenType.description) has \(givenType.entries.count) entries while type to assign \(assignType.description) has \(givenType.entries.count).", node: node)
+            throw error(header: "Type Mismatch", message: "Given type \(givenType.description) has \(givenType.entries.count) entries while type to assign \(assignType.description) has \(givenType.entries.count).", node: node)
         }
         try zip(givenType.entries, assignType.entries).forEach {
             try checkAssignment(given: $0.0, with: $0.1, on: node, to: variable)
@@ -190,13 +187,17 @@ extension Typechecker {
         try checkAssignment(given: givenType.valueType, with: assignType.valueType, on: node, to: variable)
     }
 
-    private func checkAssignment(givenClass givenType: ClassType, withClass assignType: ClassType, on node: Node, to variable: Identifier? = nil) throws {
-        guard scope.global().has(clas: givenType.name) else { throw error(message: "Class `\(givenType.name)` does not exist.", node: node) }
+    private func checkAssignment(givenClass givenType: ClassType, withClass assignType: ClassType, on node: Node, to _: Identifier? = nil) throws {
+        guard scope.global().has(clas: givenType.name) else {
+            throw error(header: "Class Error", message: "Class `\(givenType.name)` does not exist.", node: node)
+        }
 
-        guard let valueClassScope = scope.getScope(clas: assignType.name) else { throw error(message: "Class `\(assignType.name)` does not exist.", node: node) }
+        guard let valueClassScope = scope.getScope(clas: assignType.name) else {
+            throw error(header: "Class Error", message: "Class `\(assignType.name)` does not exist.", node: node)
+        }
 
         guard valueClassScope.extends(clas: givenType.name).extends else {
-            throw error(message: "`\(assignType.name)` does not extend declared type `\(givenType.name)`.", node: node)
+            throw error(header: "Type Mismatch", message: "`\(assignType.name)` does not extend declared type `\(givenType.name)`.", node: node)
         }
     }
 
@@ -206,7 +207,7 @@ extension Typechecker {
         case let tuple as TupleType:
 
             guard tuple.entries.count >= size else {
-                throw error(message: "Tuple on right side has \(tuple.entries.count) values, while at least \(size) are needed by left side of assignment.", node: debugNode)
+                throw error(header: "Type Mismatch", message: "Tuple on right side has \(tuple.entries.count) values, while at least \(size) are needed by left side of assignment.", node: debugNode)
             }
 
             return tuple.entries
@@ -215,19 +216,19 @@ extension Typechecker {
         case let clas as ClassType:
             let className = clas.name
             guard let classScope = scope.getScope(clas: className) else {
-                throw error(message: "Class `\(className)` does not exist.", node: debugNode)
+                throw error(header: "Class Error", message: "Class `\(className)` does not exist.", node: debugNode)
             }
 
             let propTypes = classScope.classProperties.map { $0.type }
 
             guard propTypes.count >= size else {
-                throw error(message: "Class `\(className)` has \(propTypes.count) properties, while at least \(size) are required to unwrap to tuple. ", node: debugNode)
+                throw error(header: "Type Mismatch", message: "Class `\(className)` has \(propTypes.count) properties, while at least \(size) are required to unwrap to tuple. ", node: debugNode)
             }
 
             return propTypes
 
         default:
-            throw error(message: "Could not unwrap \(type.description) to tuple.", node: debugNode)
+            throw error(header: "Tuple Error", message: "Could not unwrap \(type.description) to tuple.", node: debugNode)
         }
     }
 }

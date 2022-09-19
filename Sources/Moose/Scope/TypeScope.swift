@@ -240,7 +240,7 @@ extension TypeScope {
     func add(function: String, params: [ParamType], returnType: MooseType) throws {
         let inCurrent = currentContains(function: function, params: params)
         guard !inCurrent else {
-            throw ScopeError(message: "Function '\(function)' with params (\(params.map { $0.description }.joined(separator: ","))) is already defined.")
+            throw ScopeError(message: "Function `\(function)(\(params.map { $0.description }.joined(separator: ",")))` is already defined.")
         }
         var list = (funcs[function] ?? [])
         list.append(FunctionType(params: params, returnType: returnType))
@@ -264,29 +264,6 @@ extension TypeScope {
         }
 
         funcs[function]![selectedIndex!] = newType
-    }
-}
-
-extension TypeScope {
-    func getSimilar(function: String, params: [MooseType]) -> [(String, FunctionType)] {
-        var similars: [(String, FunctionType)] = []
-
-        if let candidates = funcs[function] {
-            similars += candidates.map { (function, $0) }
-        }
-
-        // TODO: add similar named functions
-
-        if let enclosing = enclosing {
-            similars += enclosing.getSimilar(function: function, params: params)
-        }
-
-        // Sort by arity
-        similars.sort { a, b in
-            abs(a.1.params.count - params.count) < abs(b.1.params.count - params.count)
-        }
-
-        return similars
     }
 }
 

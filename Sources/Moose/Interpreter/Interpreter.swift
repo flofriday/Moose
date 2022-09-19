@@ -295,15 +295,21 @@ class Interpreter: Visitor {
         if let callee = callee as? BuiltInFunctionObj {
             // If the environment is already the class environment we do noting,
             // however, if it is not we set the current environment to the
-            // global.
+            // global, because we want to have them behave as if they were
+            // defined in the global environment.
+            //
+            // We do have to make exceptions for BuiltinClasses and the dbgEnv
+            // function. The dbgEnv wants to print the current environment so
+            // we cannot reset it here.
             let oldEnv = environment
-            if !(environment is BuiltInClassEnvironment) {
+            if !(environment is BuiltInClassEnvironment || callee.name == "dbgEnv") {
                 environment = environment.global()
             }
 
             defer {
                 environment = oldEnv
             }
+
             // Execute the function
             return try callee.function(args, environment)
         } else if let callee = callee as? FunctionObj {
@@ -467,7 +473,7 @@ class Interpreter: Visitor {
 
     func visit(_ node: IndexExpression) throws -> MooseObject {
         let funcIdent = Identifier(token: node.indexable.token, value: Settings.GET_ITEM_FUNCTIONNAME)
-        let location = mergeLocations(node.indexable.token, node.index.token)
+        let location = Location(node.indexable.token.location, node.index.token.location)
         let indexCall = CallExpression(token: node.index.token, location: location, function: funcIdent, arguments: [node.index])
         let dereferer = Dereferer(token: node.token, obj: node.indexable, referer: indexCall)
         return try dereferer.accept(self)

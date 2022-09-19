@@ -140,7 +140,7 @@ extension Parser {
             throw error(message: "Variable cannot be of type \(type).", token: token)
         }
 
-        let location = mergeLocations(startToken, endToken)
+        let location = Location(startToken.location, endToken.location)
         return VariableDefinition(token: ident.token, location: location, mutable: mut, name: ident, type: type)
     }
 

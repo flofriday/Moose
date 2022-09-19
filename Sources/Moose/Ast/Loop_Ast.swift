@@ -34,7 +34,7 @@ class ForEachStatement: Statement {
     }
 
     var location: Location {
-        return mergeLocations(locationFromToken(token), body.location)
+        return Location(token.location, body.location)
     }
 }
 
@@ -67,6 +67,6 @@ class ForCStyleStatement: Statement {
     }
 
     var location: Location {
-        return mergeLocations(locationFromToken(token), body.location)
+        return Location(token.location, body.location)
     }
 }

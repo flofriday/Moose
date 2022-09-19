@@ -129,7 +129,7 @@ extension BuiltIns {
     private static func createBoolEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "toInt", value: BuiltInFunctionObj(name: "toInt", params: [], returnType: IntType(), function: boolToIntBuiltIn))
-        env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: boolToFloatBuiltIn))
+        // env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: boolToFloatBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: boolToStrBuiltIn))
         return env
     }
@@ -186,7 +186,7 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: StringType(), function: lengthString))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
         env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
@@ -220,7 +220,7 @@ extension BuiltIns {
 
         let value = obj.value!
         guard value.count > key.value! else {
-            throw RuntimeError(message: "Array Access Error: String has a length of \(value.count) but you want to access \(key.value!).")
+            throw OutOfBoundsPanic(length: Int64(value.count), attemptedIndex: Int64(key.value!))
         }
 
         let index = Int(key.value!)

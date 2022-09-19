@@ -64,9 +64,10 @@ class GlobalEnvironmentExplorer: BaseVisitor {
         environment.set(clas: node.name.value, env: classEnv)
     }
 
-    internal func error(message: String, node: Node) -> CompileErrorMessage {
+    internal func error(header: String, message: String, node: Node) -> CompileErrorMessage {
         return CompileErrorMessage(
             location: node.location,
+            header: header,
             message: message
         )
     }

@@ -7,6 +7,6 @@ func fib(n: Int) > Int {
     return fib(n - 1) + fib(n - 2)
 }
 
-for mut i = 0; i < 20; i = i + 1 {
-    print(String(i) + ": " + String(fib(i)))
+for i in range(20) {
+    println(i.toString() + ": " + fib(i).toString())
 }

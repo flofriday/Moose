@@ -14,7 +14,7 @@ extension Parser {
         let exprs = try parseExpressionList(seperator: .Comma, end: .RBracket)
         let rbracket = try consume(type: .RBracket, message: "Expected `]` as end of List, but got `\(peek().lexeme)` instead.")
 
-        let location = mergeLocations(token, rbracket)
+        let location = Location(token.location, rbracket.location)
         return List(token: token, location: location, expressions: exprs)
     }
 
@@ -23,7 +23,7 @@ extension Parser {
         let pairs = try parseDictPairs(end: .RBrace)
         let rbrace = try consume(type: .RBrace, message: "`}` as end of dict expected, but got `\(peek().lexeme)` instead.")
 
-        let location = mergeLocations(token, rbrace)
+        let location = Location(token.location, rbrace.location)
         return Dict(token: token, location: location, pairs: pairs)
     }
 
@@ -34,7 +34,7 @@ extension Parser {
 
         let rbracket = try consume(type: .RBracket, message: "Expected `]` as end of index access, but got `\(peek().lexeme)` instead.")
 
-        let location = mergeLocations(left.location, locationFromToken(rbracket))
+        let location = Location(left.location, rbracket.location)
         return IndexExpression(token: token, location: location, indexable: left, index: index)
     }
 

@@ -8,14 +8,14 @@
 import Foundation
 
 extension BuiltIns {
-    static func equalGeneric(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
+    static func equalGeneric(_ params: [MooseObject], _: Environment) throws -> BoolObj {
         let lhs = params[0]
         let rhs = params[1]
         if lhs.isNil, rhs.isNil { return BoolObj(value: true) }
         return BoolObj(value: lhs.equals(other: rhs))
     }
 
-    static func notEqualGeneric(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
+    static func notEqualGeneric(_ params: [MooseObject], _: Environment) throws -> BoolObj {
         let lhs = params[0]
         let rhs = params[1]
 
@@ -23,13 +23,13 @@ extension BuiltIns {
         return BoolObj(value: !lhs.equals(other: rhs))
     }
 
-    static func notNullTest(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
+    static func notNullTest(_ params: [MooseObject], _: Environment) throws -> BoolObj {
         return BoolObj(value: !params[0].isNil)
     }
 
-    static func negateOperator(_ params: [MooseObject], _ env: Environment) throws -> BoolObj {
+    static func negateOperator(_ params: [MooseObject], _: Environment) throws -> BoolObj {
         guard let b = (params[0] as! BoolObj).value else {
-            throw RuntimeError(message: "Nullpointer exception while negating value...")
+            throw NilUsagePanic()
         }
         return BoolObj(value: !b)
     }

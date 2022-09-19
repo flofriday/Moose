@@ -1,12 +1,9 @@
-// Test comment
-// Test 2
-
+// A simple custom operator demonstration
 
 mut x = 20
 
 print(x--:)
 
-
 postfix -- (a: Int) > Int {
-	return a + 1
+	a + 1
 }

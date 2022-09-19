@@ -128,18 +128,18 @@ extension Lexer {
                     if let num = Float64(digit) {
                         return genToken(.Float, num, digit)
                     } else {
-                        throw error(message: "I thought I was reading a number, but \(digit) is not a float number")
+                        throw error(header: "Bad Float", message: "I thought I was reading a number, but \(digit) is not a float number")
                     }
                 }
 
                 if let num = Int64(digit) {
                     return genToken(.Int, num, digit)
                 } else {
-                    throw error(message: "I thought I was reading a number, but \(digit) is not an integer number")
+                    throw error(header: "Bad Number", message: "I thought I was reading a number, but \(digit) is not an integer number")
                 }
 
             } else {
-                throw error(message: "I got confused while reading your code, \(unwrappedChar) is not a valid token")
+                throw error(header: "Confused Lexer", message: "I got confused while reading your code, \(unwrappedChar) is not a valid token")
             }
         }
 
@@ -187,7 +187,9 @@ extension Lexer {
             readChar()
         }
 
-        guard char == "\"" else { throw error(message: "String does not end with an closint \".") }
+        guard char == "\"" else {
+            throw error(header: "Bad String", message: "String does not end with an closing \".")
+        }
         readChar()
         return (input[pos ..< position], str)
     }
@@ -217,7 +219,7 @@ extension Lexer {
 
     private func parseAnsi() throws -> String {
         guard char == "{" else {
-            throw error(message: "Opening `{` for ANSI code definition expected after escaping \\e.")
+            throw error(header: "Bad ANSI Code", message: "Opening `{` for ANSI code definition expected after escaping \\e.")
         }
         // first ansi letter
         readChar()
@@ -227,7 +229,9 @@ extension Lexer {
             readChar()
         }
 
-        guard char == "}" else { throw error(message: "Expected closing `}` at end of ANSI code definition.") }
+        guard char == "}" else {
+            throw error(header: "Bad ANSI Code", message: "Expected closing `}` at end of ANSI code definition.")
+        }
         readChar()
         return ansi
     }
@@ -329,17 +333,26 @@ extension Lexer {
     private func genToken(_ type: TokenType, _ lit: Any?, _ lexeme: String) -> Token {
         var lexeme = lexeme
 
-        // TODO: This is wrong for newlines
-        var startCol = column - lexeme.count
+        var location = Location(
+            col: column - lexeme.count,
+            endCol: column - 1,
+            line: line,
+            endLine: line
+        )
 
-        // String literals need to be adjusted for two qutationmarks
         if type == .String {
-            startCol -= 2
+            // String literals need to be adjusted for two qutationmarks
+            location.col -= 2
         } else if type == .EOF {
             lexeme = " "
+        } else if type == .NLine {
+            // Newlines need to be on the previous line
+            let col = input.lines[line - 1].count + 1
+            location.col = col
+            location.endCol = col
         }
 
-        let t = Token(type: type, lexeme: lexeme, literal: lit, line: line, column: startCol)
+        let t = Token(type: type, lexeme: lexeme, literal: lit, location: location)
         return t
     }
 }
@@ -379,8 +392,8 @@ extension Lexer {
 }
 
 extension Lexer {
-    func error(message: String) -> CompileErrorMessage {
+    func error(header: String, message: String) -> CompileErrorMessage {
         let location = Location(col: column, endCol: column, line: line, endLine: line)
-        return CompileErrorMessage(location: location, message: message)
+        return CompileErrorMessage(location: location, header: header, message: message)
     }
 }

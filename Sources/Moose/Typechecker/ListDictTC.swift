@@ -37,7 +37,7 @@ extension Typechecker {
                         }
                     }
 
-                    throw error(message: "`\(curr.description)` is of type `\(curr.mooseType!.description)`, but previous list entry is of type `\(acc.description)`.\nTip: Lists have to be homogen.", node: node)
+                    throw error(header: "Type Mismatch", message: "`\(curr.description)` is of type `\(curr.mooseType!.description)`, but previous list entry is of type `\(acc.description)`.\nTip: Lists have to be homogen.", node: node)
                 }
                 return curr.mooseType!
             }
@@ -45,7 +45,7 @@ extension Typechecker {
         }
 
         guard let listType = listType as? ParamType else {
-            throw error(message: "Type of list `\(listType?.description ?? "list")` is not a valid type for Lists.", node: node)
+            throw error(header: "Type Mismatch", message: "Type of list `\(listType?.description ?? "list")` is not a valid type for Lists.", node: node)
         }
 
         node.mooseType = ListType(listType)
@@ -63,14 +63,14 @@ extension Typechecker {
 
             try cur.key.accept(self)
             guard let curKey = cur.key.mooseType as? ParamType else {
-                throw error(message: "Type \(cur.key.mooseType!) is not suitable as key of dict.", node: cur.key)
+                throw error(header: "Type Mismatch", message: "Type \(cur.key.mooseType!) is not suitable as key of dict.", node: cur.key)
             }
             if let key = keyType {
                 // if the current key is no subtype of the acc. key type, check if it is a supertype of the acc keytype
                 // if it is the super, set the key type to the curKey
                 if TypeScope.rate(subtype: curKey, ofSuper: key, classExtends: scope.doesScopeExtend) == nil {
                     guard TypeScope.rate(subtype: key, ofSuper: curKey, classExtends: scope.doesScopeExtend) != nil else {
-                        throw error(message: "Key types \(curKey) and \(key) are not compatible as keys in same dict.", node: node)
+                        throw error(header: "Type Mismatch", message: "Key types \(curKey) and \(key) are not compatible as keys in same dict.", node: node)
                     }
                     keyType = curKey
                 }
@@ -80,14 +80,14 @@ extension Typechecker {
 
             try cur.value.accept(self)
             guard let curVal = cur.value.mooseType as? ParamType else {
-                throw error(message: "Type \(cur.key.mooseType!) is not suitable as value of dict.", node: cur.value)
+                throw error(header: "Type Mismatch", message: "Type \(cur.key.mooseType!) is not suitable as value of dict.", node: cur.value)
             }
             if let val = valType {
                 // if the current value is no subtype of the acc. value type, check if it is a supertype of the acc valuetype
                 // if it is the super, set the value type to the curVal
                 if TypeScope.rate(subtype: curVal, ofSuper: val, classExtends: scope.doesScopeExtend) == nil {
                     guard TypeScope.rate(subtype: val, ofSuper: curVal, classExtends: scope.doesScopeExtend) != nil else {
-                        throw error(message: "Value types \(curVal) and \(val) are not compatible as values in same dict.", node: node)
+                        throw error(header: "Type Mismatch", message: "Value types \(curVal) and \(val) are not compatible as values in same dict.", node: node)
                     }
                     valType = curVal
                 }
@@ -116,7 +116,7 @@ extension Typechecker {
 
         do {
             guard let indexableType = node.indexable.mooseType as? AnyType else {
-                throw error(message: "Type \(String(describing: node.indexable.mooseType)) is not callable via indexing.", node: node)
+                throw error(header: "Type Mismatch", message: "Type \(String(describing: node.indexable.mooseType)) is not callable via indexing.", node: node)
             }
 
             let classScope = try indexableType.inferredClass()
@@ -124,7 +124,7 @@ extension Typechecker {
             node.mooseType = retType
 
         } catch let err as ScopeError {
-            throw error(message: "Type \(node.indexable.mooseType!) does not support indexed access of type \(node.index.mooseType!): \(err.message)", node: node)
+            throw error(header: "Type Mismatch", message: "Type \(node.indexable.mooseType!) does not support indexed access of type \(node.index.mooseType!): \(err.message)", node: node)
         }
     }
 }

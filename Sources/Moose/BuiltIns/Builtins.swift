@@ -11,6 +11,7 @@ class BuiltIns {
     static let builtInFunctions = [
         // Mini stdlib
         BuiltInFunctionObj(name: "range", params: [IntType()], returnType: ListType(IntType()), function: rangeBuiltIn),
+        BuiltInFunctionObj(name: "range", params: [IntType(), IntType()], returnType: ListType(IntType()), function: rangeBuiltIn),
 
         // Math functions
         BuiltInFunctionObj(name: "min", params: [IntType(), IntType()], returnType: IntType(), function: minBuiltIn),
@@ -100,11 +101,15 @@ extension BuiltIns {
         try assertNoNil(params)
 
         let type = ListType(IntType())
-        let n = (params[0] as! IntegerObj).value! - 1
-        guard n >= 0 else {
+        var start: Int64 = 0
+        if params.count > 1 {
+            start = (params[0] as! IntegerObj).value!
+        }
+        let end = (params[params.count - 1] as! IntegerObj).value! - 1
+        guard end >= 0 else {
             return ListObj(type: type, value: [])
         }
-        let l = Array(0 ... n).map { IntegerObj(value: $0) }
+        let l = Array(start ... end).map { IntegerObj(value: $0) }
         return ListObj(type: type, value: l)
     }
 
