@@ -46,7 +46,7 @@ class InterpreterBaseClass: XCTestCase {
                 let prog = try parseAndCheckProgram(source)
                 let i = Interpreter.shared
                 i.reset()
-                try i.run(program: prog)
+                try i.run(program: prog, arguments: [])
                 try validatePromises(env: i.environment, promises: promises)
             } catch let error as CompileError {
                 // This shouldn't happen but is really helpful if you write
@@ -80,7 +80,7 @@ class InterpreterBaseClass: XCTestCase {
                 let prog = try parseAndCheckProgram(source)
                 let i = Interpreter.shared
                 i.reset()
-                try i.run(program: prog)
+                try i.run(program: prog, arguments: [])
             } catch let error as CompileError {
                 // This shouldn't happen but is really helpful if you write
                 // tests that don't compile.
@@ -115,7 +115,7 @@ class InterpreterBaseClass: XCTestCase {
                 let prog = try parseAndCheckProgram(source)
                 let i = Interpreter.shared
                 i.reset()
-                XCTAssertThrowsError(try i.run(program: prog)) { err in
+                XCTAssertThrowsError(try i.run(program: prog, arguments: [])) { err in
                     if !allowedErrors.contains(where: { t in type(of: err) == t }) {
                         XCTFail(err.localizedDescription)
                     }

@@ -12,6 +12,12 @@ TODO: create a table of contents from the headers with python.
 ## Contents
 -->
 
+## Builtin variables
+
+### `args: List[String]`
+
+The command line arguments provided to the script.
+
 ## Builtin functions
 
 ### `abs(Int) > Int`
@@ -131,6 +137,14 @@ Returns the float converted to a String.
 
 ## String Methods
 
+### `String.capitalize() > String`
+
+Returns a capitalized version of the string.
+
+### `String.contains(String) > Bool`
+
+Returns wether or not the string contains the other one.
+
 ### `String.getItem(Int) > String`
 
 Returns the character at the index and returns it in a new string.
@@ -138,6 +152,14 @@ Returns the character at the index and returns it in a new string.
 ### `String.length() > Int`
 
 Returns the length of the string.
+
+### `String.lines() > List[String]`
+
+Returns a list where each item is a line in the original string.
+
+### `String.lower() > String`
+
+Returns a version of the string without upper letters.
 
 ### `String.parseBool() > (Bool, String)`
 
@@ -157,10 +179,106 @@ Returns a tuple where the integer is the parsed integer and the string is `nil` 
 
 On error the integer is `nil` and the string contains the reason why it failed.
 
+### `String.split(String) > List[String]`
+
+Splits the string by the separator provided.
+
+### `String.strip() > String`
+
+Returns a version with all whitespaces at the start and end of the string removed.
+
+### `String.upper() > String`
+
+Returns a version with all characters capitalized.
+
 ## List Methods
 
-Not yet documented...
+Lists are a generic datastructure and with that an exception as Moose doesn't allow you to define custom generic Classes.
+
+### `List[T].append(T) > Void`
+
+Appends the provided item to the end of the list.
+
+### `List[T].append(List[T]) > Void`
+
+Appends the rest the provided list to the end of the first one.
+
+### `List[T].enumerated() > List[(Int, T)]`
+
+Returns a list where each item is wrapped in a tuple with the first element being the index in the original list and the second being the original item.
+
+### `List[T].getItem(Int) > T`
+
+Returns the item at the provided index.
+
+This method panics with `OutOfBoundsPanic` if the item at the index doesn't exist.
+
+There is syntactic sugar for this function:
+
+```dart
+l = [1, 77, 3, 4]
+println(l[1])
+```
+
+### `List[T].setItem(Int, T) > Void`
+
+Updates the item at the provided index.
+
+This method panics with `OutOfBoundsPanic` if the item at the index doesn't exist.
+
+There is syntactic sugar for this function:
+
+```dart
+l = [1, 77, 3, 4]
+l[1] = 2
+```
+
+### `List[T].length() > Int`
+
+Returns the length of the list.
+
+<!-- TODO: min, max but how do they work? -->
+
+### `List[T].reverse() > Void`
+
+Reverses the List in place.
+
+### `List[T].reversed() > List[T]`
+
+Returns a reversed copy of the list and leaves the original intact.
 
 ## Dict Methods
 
-Not yet documented...
+Dicts are a generic datastructure and with that an exception as Moose doesn't allow you to define custom generic Classes.
+
+### `Dict[K, V].length() > Int`
+
+Returns the number of key-value pairs.
+
+### `Dict[K, V].flat() > List[(K, V)]`
+
+Converts the dictionary to a list where each item is a tuple with the key and value from the dictionary.
+
+### `Dict[K, V].getItem(K) > V`
+
+Gets the item with the provided key.
+
+If the key doesn't exist, it will return `nil`.
+
+There is syntactic sugar for this function:
+
+```dart
+dict = {"flo": true, "lisa": false}
+println(dict["lisa"])
+```
+
+### `Dict[K, V].setItem(K, V) > Void`
+
+Updates the provided key with the provided value.
+
+There is syntactic sugar for this function:
+
+```dart
+dict = {"flo": true, "lisa": false}
+dict["luis"] = false
+```

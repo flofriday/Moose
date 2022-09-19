@@ -350,6 +350,45 @@ extension InterpreterTests {
         ])
     }
 
+    func test_list_panics() throws {
+        let tests: [(String, Panic)] = [
+            (
+                """
+                // Index out of bounds test
+                l = [1]
+                a = l[1] 
+                """,
+                OutOfBoundsPanic(length: 1, attemptedIndex: 1)
+            ),
+            (
+                """
+                // Index out of bounds write test
+                l = [1, 2]
+                l[100] = 42
+                """,
+                OutOfBoundsPanic(length: 2, attemptedIndex: 100)
+            ),
+            (
+                """
+                // Nil indexing test
+                l: [Int] = nil
+                a = l[1] 
+                """,
+                NilUsagePanic()
+            ),
+            (
+                """
+                // Nil method test
+                l: [Int] = nil
+                a = l.length()
+                """,
+                NilUsagePanic()
+            ),
+        ]
+
+        try runPanicTests(name: #function, tests)
+    }
+
     func test_string_indexing() throws {
         try runValidTests(name: #function, [
             (

@@ -216,12 +216,20 @@ extension BuiltIns {
 
     private static func createStringEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: "capitalize", value: BuiltInFunctionObj(name: "capitalize", params: [], returnType: StringType(), function: strCapitalizeBuiltIn))
+        env.set(function: "contains", value: BuiltInFunctionObj(name: "contains", params: [StringType()], returnType: BoolType(), function: strContainsBuiltIn))
+        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
         env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representString))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
-        env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
-        env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
+        env.set(function: "lines", value: BuiltInFunctionObj(name: "lines", params: [], returnType: ListType(StringType()), function: strLinesBuiltIn))
+        env.set(function: "lower", value: BuiltInFunctionObj(name: "lower", params: [], returnType: StringType(), function: strLowerBuiltIn))
         env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
+        env.set(function: "parseFloat", value: BuiltInFunctionObj(name: "parseFloat", params: [], returnType: TupleType([FloatType(), StringType()]), function: strToFloatBuiltIn))
+        env.set(function: "parseInt", value: BuiltInFunctionObj(name: "parseInt", params: [], returnType: TupleType([IntType(), StringType()]), function: strToIntBuiltIn))
+        env.set(function: "split", value: BuiltInFunctionObj(name: "split", params: [StringType()], returnType: ListType(StringType()), function: strSplitBuiltIn))
+        env.set(function: "strip", value: BuiltInFunctionObj(name: "strip", params: [], returnType: StringType(), function: strStripBuiltIn))
+        env.set(function: "upper", value: BuiltInFunctionObj(name: "upper", params: [], returnType: StringType(), function: strUpperBuiltIn))
         return env
     }
 
@@ -322,6 +330,82 @@ extension BuiltIns {
 
         return TupleObj(type: type, value: [BoolObj(value: value), StringObj(value: errMsg)])
     }
+
+    private static func strSplitBuiltIn(params: [MooseObject], _ env: Environment) throws -> ListObj {
+        let target: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        try assertNoNil(params)
+        let seperator = (params[0] as! StringObj).value!
+
+        let list = target.value?.components(separatedBy: seperator) ?? []
+
+        return ListObj(
+            type: ListType(StringType()),
+            value: list.map { s in
+                StringObj(value: s)
+            }
+        )
+    }
+
+    private static func strStripBuiltIn(params _: [MooseObject], _ env: Environment) throws -> StringObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        return StringObj(
+            value: source.value!.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+    }
+
+    private static func strUpperBuiltIn(params _: [MooseObject], _ env: Environment) throws -> StringObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        return StringObj(
+            value: source.value!.uppercased()
+        )
+    }
+
+    private static func strLowerBuiltIn(params _: [MooseObject], _ env: Environment) throws -> StringObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        return StringObj(
+            value: source.value!.lowercased()
+        )
+    }
+
+    private static func strCapitalizeBuiltIn(params _: [MooseObject], _ env: Environment) throws -> StringObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        return StringObj(
+            value: source.value!.capitalized
+        )
+    }
+
+    private static func strContainsBuiltIn(params: [MooseObject], _ env: Environment) throws -> BoolObj {
+        let source: StringObj = try env
+            .cast(to: BuiltInClassEnvironment.self)
+            .value.cast()
+
+        try assertNoNil(params)
+        let other = (params[0] as! StringObj).value!
+
+        return BoolObj(
+            value: source.value!.contains(other)
+        )
+    }
+
+    private static func strLinesBuiltIn(params _: [MooseObject], env: Environment) throws -> ListObj {
+        let param = StringObj(value: "\n")
+        return try strSplitBuiltIn(params: [param], env)
+    }
 }
 
 /// Function Environment Creation
@@ -416,18 +500,19 @@ extension BuiltIns {
 
     private static func createListEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ParamType()], returnType: VoidType(), function: appendList))
         env.set(function: "append", value: BuiltInFunctionObj(name: "append", params: [ListType(ParamType())], returnType: VoidType(), function: appendList))
-        env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: VoidType(), function: reverseList))
-        env.set(function: "reversed", value: BuiltInFunctionObj(name: "reversed", params: [], returnType: ParamType(), function: reversedList))
         env.set(function: "enumerated", value: BuiltInFunctionObj(name: "enumerated", params: [], returnType: ParamType(), function: enumeratedList))
         env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representList))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: ParamType(), function: getItemList))
         env.set(function: Settings.SET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.SET_ITEM_FUNCTIONNAME, params: [IntType(), ParamType()], returnType: VoidType(), function: setItemList))
-
-        env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
+        env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "max", value: BuiltInFunctionObj(name: "max", params: [], returnType: NumericType(), function: maxList))
+        env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
+        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
+        env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: VoidType(), function: reverseList))
+        env.set(function: "reversed", value: BuiltInFunctionObj(name: "reversed", params: [], returnType: ParamType(), function: reversedList))
+
         return env
     }
 
