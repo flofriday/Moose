@@ -388,7 +388,9 @@ class ClassEnvironment: BaseEnvironment {
     func bindMethods() {
         for meths in funcs {
             for meth in meths.value {
-                (meth as! FunctionObj).closure = self
+                if let meth = meth as? FunctionObj {
+                    meth.closure = self
+                }
             }
         }
     }
@@ -407,6 +409,11 @@ class ClassEnvironment: BaseEnvironment {
         for (superName, sFns) in superClass.funcs {
             for sFn in sFns {
                 if let sFn = sFn as? FunctionObj, let sFnType = sFn.type as? FunctionType {
+                    // If function of superclass is not overridden by this class, add superclass function
+                    if !has(function: superName, params: sFnType.params) {
+                        set(function: superName, value: sFn)
+                    }
+                } else if let sFn = sFn as? BuiltInFunctionObj, let sFnType = sFn.type as? FunctionType {
                     // If function of superclass is not overridden by this class, add superclass function
                     if !has(function: superName, params: sFnType.params) {
                         set(function: superName, value: sFn)

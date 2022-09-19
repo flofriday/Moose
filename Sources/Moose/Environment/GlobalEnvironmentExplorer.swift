@@ -60,6 +60,11 @@ class GlobalEnvironmentExplorer: BaseVisitor {
         for meth in node.methods {
             try meth.accept(self)
         }
+
+        if node.extends == nil, !node.hasRepresentMethod {
+            classEnv.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: BuiltIns.defaultRepresentMethod))
+        }
+
         environment = preEnv
         environment.set(clas: node.name.value, env: classEnv)
     }

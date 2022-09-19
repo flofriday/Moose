@@ -7,12 +7,22 @@
 
 import Foundation
 
+extension BuiltIns {
+    /// This is the default implementation of the represent() method for custom classes that are not implementing it.
+    static func defaultRepresentMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let this: ClassObject = try classEnvToObj(env)
+        try assertNoNil(this)
+        return StringObj(value: "<class object: \(this.classEnv!.className)>")
+    }
+}
+
 /// Integer Environment Creation
 extension BuiltIns {
     static let builtIn_Integer_Env: BaseEnvironment = createIntegerEnv()
 
     private static func createIntegerEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representInt))
         env.set(function: "abs", value: BuiltInFunctionObj(name: "abs", params: [], returnType: IntType(), function: absIntegerMethod))
         env.set(function: "toBool", value: BuiltInFunctionObj(name: "toBool", params: [], returnType: BoolType(), function: intToBoolBuiltIn))
         env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: intToFloatBuiltIn))
@@ -27,6 +37,12 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func representInt(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let this: IntegerObj = try classEnvToObj(env)
+        try assertNoNil(this)
+        return StringObj(value: this.value!.description)
     }
 
     private static func absIntegerMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
@@ -77,6 +93,7 @@ extension BuiltIns {
 
     private static func createFloatEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representFloat))
         env.set(function: "abs", value: BuiltInFunctionObj(name: "abs", params: [], returnType: FloatType(), function: absFloatMethod))
         env.set(function: "toInt", value: BuiltInFunctionObj(name: "toInt", params: [], returnType: IntType(), function: floatToIntBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: floatToStrBuiltIn))
@@ -90,6 +107,12 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func representFloat(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let this: FloatObj = try classEnvToObj(env)
+        try assertNoNil(this)
+        return StringObj(value: this.value!.description)
     }
 
     private static func absFloatMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
@@ -128,6 +151,7 @@ extension BuiltIns {
 
     private static func createBoolEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representBool))
         env.set(function: "toInt", value: BuiltInFunctionObj(name: "toInt", params: [], returnType: IntType(), function: boolToIntBuiltIn))
         // env.set(function: "toFloat", value: BuiltInFunctionObj(name: "toFloat", params: [], returnType: FloatType(), function: boolToFloatBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: boolToStrBuiltIn))
@@ -141,6 +165,12 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func representBool(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let this: BoolObj = try classEnvToObj(env)
+        try assertNoNil(this)
+        return StringObj(value: this.value!.description)
     }
 
     private static func boolToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> IntegerObj {
@@ -188,8 +218,9 @@ extension BuiltIns {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: "capitalize", value: BuiltInFunctionObj(name: "capitalize", params: [], returnType: StringType(), function: strCapitalizeBuiltIn))
         env.set(function: "contains", value: BuiltInFunctionObj(name: "contains", params: [StringType()], returnType: BoolType(), function: strContainsBuiltIn))
-        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthString))
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representString))
+        env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [IntType()], returnType: StringType(), function: getItemString))
         env.set(function: "lines", value: BuiltInFunctionObj(name: "lines", params: [], returnType: ListType(StringType()), function: strLinesBuiltIn))
         env.set(function: "lower", value: BuiltInFunctionObj(name: "lower", params: [], returnType: StringType(), function: strLowerBuiltIn))
         env.set(function: "parseBool", value: BuiltInFunctionObj(name: "parseBool", params: [], returnType: TupleType([BoolType(), StringType()]), function: strToBoolBuiltIn))
@@ -208,6 +239,10 @@ extension BuiltIns {
         let ndict = ClassTypeScope(copy: old)
 
         return ndict
+    }
+
+    private static func representString(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        return try (classEnvToObj(env) as StringObj)
     }
 
     private static func lengthString(params _: [MooseObject], env: Environment) throws -> MooseObject {
@@ -427,7 +462,7 @@ extension BuiltIns {
 
     private static func createTupleEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representTuple))
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representTuple))
         return env
     }
 
@@ -451,7 +486,7 @@ extension BuiltIns {
             .value.cast()
 
         let valStrs = try obj.value!.map {
-            try representAny(obj: $0)
+            try representAnyWithStringInQuotes(obj: $0)
         }.joined(separator: ", ")
 
         return StringObj(value: "(\(valStrs))")
@@ -472,9 +507,11 @@ extension BuiltIns {
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: listLengthImpl))
         env.set(function: "max", value: BuiltInFunctionObj(name: "max", params: [], returnType: NumericType(), function: maxList))
         env.set(function: "min", value: BuiltInFunctionObj(name: "min", params: [], returnType: NumericType(), function: minList))
-        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representList))
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representList))
         env.set(function: "reverse", value: BuiltInFunctionObj(name: "reverse", params: [], returnType: VoidType(), function: reverseList))
         env.set(function: "reversed", value: BuiltInFunctionObj(name: "reversed", params: [], returnType: ParamType(), function: reversedList))
+        env.set(function: "joined", value: BuiltInFunctionObj(name: "joined", params: [], returnType: StringType(), function: joinedList))
+        env.set(function: "joined", value: BuiltInFunctionObj(name: "joined", params: [StringType()], returnType: StringType(), function: joinedList))
 
         return env
     }
@@ -504,6 +541,18 @@ extension BuiltIns {
             .value.cast()
 
         return IntegerObj(value: Int64(list.length()))
+    }
+
+    private static func joinedList(params: [MooseObject], _ env: Environment) throws -> MooseObject {
+        var seperator = ""
+        try assertNoNil(params)
+        if let sep = params.first as? StringObj {
+            seperator = sep.value!
+        }
+        let list: ListObj = try classEnvToObj(env)
+        try assertNoNil(list)
+        let str = try list.value!.map { try representAnyWithStringInQuotes(obj: $0) }.joined(separator: seperator)
+        return StringObj(value: str)
     }
 
     private static func appendList(params: [MooseObject], env: Environment) throws -> MooseObject {
@@ -592,7 +641,7 @@ extension BuiltIns {
             .value.cast()
 
         let valStrs = try obj.value!.map {
-            try representAny(obj: $0)
+            try representAnyWithStringInQuotes(obj: $0)
         }.joined(separator: ", ")
 
         return StringObj(value: "[\(valStrs)]")
@@ -617,7 +666,7 @@ extension BuiltIns {
 
     private static func createDictEnv() -> BaseEnvironment {
         let env = BaseEnvironment(enclosing: nil)
-        env.set(function: "represent", value: BuiltInFunctionObj(name: "represent", params: [], returnType: StringType(), function: representDict))
+        env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representDict))
         env.set(function: "length", value: BuiltInFunctionObj(name: "length", params: [], returnType: IntType(), function: lengthDict))
         env.set(function: "flat", value: BuiltInFunctionObj(name: "flat", params: [], returnType: ParamType(), function: flatDict))
         env.set(function: Settings.GET_ITEM_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.GET_ITEM_FUNCTIONNAME, params: [ParamType()], returnType: ParamType(), function: getItemDict))
@@ -663,7 +712,7 @@ extension BuiltIns {
             .value.cast()
 
         let valStrs = try obj.pairs!.map {
-            "\(try representAny(obj: $0.key)): \(try representAny(obj: $0.value))"
+            "\(try representAnyWithStringInQuotes(obj: $0.key)): \(try representAnyWithStringInQuotes(obj: $0.value))"
         }.joined(separator: ", ")
 
         return StringObj(value: "{\(valStrs)}")
@@ -720,6 +769,21 @@ extension BuiltIns {
     static func classEnvToObj<T>(_ env: Environment) throws -> T where T: MooseObject {
         return try env.cast(to: BuiltInClassEnvironment.self)
             .value.cast()
+    }
+
+    /// Same as BuiltIns.representAny, but in case it is a String, we return "String" in quotes
+    static func representAnyWithStringInQuotes(obj: MooseObject) throws -> String {
+        guard !obj.isNil else { return "nil" }
+
+        if let strObj = obj as? StringObj {
+            return "\"\(strObj.value!)\""
+        }
+
+        guard let repObj = try callRepresent(env: obj.env) else {
+            return obj.description
+        }
+
+        return repObj.value!
     }
 }
 
