@@ -1,9 +1,9 @@
 // A ASCII Mandelbrot renderer
 COLS = 90
-ROWS = 24
+ROWS = 28
 START = (-3.0, 2.0)
 END = (3.0, -2.0)
-MAXITER = 16
+MAXITER = 64
 
 xStep = (END.0 - START.0) / COLS.toFloat()
 yStep = abs((END.1 - START.1) / ROWS.toFloat())
