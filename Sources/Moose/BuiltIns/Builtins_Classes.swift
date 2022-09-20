@@ -95,6 +95,7 @@ extension BuiltIns {
         let env = BaseEnvironment(enclosing: nil)
         env.set(function: Settings.REPRESENT_FUNCTIONNAME, value: BuiltInFunctionObj(name: Settings.REPRESENT_FUNCTIONNAME, params: [], returnType: StringType(), function: representFloat))
         env.set(function: "abs", value: BuiltInFunctionObj(name: "abs", params: [], returnType: FloatType(), function: absFloatMethod))
+        env.set(function: "sqrt", value: BuiltInFunctionObj(name: "sqrt", params: [], returnType: FloatType(), function: sqrtFloatMethod))
         env.set(function: "toInt", value: BuiltInFunctionObj(name: "toInt", params: [], returnType: IntType(), function: floatToIntBuiltIn))
         env.set(function: "toString", value: BuiltInFunctionObj(name: "toString", params: [], returnType: StringType(), function: floatToStrBuiltIn))
         return env
@@ -118,6 +119,11 @@ extension BuiltIns {
     private static func absFloatMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
         let float: FloatObj = try classEnvToObj(env)
         return try absBuiltIn([float], env)
+    }
+
+    private static func sqrtFloatMethod(params _: [MooseObject], _ env: Environment) throws -> MooseObject {
+        let float: FloatObj = try classEnvToObj(env)
+        return FloatObj(value: float.value!.squareRoot())
     }
 
     private static func floatToIntBuiltIn(params _: [MooseObject], _ env: Environment) throws -> IntegerObj {

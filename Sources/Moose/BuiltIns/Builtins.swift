@@ -14,12 +14,12 @@ class BuiltIns {
         BuiltInFunctionObj(name: "range", params: [IntType(), IntType()], returnType: ListType(IntType()), function: rangeBuiltIn),
 
         // Math functions
-        BuiltInFunctionObj(name: "min", params: [IntType(), IntType()], returnType: IntType(), function: minBuiltIn),
-        BuiltInFunctionObj(name: "min", params: [FloatType(), FloatType()], returnType: FloatType(), function: minBuiltIn),
-        BuiltInFunctionObj(name: "max", params: [IntType(), IntType()], returnType: IntType(), function: maxBuiltIn),
-        BuiltInFunctionObj(name: "max", params: [FloatType(), FloatType()], returnType: FloatType(), function: maxBuiltIn),
         BuiltInFunctionObj(name: "abs", params: [IntType()], returnType: IntType(), function: absBuiltIn),
         BuiltInFunctionObj(name: "abs", params: [FloatType()], returnType: FloatType(), function: absBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [IntType(), IntType()], returnType: IntType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "max", params: [FloatType(), FloatType()], returnType: FloatType(), function: maxBuiltIn),
+        BuiltInFunctionObj(name: "min", params: [IntType(), IntType()], returnType: IntType(), function: minBuiltIn),
+        BuiltInFunctionObj(name: "min", params: [FloatType(), FloatType()], returnType: FloatType(), function: minBuiltIn),
 
         // IO Functions
         BuiltInFunctionObj(name: "print", params: [ParamType()], returnType: VoidType(), function: printBuiltIn),

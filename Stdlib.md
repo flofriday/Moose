@@ -97,7 +97,7 @@ Returns a list starting at the first input up to but not including the second in
 
 Any is not a real type, but the methods in this section hold true for every type (even custom class types).
 
-### `Any.represent() > String` 
+### `Any.represent() > String`
 
 Returns are string representation of the object.
 
@@ -142,6 +142,10 @@ Returns the float converted to a Int.
 ### `Float.toString() > String`
 
 Returns the float converted to a String.
+
+### `Float.sqrt() > Float`
+
+Returns the square root of the Float.
 
 ## String Methods
 
@@ -219,7 +223,7 @@ Returns a list where each item is wrapped in a tuple with the first element bein
 
 Returns a string of the joined list, where each element is converted to String via its `represent()` method.
 
-### `List[T].joined(String) > String` 
+### `List[T].joined(String) > String`
 
 Returns a string of the joined list, where each element is converted to String via its `represent()` method.
 In addition the first argument is used as seperator between the joined elements.
@@ -302,7 +306,7 @@ dict["luis"] = false
 
 ## Tuple
 
-Tuples are a generic datastructure that can hold a arbitrary set of heterogen typed values. Tuples support unpackaging and are the only class that 
+Tuples are a generic datastructure that can hold a arbitrary set of heterogen typed values. Tuples support unpackaging and are the only class that
 uses numbers as property names.
 
 ### Properties
@@ -314,4 +318,3 @@ a = (1, true)
 print(a.0) // "1"
 print(a.1) // "true"
 ```
-
