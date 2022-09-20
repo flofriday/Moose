@@ -66,7 +66,7 @@ extension Typechecker {
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.right], token: node.token)
         } catch is ScopeError {
             node.mooseType = InternalErrorType()
-            throw error(header: "Operator Error", message: "I couldn't find any prefix operator `\(node.op)` for the type \(node.right.mooseType).", node: node)
+            throw error(header: "Operator Error", message: "I couldn't find any prefix operator `\(node.op)` for the type \(node.right.mooseType!).", node: node)
         }
     }
 
@@ -78,7 +78,7 @@ extension Typechecker {
             node.mooseType = try checkOperationsType(op: node.op, operands: [node.left], token: node.token)
         } catch is ScopeError {
             node.mooseType = InternalErrorType()
-            throw error(header: "Operator Error", message: "I couldn't find any postfix operator `\(node.op)` for the type \(node.left.mooseType).", node: node)
+            throw error(header: "Operator Error", message: "I couldn't find any postfix operator `\(node.op)` for the type \(node.left.mooseType!).", node: node)
         }
     }
 
