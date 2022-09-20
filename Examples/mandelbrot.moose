@@ -1,0 +1,62 @@
+// A ASCII Mandelbrot renderer
+COLS = 90
+ROWS = 24
+START = (-3.0, 2.0)
+END = (3.0, -2.0)
+MAXITER = 16
+
+xStep = (END.0 - START.0) / COLS.toFloat()
+yStep = abs((END.1 - START.1) / ROWS.toFloat())
+
+for y in range(ROWS) {
+    for x in range(COLS) {
+        c = ComplexNumber(START.0 + x.toFloat() * xStep, START.1 - (y.toFloat() * yStep))    
+        mut z = ComplexNumber(0.0, 0.0)
+
+        mut iterations = 0
+        for ; iterations < MAXITER; iterations +: 1 {
+            z = z.square() + c
+
+            if z.abs() > 2.0 {
+                break
+            }
+        }
+
+        printForDepth(iterations)
+    }
+    println("")
+}
+
+func printForDepth(iterations: Int) {
+    if iterations == MAXITER {
+        print(" ")
+        return
+    }
+
+    chars = [
+        "\e{[1;31m}#\e{[0m}", 
+        "\e{[1;32m}#\e{[0m}", 
+        "\e{[1;33m}#\e{[0m}", 
+        "\e{[1;34m}#\e{[0m}", 
+        "\e{[1;35m}#\e{[0m}", 
+        "\e{[1;36m}#\e{[0m}" 
+    ]
+    print(chars[iterations % chars.length()])
+}
+
+class ComplexNumber {
+    re: Float
+    im: Float
+
+    func square() > ComplexNumber {
+        return ComplexNumber(re * re - im * im, 2.0 * re * im)
+    }
+
+    func abs() > Float {
+        return (re * re + im * im).sqrt()
+    }
+}
+
+infix + (a: ComplexNumber, b: ComplexNumber) > ComplexNumber {
+    return ComplexNumber(a.re + b.re, a.im + b.im)
+}
