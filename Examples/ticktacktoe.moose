@@ -27,7 +27,7 @@ class PlayerX < Player {
   func eq(o: Field) > Bool { return o is PlayerX }
 }
 
-class PlayerO < Field {
+class PlayerO < Player {
   func represent() > String { return "\e{[0;33m}O\e{[0m}" }
   func eq(o: Field) > Bool { return o is PlayerO }
 }
@@ -99,6 +99,11 @@ for true {
     (num, err) = a.parseInt()
     if err != nil {
       print(lineUp + "\e{[2K}\r\e{[0;31m}Input must be a number! Try again: \e{[0m}")
+      continue
+    }
+
+    if num < 1 || num > 9 {
+      print(lineUp + "\e{[2K}\r\e{[0;31m}The number must be on the field! Try again: \e{[0m}")
       continue
     }
 
