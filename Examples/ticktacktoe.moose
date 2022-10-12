@@ -17,7 +17,7 @@ class Field {
 class BoardField < Field {
   number: Int
 
-  func represent() > String { return String(number) }
+  func represent() > String { return number.toString() }
 }
 
 class Player < Field {}
@@ -50,9 +50,9 @@ class Board {
     col = " | "
     mut str = seperator
     for row in fields {
-      str +: col + String(row[0]) + col
-      str +: String(row[1]) + col
-      str +: String(row[2]) + col
+      str +: col + row[0].represent() + col
+      str +: row[1].represent() + col
+      str +: row[2].represent() + col
       str +: "\n" + seperator
     }
     return str + "\n"
@@ -116,9 +116,12 @@ for true {
   print(lineUp * upcount)
   print(board)
 
-  if board.winnerState() { break }
+  if board.winnerState() {
+    println("Congratualtion " + currPlayer.represent() + ", you won!")
+    exit()
+  }
 
   round +: 1
 }
 
-println("Congratulation, you won!")
+println("It's a tie, I guess you have to play again.")
