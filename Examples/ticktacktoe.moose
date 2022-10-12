@@ -61,17 +61,26 @@ class Board {
   func winnerState() > Bool {
     for i in range(3) {
       // check columns
-      if me[i].eq(me[i+3]) && me[i].eq(me[i+6]) { return true }
+      if me[i+1].eq(me[i+1+3]) && me[i+1].eq(me[i+1+6]) { return true }
       row = i * 3
       // check rows
-      if me[row].eq(me[row+1]) && me[row].eq(me[i+2]) { return true }
+      if me[row+1].eq(me[row+1+1]) && me[row+1].eq(me[row+1+2]) { return true }
     }
 
     // left right diagonal
-    if me[0].eq(me[4]) && me[0].eq(me[8]) { return true }
+    if me[1].eq(me[5]) && me[1].eq(me[9]) { return true }
     // right left diagonal
-    if me[2].eq(me[4]) && me[2].eq(me[6]) { return true }
+    if me[3].eq(me[5]) && me[3].eq(me[7]) { return true }
     return false
+  }
+
+  func completed() > Bool {
+    for i in range(9) {
+      if !(me[i+1] is Player) {
+        return false
+      }
+    }
+    return true
   }
 
 }
@@ -96,6 +105,11 @@ for true {
   mut num: Int
   for true {
     a = input()
+    if a == nil {
+      println("Bye")
+      exit()
+    }
+
     (num, err) = a.parseInt()
     if err != nil {
       print(lineUp + "\e{[2K}\r\e{[0;31m}Input must be a number! Try again: \e{[0m}")
@@ -126,7 +140,10 @@ for true {
     exit()
   }
 
+  if board.completed() {
+    println("It's a tie, I guess you have to play again.")
+    exit()
+  }
+
   round +: 1
 }
-
-println("It's a tie, I guess you have to play again.")
